@@ -56,6 +56,15 @@ html,body{height:100%;margin:0;background:var(--room);overflow:hidden;
   transition:transform .3s ease, border-color .3s ease}
 .mk:hover{transform:scale(1.35);border-color:rgba(247,231,190,.95)}
 
+#card{position:absolute;z-index:12;max-width:210px;padding:9px 12px;
+  background:rgba(18,15,11,.94);border:1px solid rgba(217,180,90,.45);
+  box-shadow:0 8px 30px rgba(0,0,0,.7);opacity:0;pointer-events:none;
+  transition:opacity .45s ease, transform .45s ease;transform:translateY(5px)}
+#card.on{opacity:1;transform:translateY(0)}
+#card .k{font-size:13px;letter-spacing:3px;color:#f0e6cd;margin-bottom:3px}
+#card .n{font-size:12px;line-height:1.45;color:#9d917a}
+#card .c{font-size:10px;letter-spacing:2px;color:#6b6151;margin-top:5px;text-transform:uppercase}
+
 /* roads: white over a dark casing so the line survives both silk and shadow.
    non-scaling-stroke keeps it a constant screen width at every zoom. */
 #roads{position:absolute;left:0;top:0;z-index:5;pointer-events:none;overflow:visible;
@@ -189,6 +198,7 @@ html,body{height:100%;margin:0;background:var(--room);overflow:hidden;
 <script src="assets/data/episodes.js"></script>
 <script src="assets/data/details.js"></script>
 <script src="assets/data/roads.js" onerror="void 0"></script>
+<script src="assets/data/things.js" onerror="void 0"></script>
 <script>
 (function(){
 const S=window.SCROLL, EP=(window.EPISODES&&window.EPISODES.episodes)||[],
@@ -201,11 +211,13 @@ const desk=$('desk'), win=$('window'), rail=$('rail'), rollL=$('rollL'), rollR=$
 
 const I18N={
   en:{zoom:'Zoom', persp:'Perspectives', whole:'Whole', pane:'Pane', detail:'Detail',
-      loc:'Locator', marks:'Marks', roads:'Roads', lang:'中', back:'Return to Cabinet',
+      loc:'Locator', marks:'Things', roads:'Roads', lang:'中', back:'Return to Cabinet',
+      hidden:'hidden — click the painting to find them', found:'you found',
       title:'A Thousand Li of Rivers and Mountains · Wang Ximeng · Northern Song',
       seg:(i,n)=> i===0?'1 · opening' : i===n-1? n+' · end' : String(i+1)},
   zh:{zoom:'縮放', persp:'視角', whole:'全卷', pane:'展卷', detail:'細看',
-      loc:'卷影', marks:'標', roads:'道路', lang:'EN', back:'返回畫匣',
+      loc:'卷影', marks:'物', roads:'道路', lang:'EN', back:'返回畫匣',
+      hidden:'已隱藏 —— 點畫面自己找', found:'你找到了',
       title:'千里江山圖　王希孟　北宋',
       seg:(i,n)=> i===0?'一（起首）' : i===n-1? String(n)+'（卷末）' : String(i+1)}
 };
@@ -214,6 +226,16 @@ const t=k=>I18N[lang][k];
 
 let mode='pane', showLoc=false, showMarks=false, showRoads=false, customUsed=false;
 const ROADS=(window.ROADS&&window.ROADS.paths)||[];
+const THINGS=(window.THINGS&&window.THINGS.items)||[];
+const ITEMS = THINGS.length? THINGS : DET;      // catalogue if we have it, else raw detections
+const TYPE={
+  en:{building:'Building',pavilion:'Pavilion',temple:'Temple',pagoda:'Pagoda',bridge:'Bridge',
+      boat:'Boat',figure:'Figure',watermill:'Watermill',jetty:'Jetty',fence:'Enclosure',
+      animal:'Animal',other:'Detail'},
+  zh:{building:'屋舍',pavilion:'樓閣',temple:'寺',pagoda:'塔',bridge:'橋',
+      boat:'舟',figure:'人',watermill:'水磨',jetty:'埠',fence:'垣',
+      animal:'獸',other:'細節'}
+};
 let apH=0, apW=0, scale=1, Z=1, x0=0, y0=0, vel=0, panning=false, target=null;
 let core=0, thick=0, TX=0, TY=0, kept=null, lastCustom=null;
 
@@ -316,18 +338,31 @@ function render(){
   }
   syncLoc(); syncTrack();
 }
-const markEls=DET.map(d=>{
+const markEls=ITEMS.map(d=>{
   const el=document.createElement('div'); el.className='mk';
-  if(d.label) el.title=d.label;
   el.addEventListener('pointerdown',ev=>ev.stopPropagation());
-  el.addEventListener('click',ev=>{ ev.stopPropagation(); goDetail(d); });
+  el.addEventListener('click',ev=>{ ev.stopPropagation(); revealThing(d,true); });
   marksEl.appendChild(el); return el;
 });
+const card=document.createElement('div'); card.id='card'; win.appendChild(card);
+let cardT=null;
+function revealThing(d,known){
+  const sE=scale*Z;
+  const label=(TYPE[lang]&&TYPE[lang][d.type])||TYPE[lang].other;
+  card.innerHTML='<div class="k">'+label+'</div>'+
+    (d.note?'<div class="n">'+d.note+'</div>':'')+
+    (known?'':'<div class="c">'+t('found')+'</div>');
+  let cx=d.x*sE+TX+16, cy=d.y*sE+TY-10;
+  cx=Math.max(8,Math.min(apW-224,cx)); cy=Math.max(8,Math.min(apH-90,cy));
+  card.style.left=cx+'px'; card.style.top=cy+'px';
+  card.classList.add('on');
+  clearTimeout(cardT); cardT=setTimeout(()=>card.classList.remove('on'), known?4200:5200);
+}
 function renderMarks(sE){
   if(!showMarks||mode==='fold'){ marksEl.style.display='none'; return; }
   marksEl.style.display='block';
-  for(let i=0;i<DET.length;i++){
-    const d=DET[i], el=markEls[i];
+  for(let i=0;i<ITEMS.length;i++){
+    const d=ITEMS[i], el=markEls[i];
     const sx=d.x*sE+TX, sy=d.y*sE+TY;
     if(sx<-30||sx>apW+30||sy<-30||sy>apH+30){ el.style.display='none'; continue; }
     el.style.display='block'; el.style.left=sx+'px'; el.style.top=sy+'px';
@@ -484,7 +519,15 @@ function winUp(){
   const w=parseFloat(marqEl.style.width)||0, h=parseFloat(marqEl.style.height)||0;
   const lf=parseFloat(marqEl.style.left)||0, tp=parseFloat(marqEl.style.top)||0;
   marqEl.style.display='none'; marq=null;
-  if(w<26||h<26) return;
+  if(w<26||h<26){
+    if(!showMarks && ITEMS.length && w<6 && h<6){      // a tap, not a scrub: go hunting
+      const sE0=scale*Z, cx=(lf-TX)/sE0, cy=(tp-TY)/sE0;
+      let best=null,bd=1e9;
+      for(const d of ITEMS){ const q=Math.hypot(d.x-cx,d.y-cy); if(q<bd){bd=q;best=d;} }
+      if(best && bd < 46/(scale*Z)) revealThing(best,false);
+    }
+    return;
+  }
   const sE=scale*Z;
   const sel={x:x0+lf/sE, y:y0+tp/sE, w:w/sE, h:h/sE};
   const PAD=1.38;                                   // keep context around the selection
@@ -574,6 +617,8 @@ function applyLang(){
   rp.querySelector('.lb').textContent=t('roads');
   rp.classList.toggle('off', ROADS.length===0);
   rp.title = ROADS.length? '' : 'no roads traced yet — use trace.html';
+  const mp=document.querySelector('.persp[data-t="marks"]');
+  mp.title = showMarks? '' : t('hidden');
   document.title = lang==='en'?'A Thousand Li of Rivers and Mountains':'千里江山圖';
   buildTrack(); if(mode==='fold') layoutFold();
 }
