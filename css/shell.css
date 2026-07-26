@@ -76,8 +76,10 @@
 
 /* ---- page offsets ---- */
 /* poetry site: one row of chrome */
-body:not(.art-page):not(.art-immersive) { padding-top: 36px; }
-body:not(.art-page):not(.art-immersive) .site-header { top: 36px; }
+body:not(.art-page):not(.art-immersive):not(.art-nav) { padding-top: 36px; }
+body:not(.art-page):not(.art-immersive):not(.art-nav) .site-header { top: 36px; }
+/* navigator view lays itself out as a flex column, so the strip sits in flow */
+body.art-nav .tabstrip { position: static; flex: 0 0 auto; }
 /* painting, paged view: two rows of chrome */
 body.art-page { padding-top: 66px; }
 /* painting, immersive view: strip floats over the artwork and auto-hides */

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>千里江山图 · 导览</title>
+  <meta name="description" content="王希孟《千里江山图》全卷高清，附全卷缩览导航，随时知道自己身在何处。">
+  <link rel="stylesheet" href="css/shell.css">
+  <style>
+    :root { --paper:#f4efe4; --cinnabar:#a8322d; --gold:#d9b45a; }
+    * { box-sizing: border-box; }
+    html, body {
+      height: 100%; margin: 0; padding: 0; overflow: hidden;
+      background: #14120f; color: #d9cfba;
+      font-family: "Songti SC", "Noto Serif SC", Georgia, serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    body.art-nav { display: flex; flex-direction: column; }
+
+    /* ---- minimap bar ---- */
+    #navbar {
+      flex: 0 0 auto;
+      background: linear-gradient(180deg, #211e1a, #16130f);
+      border-bottom: 1px solid rgba(217,180,90,0.22);
+      padding: 6px 12px 9px;
+    }
+    #navMeta {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 11px; letter-spacing: 2px; color: #8d8271;
+      margin: 0 2px 5px;
+    }
+    #navMeta #pct { color: var(--gold); letter-spacing: 1px; }
+    #mini {
+      position: relative; overflow: hidden; line-height: 0;
+      border: 1px solid rgba(217,180,90,0.25);
+      background: #0e0c0a; cursor: pointer;
+      touch-action: none;
+    }
+    #miniImg {
+      width: 100%; height: auto; display: block;
+      pointer-events: none; -webkit-user-drag: none; user-select: none;
+    }
+    /* everything outside the golden window is dimmed by the giant box-shadow */
+    #box {
+      position: absolute; top: 0; bottom: 0;
+      border: 2px solid var(--gold); border-radius: 2px;
+      box-shadow: 0 0 0 9999px rgba(12,10,8,0.58), 0 0 14px rgba(217,180,90,0.55);
+      pointer-events: none;
+    }
+    /* where the painting ends and the mounting silk begins */
+    #mark {
+      position: absolute; top: 0; bottom: 0; width: 1px;
+      background: rgba(244,239,228,0.4); pointer-events: none;
+    }
+
+    /* ---- the scroll itself ---- */
+    #stage {
+      flex: 1 1 auto; min-height: 0; position: relative;
+      overflow-x: auto; overflow-y: hidden;
+      cursor: grab; scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      background: #14120f;
+    }
+    #stage::-webkit-scrollbar { display: none; }
+    #stage.grabbing { cursor: grabbing; }
+    #rail { position: relative; height: 100%; }
+    #rail img {
+      position: absolute; top: 0; height: 100%;
+      display: block; border: 0;
+      -webkit-user-drag: none; user-select: none; pointer-events: none;
+    }
+
+    .caption {
+      position: fixed; left: 18px; bottom: 14px; z-index: 900;
+      font-size: 14px; letter-spacing: 2px; color: #e7ddc9;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.9);
+      transition: opacity .5s ease; pointer-events: none;
+    }
+    .caption small { display:block; font-size: 11px; color:#b7ab97; letter-spacing:1px; margin-top:2px; }
+    .faded { opacity: 0 !important; }
+    .veil {
+      position: fixed; inset: 0; z-index: 1700; display: flex;
+      align-items: center; justify-content: center; background: #14120f;
+      color: #b7ab97; letter-spacing: 4px; font-size: 15px;
+      transition: opacity .6s ease;
+    }
+    .veil.gone { opacity: 0; pointer-events: none; }
+    .veil .dot { animation: blink 1.2s infinite; }
+    @keyframes blink { 0%,100%{opacity:.25} 50%{opacity:1} }
+
+    @media (max-width: 520px) {
+      #navbar { padding: 5px 8px 7px; }
+      #navMeta { font-size: 10px; letter-spacing: 1px; margin-bottom: 4px; }
+    }
+  </style>
+</head>
+<body class="art-nav">
+  <div class="tabstrip" id="tabstrip">
+    <div class="tabrow tabrow-works">
+      <a class="tabstrip-tab" href="https://classicalchinesepoetry.com/">诗渊</a>
+      <a class="tabstrip-tab active" href="./">千里江山图</a>
+    </div>
+    <div class="tabrow tabrow-views">
+      <span class="views-label">观法</span>
+      <a class="tabstrip-tab" href="./">展卷</a>
+      <a class="tabstrip-tab" href="grid.html">叠卷</a>
+      <a class="tabstrip-tab active" href="nav.html">导览</a>
+    </div>
+  </div>
+
+  <div id="navbar">
+    <div id="navMeta">
+      <span>卷末（左）</span>
+      <span id="pct">自右起 0%</span>
+      <span>起首（右）</span>
+    </div>
+    <div id="mini">
+      <img id="miniImg" src="assets/nav/strip.jpg" alt="全卷缩览">
+      <div id="mark"></div>
+      <div id="box"></div>
+    </div>
+  </div>
+
+  <div id="stage" aria-label="千里江山图 全卷"><div id="rail"></div></div>
+
+  <div class="caption" id="caption">《千里江山图》<small>王希孟　北宋　点按上方缩览图可跳转</small></div>
+  <div class="veil" id="veil">展卷中<span class="dot">…</span></div>
+
+  <script src="assets/scroll/manifest.js"></script>
+  <script>
+  (function () {
+    var stage = document.getElementById('stage');
+    var rail  = document.getElementById('rail');
+    var mini  = document.getElementById('mini');
+    var box   = document.getElementById('box');
+    var mark  = document.getElementById('mark');
+    var pct   = document.getElementById('pct');
+    var S = window.SCROLL || { w: 1, h: 1, tiles: [] };
+    var n = S.tiles.length;
+
+    var cum = [0];
+    S.tiles.forEach(function (t) { cum.push(cum[cum.length - 1] + t.w); });
+
+    var imgs = S.tiles.map(function (t, i) {
+      var img = document.createElement('img');
+      img.src = 'assets/scroll/tiles/' + t.f;
+      img.alt = ''; img.decoding = 'async';
+      img.loading = (i >= n - 5) ? 'eager' : 'lazy';
+      rail.appendChild(img);
+      return img;
+    });
+
+    var scale = 1, xs = [];
+    function layout() {
+      var H = stage.clientHeight;
+      if (!H || !S.h) return;
+      scale = H / S.h;
+      xs = cum.map(function (c) { return Math.round(c * scale); });
+      for (var i = 0; i < imgs.length; i++) {
+        imgs[i].style.left  = xs[i] + 'px';
+        imgs[i].style.width = (xs[i + 1] - xs[i]) + 'px';
+      }
+      rail.style.width = xs[xs.length - 1] + 'px';
+      // tick marking the end of the painting proper
+      mark.style.left = ((S.contentRight || S.w) / S.w * 100).toFixed(3) + '%';
+    }
+
+    function openAtStart() {
+      var edge = Math.round((S.contentRight || S.w) * scale);
+      stage.scrollLeft = Math.max(0, edge - stage.clientWidth);
+    }
+
+    // keep the golden window in sync with the viewport
+    function syncBox() {
+      var rw = rail.offsetWidth;
+      if (!rw) return;
+      var mw = mini.clientWidth;
+      var left = (stage.scrollLeft / rw) * mw;
+      var w = Math.max(5, (stage.clientWidth / rw) * mw);
+      if (left + w > mw) left = mw - w;
+      if (left < 0) left = 0;
+      box.style.left = left + 'px';
+      box.style.width = w + 'px';
+      var max = rw - stage.clientWidth;
+      var seen = max > 0 ? (1 - stage.scrollLeft / max) : 0;
+      pct.textContent = '自右起 ' + Math.round(seen * 100) + '%';
+    }
+
+    var opened = false;
+    function reflow() {
+      var rw = rail.offsetWidth, frac = null;
+      var max0 = rw - stage.clientWidth;
+      if (opened && max0 > 0) frac = stage.scrollLeft / max0;
+      layout();
+      if (frac !== null) {
+        stage.scrollLeft = frac * (rail.offsetWidth - stage.clientWidth);
+      } else {
+        openAtStart();
+      }
+      syncBox();
+    }
+
+    layout(); openAtStart(); syncBox();
+    requestAnimationFrame(function () { layout(); if (!opened) openAtStart(); syncBox(); });
+    window.addEventListener('load', function () { layout(); if (!opened) openAtStart(); syncBox(); });
+    window.addEventListener('resize', reflow);
+    window.addEventListener('orientationchange', function () { setTimeout(reflow, 120); });
+
+    var veil = document.getElementById('veil');
+    function drop() { veil.classList.add('gone'); }
+    var lastImg = imgs[imgs.length - 1];
+    if (lastImg) { lastImg.complete ? drop() : lastImg.addEventListener('load', drop); }
+    setTimeout(drop, 4000);
+
+    stage.addEventListener('scroll', function () { syncBox(); markMoved(); }, { passive: true });
+
+    stage.addEventListener('wheel', function (e) {
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      stage.scrollLeft -= e.deltaY;
+    }, { passive: false });
+
+    var down = false, startX = 0, startL = 0;
+    stage.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'touch') return;
+      down = true; markMoved(); startX = e.clientX; startL = stage.scrollLeft;
+      stage.classList.add('grabbing'); stage.setPointerCapture(e.pointerId);
+    });
+    stage.addEventListener('pointermove', function (e) {
+      if (!down) return;
+      stage.scrollLeft = startL - (e.clientX - startX);
+    });
+    function up() { down = false; stage.classList.remove('grabbing'); }
+    stage.addEventListener('pointerup', up);
+    stage.addEventListener('pointercancel', up);
+
+    // click / drag anywhere on the minimap to jump there
+    function seek(clientX) {
+      var r = mini.getBoundingClientRect();
+      var f = (clientX - r.left) / r.width;
+      f = Math.max(0, Math.min(1, f));
+      var rw = rail.offsetWidth;
+      stage.scrollLeft = f * rw - stage.clientWidth / 2;
+      markMoved();
+      syncBox();
+    }
+    var scrub = false;
+    mini.addEventListener('pointerdown', function (e) {
+      scrub = true; mini.setPointerCapture(e.pointerId); seek(e.clientX); e.preventDefault();
+    });
+    mini.addEventListener('pointermove', function (e) { if (scrub) seek(e.clientX); });
+    function endScrub() { scrub = false; }
+    mini.addEventListener('pointerup', endScrub);
+    mini.addEventListener('pointercancel', endScrub);
+
+    var caption = document.getElementById('caption');
+    var moved = false;
+    function markMoved() {
+      opened = true;
+      if (!moved) { moved = true; setTimeout(function () { caption.classList.add('faded'); }, 3200); }
+    }
+    setTimeout(function () { caption.classList.add('faded'); }, 7000);
+  })();
+  </script>
+</body>
+</html>
