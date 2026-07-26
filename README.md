@@ -75,6 +75,36 @@ done
 
 Tile widths must sum to exactly 41783; `manifest.js` must be updated to match.
 
+### ⚠️ `sips --cropOffset 0 0` is broken — do not use it
+
+When **both** offsets are zero, `sips` silently ignores `--cropOffset` and returns a
+**centre crop** instead of the top-left crop. The loop above therefore produces a
+`tile-00.jpg` containing the middle of the painting rather than its left end. This is
+not hypothetical: it shipped, and it replaced the entire colophon section (蔡京's
+inscription and the imperial seals at the scroll's end) with a duplicate of the middle.
+
+Verified behaviour on macOS 15:
+
+```
+sips -c 1673 2048 --cropOffset 0 0 src.jpg   # -> MAE 1.93 vs the CENTRE, 91.98 vs left edge
+```
+
+Flag order does not help. To crop anchored at x=0, flip horizontally, crop at a non-zero
+offset, then flip back (use PNG intermediates so no extra JPEG generation is added):
+
+```bash
+sips -s format png -f horizontal src.jpg --out flip.png
+sips -s format png -c 1673 2048 --cropOffset 0 $((41783-2048)) flip.png --out c.png
+sips -s format png -f horizontal c.png --out t00.png
+sips -s format jpeg -s formatOptions 86 t00.png --out assets/scroll/tiles/tile-00.jpg
+```
+
+The same trap applies to `assets/grid/row-3.jpg` (the leftmost band).
+
+**Always verify after regenerating** by comparing each tile against the master, and the
+master against the museum's own tiles. A correct tile scores MAE ≈ 0.4–0.9 against the
+master; wrong content scores ≈ 90.
+
 ## Copyright
 
 The painting is in the public domain. The digitised scan is published by the Palace
