@@ -99,6 +99,9 @@ html,body{height:100%;margin:0;background:var(--room);color:#c9bda4;overflow:hid
 #skin span:hover{color:#cbbd9c}
 #skin span.on{color:#f0e6cd;border-bottom-color:rgba(217,180,90,.6)}
 #skin i{width:1px;height:11px;background:rgba(217,180,90,.22);display:inline-block}
+#classic{position:fixed;right:18px;bottom:16px;z-index:9;font-size:11px;letter-spacing:2px;
+  color:#443e33;text-decoration:none;transition:color .3s}
+#classic:hover{color:#a2957a}
 </style>
 </head>
 <body>
@@ -117,22 +120,23 @@ html,body{height:100%;margin:0;background:var(--room);color:#c9bda4;overflow:hid
 
 <div id="lang">中</div>
 <div id="skin"><span data-s="geo"></span><i></i><span data-s="pic"></span></div>
+<a id="classic" href="classic.html"></a>
 
 <script>
 (function(){
 const I18N={
   en:{h1:'The Case', sub:'Six compartments. Two filled.', lang:'中',
-      geo:'Geometric', pic:'Pictorial',
+      geo:'Geometric', pic:'Pictorial', classic:'classic view',
       short:['A Thousand Li','Shi Yuan'],
       items:[{n:'A Thousand Li of Rivers and Mountains', m:'Wang Ximeng · Northern Song · handscroll'},
              {n:'Shi Yuan — Classical Chinese Poetry',   m:'2,966 poems and prose works'}]},
   zh:{h1:'畫　匣', sub:'六格　二實', lang:'EN',
-      geo:'幾何', pic:'寫實',
+      geo:'幾何', pic:'寫實', classic:'舊版',
       short:['千里江山圖','詩　淵'],
       items:[{n:'千里江山圖', m:'王希孟　北宋　絹本設色'},
              {n:'詩　淵',    m:'古詩古文 二九六六篇'}]}
 };
-const HREF=['view.html','https://classicalchinesepoetry.com/'];
+const HREF=['./','https://classicalchinesepoetry.com/'];
 const GEO_C=['#5c7a72','#9c8558'];                          // silk: celadon, gold-tan
 const PIC_C=[['#5d7186','#3b5063'],['#8a6a52','#5e4335']];  // the earlier blue / russet
 const SLOTS=6;
@@ -186,6 +190,7 @@ function build(){
   document.getElementById('h1').textContent=d.h1;
   document.getElementById('sub').textContent=d.sub;
   document.getElementById('lang').textContent=d.lang;
+  document.getElementById('classic').textContent=d.classic;
   document.title=d.h1;
   document.querySelector('#skin [data-s="geo"]').textContent=d.geo;
   document.querySelector('#skin [data-s="pic"]').textContent=d.pic;
