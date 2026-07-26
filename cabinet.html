@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>The Case</title>
+<meta name="description" content="A case of handscrolls — choose one to unroll.">
+<style>
+:root{
+  --room:#0c0a08; --warm:#d9b45a; --line:rgba(217,180,90,.20);
+  --serif:"Songti SC","Noto Serif SC",Georgia,"Times New Roman",serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--room);color:#c9bda4;
+  overflow:hidden;font-family:var(--serif);-webkit-font-smoothing:antialiased;
+  -webkit-user-select:none;user-select:none}
+
+#room{position:fixed;inset:0;
+  background:radial-gradient(70% 56% at 30% 2%, rgba(224,186,120,.10), transparent 64%), var(--room)}
+
+#wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(86vw,900px)}
+h1{margin:0 0 4px;font-size:13px;font-weight:400;letter-spacing:6px;color:#7d735f;
+  text-transform:uppercase}
+#sub{margin:0 0 26px;font-size:11px;letter-spacing:3px;color:#544c3e}
+
+/* the case: a grid of compartments, drawn not simulated */
+#grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;
+  background:var(--line);border:1px solid var(--line)}
+@media(max-width:640px){ #grid{grid-template-columns:1fr} }
+
+.cell{position:relative;background:#0e0c09;padding:22px 20px 18px;min-height:104px;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  transition:background .35s ease}
+.cell.open{cursor:pointer}
+.cell.open:hover{background:#141109}
+
+/* a scroll, abstracted: one rectangle, one accent edge */
+.bar{position:relative;height:15px;width:100%;
+  background:var(--c);transition:height .35s cubic-bezier(.2,.7,.3,1), filter .35s ease}
+.bar::after{content:"";position:absolute;left:0;right:0;top:0;height:2px;
+  background:rgba(255,238,205,.42)}
+/* the ties — two hairlines, nothing more */
+.bar i{position:absolute;top:-3px;bottom:-3px;width:1px;background:rgba(10,8,6,.75)}
+.cell.open:hover .bar{height:21px;filter:brightness(1.22)}
+
+.name{margin-top:14px;font-size:13px;letter-spacing:3px;color:#9d917a;
+  transition:color .35s ease}
+.meta{margin-top:5px;font-size:10px;letter-spacing:2px;color:#4f483b}
+.cell.open:hover .name{color:#f0e6cd}
+
+.cell.empty .slotline{height:1px;width:100%;background:rgba(217,180,90,.10)}
+.cell.empty .name{color:#33302a}
+
+#lang{position:fixed;right:18px;top:16px;z-index:9;font-size:11px;letter-spacing:3px;
+  color:#6b6151;cursor:pointer;border:1px solid var(--line);padding:5px 10px;
+  transition:color .3s, border-color .3s}
+#lang:hover{color:#efe3c6;border-color:rgba(217,180,90,.5)}
+</style>
+</head>
+<body>
+<div id="room"></div>
+<div id="wrap">
+  <h1 id="h1">The Case</h1>
+  <p id="sub"></p>
+  <div id="grid"></div>
+</div>
+<div id="lang">中</div>
+
+<script>
+(function(){
+const I18N={
+  en:{h1:'The Case', sub:'Six compartments. Two filled.', lang:'中',
+      take:'open', empty:'empty',
+      items:[{n:'A Thousand Li of Rivers and Mountains', m:'Wang Ximeng · Northern Song · handscroll'},
+             {n:'Shi Yuan — Classical Chinese Poetry',   m:'2,966 poems and prose works'}]},
+  zh:{h1:'畫　匣', sub:'六格　二實', lang:'EN',
+      take:'展', empty:'空',
+      items:[{n:'千里江山圖', m:'王希孟　北宋　絹本設色'},
+             {n:'詩　淵',    m:'古詩古文 二九六六篇'}]}
+};
+const HREF=['view.html','https://classicalchinesepoetry.com/'];
+const COLOR=['#3f5b74','#7a5340'];
+const SLOTS=6;
+let lang=localStorage.getItem('ccp_lang')||'en';
+
+const grid=document.getElementById('grid');
+function build(){
+  const d=I18N[lang];
+  document.documentElement.lang = lang==='en'?'en':'zh-Hans';
+  document.getElementById('h1').textContent=d.h1;
+  document.getElementById('sub').textContent=d.sub;
+  document.getElementById('lang').textContent=d.lang;
+  document.title=d.h1;
+  grid.innerHTML='';
+  for(let i=0;i<SLOTS;i++){
+    const cell=document.createElement('div');
+    const it=d.items[i];
+    if(it){
+      cell.className='cell open';
+      cell.innerHTML='<div class="bar" style="--c:'+COLOR[i]+'">'+
+        '<i style="left:27%"></i><i style="left:71%"></i></div>'+
+        '<div class="name">'+it.n+'</div><div class="meta">'+it.m+'</div>';
+      cell.addEventListener('click',()=>{ location.href=HREF[i]; });   // straight through
+    } else {
+      cell.className='cell empty';
+      cell.innerHTML='<div class="slotline"></div><div class="name">—</div>';
+    }
+    grid.appendChild(cell);
+  }
+}
+document.getElementById('lang').addEventListener('click',()=>{
+  lang = lang==='en'?'zh':'en';
+  localStorage.setItem('ccp_lang',lang);
+  build();
+});
+build();
+})();
+</script>
+</body>
+</html>

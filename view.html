@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>千里江山圖</title>
+<meta name="description" content="王希孟《千里江山圖》全卷 — 展卷、全卷、細看。">
+<style>
+:root{
+  --room:#0c0a08; --warm:#d9b45a;
+  --kai:"Kaiti SC","STKaiti","Kaiti TC","BiauKai","Songti SC",serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--room);overflow:hidden;
+  font-family:var(--kai);-webkit-font-smoothing:antialiased;
+  -webkit-user-select:none;user-select:none;touch-action:none}
+
+#room{position:fixed;inset:0;
+  background:
+    radial-gradient(88% 68% at 28% 6%, rgba(224,186,120,.12), transparent 62%),
+    var(--room)}
+#room::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:1;
+  background:radial-gradient(132% 100% at 50% 50%, transparent 46%, rgba(0,0,0,.72) 100%)}
+
+/* ---------------- READ (展卷) ---------------- */
+#desk{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2}
+#window{position:absolute;overflow:hidden;background:#0e0c0a;cursor:grab;
+  box-shadow:0 30px 80px rgba(0,0,0,.75), 0 0 0 1px rgba(217,180,90,.10)}
+#window.pulling{cursor:grabbing}
+#window.marq{cursor:crosshair}
+#rail{position:absolute;top:0;left:0;height:100%;transform-origin:0 0;will-change:transform}
+#rail img{position:absolute;top:0;height:100%;display:block;border:0;
+  -webkit-user-drag:none;pointer-events:none}
+#window::before,#window::after{content:"";position:absolute;top:0;bottom:0;width:5%;
+  pointer-events:none;z-index:4}
+#window::before{left:0;background:linear-gradient(90deg,rgba(0,0,0,.6),transparent)}
+#window::after{right:0;background:linear-gradient(270deg,rgba(0,0,0,.6),transparent)}
+#sheen{position:absolute;inset:0;pointer-events:none;z-index:3;mix-blend-mode:soft-light;opacity:.5;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 3px),
+    linear-gradient(100deg, transparent 34%, rgba(255,244,214,.66) 50%, transparent 66%);
+  background-size:auto, 260% 100%;
+  background-position:0 0, var(--sheenX,0%) 0}
+
+.roll{position:absolute;top:0;height:100%;z-index:6;cursor:grab;transition:opacity .25s}
+.roll .body{position:absolute;inset:0;
+  background:linear-gradient(90deg, rgba(14,11,8,.96), rgba(52,45,34,.92) 46%, rgba(14,11,8,.96));
+  box-shadow:0 18px 44px rgba(0,0,0,.55)}
+.roll .knob{display:none}
+#rollL .body{border-right:1px solid rgba(217,180,90,.34)}
+#rollR .body{border-left:1px solid rgba(217,180,90,.34)}
+
+#marks{position:absolute;inset:0;z-index:7;pointer-events:none;display:none}
+.mk{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;
+  border:1px solid rgba(233,209,150,.5);pointer-events:auto;cursor:pointer;
+  box-shadow:0 0 12px rgba(217,180,90,.25), inset 0 0 10px rgba(217,180,90,.13);
+  transition:transform .3s ease, border-color .3s ease}
+.mk:hover{transform:scale(1.35);border-color:rgba(247,231,190,.95)}
+#marquee{position:absolute;z-index:9;border:1px solid rgba(240,222,180,.9);display:none;
+  background:rgba(217,180,90,.09);box-shadow:0 0 0 9999px rgba(10,8,6,.35)}
+#bleed{position:absolute;inset:0;z-index:10;pointer-events:none;background:#0d0b09;
+  transition:opacity 1.4s ease}
+#dlabel{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);z-index:11;
+  writing-mode:vertical-rl;text-orientation:upright;font-size:16px;letter-spacing:7px;
+  color:#f4e8c8;opacity:0;pointer-events:none;transition:opacity .8s ease;
+  text-shadow:0 0 14px rgba(0,0,0,.95)}
+
+/* ---------------- FOLD (全卷) ---------------- */
+#fold{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;
+  display:none;flex-direction:column;align-items:center}
+#fold .row{background-image:url('assets/fold/strip.jpg');background-repeat:no-repeat;
+  border:1px solid rgba(176,141,87,.28);box-shadow:0 6px 20px rgba(0,0,0,.5);
+  cursor:pointer;position:relative}
+#fold .row .seg{position:absolute;top:5px;right:8px;font-size:11px;letter-spacing:2px;
+  color:rgba(231,221,201,.72);text-shadow:0 1px 4px rgba(0,0,0,.9);pointer-events:none}
+
+/* ---------------- 卷影 locator ---------------- */
+#loc{position:fixed;left:50%;transform:translateX(-50%);bottom:52px;z-index:14;
+  display:none;line-height:0;border:1px solid rgba(217,180,90,.24);cursor:pointer;
+  background:#0e0c0a;touch-action:none;overflow:hidden}  /* clips locBox's 9999px scrim */
+#loc img{display:block;width:100%;height:auto;pointer-events:none}
+#locBox{position:absolute;top:0;bottom:0;border:2px solid var(--warm);border-radius:1px;
+  box-shadow:0 0 0 9999px rgba(10,8,6,.55), 0 0 12px rgba(217,180,90,.5);pointer-events:none}
+
+/* ---------------- chrome: ink, not buttons ---------------- */
+#bar{position:fixed;left:0;right:0;bottom:14px;z-index:16;text-align:center;
+  opacity:0;transition:opacity .5s ease;pointer-events:none}
+#bar.show{opacity:1;pointer-events:auto}
+#bar a{display:inline-block;margin:0 11px;color:#8d8270;font-size:13px;
+  letter-spacing:4px;text-decoration:none;cursor:pointer;transition:color .3s, text-shadow .3s}
+#bar a:hover{color:#f0e4c6;text-shadow:0 0 14px rgba(217,180,90,.45)}
+#bar a.on{color:var(--warm);text-shadow:0 0 12px rgba(217,180,90,.4)}
+#bar .sep{color:#3a3327;margin:0 2px}
+#slip{position:fixed;left:20px;top:50%;transform:translateY(-50%);z-index:15;
+  writing-mode:vertical-rl;text-orientation:upright;color:#a2957a;font-size:14px;
+  letter-spacing:6px;text-decoration:none;padding:12px 6px;
+  border:1px solid rgba(217,180,90,.18);border-radius:2px;
+  transition:color .35s, text-shadow .35s}
+#slip:hover{color:#f2e6c8;text-shadow:0 0 14px rgba(217,180,90,.5)}
+@media(max-width:640px){ #slip{display:none} #bar a{margin:0 7px;font-size:12px;letter-spacing:2px} }
+</style>
+</head>
+<body>
+<div id="room">
+  <div id="desk">
+    <div class="roll" id="rollL"><div class="body"></div><div class="knob t"></div><div class="knob b"></div></div>
+    <div id="window">
+      <div id="rail"></div>
+      <div id="sheen"></div>
+      <div id="marks"></div>
+      <div id="marquee"></div>
+      <div id="dlabel"></div>
+      <div id="bleed"></div>
+    </div>
+    <div class="roll" id="rollR"><div class="body"></div><div class="knob t"></div><div class="knob b"></div></div>
+  </div>
+  <div id="fold"></div>
+</div>
+
+<div id="loc"><img id="locImg" src="assets/nav/strip.jpg" alt=""><div id="locBox"></div></div>
+
+<a id="slip" href="cabinet.html"></a>
+<div id="bar">
+  <a data-m="fold"></a><span class="sep">·</span><a data-m="read"></a><span class="sep">·</span><a data-m="near"></a>
+  <span class="sep">　</span>
+  <a data-t="loc"></a><span class="sep">·</span><a data-t="marks"></a>
+  <span class="sep">　</span><a data-lang></a>
+</div>
+
+<script src="assets/scroll/manifest.js"></script>
+<script src="assets/data/episodes.js"></script>
+<script src="assets/data/details.js"></script>
+<script>
+(function(){
+const S=window.SCROLL, EP=(window.EPISODES&&window.EPISODES.episodes)||[],
+      DET=(window.DETAILS&&window.DETAILS.items)||[];
+const L=S.w, PH=S.h, CR=S.contentRight||S.w;
+const $=id=>document.getElementById(id);
+const desk=$('desk'), win=$('window'), rail=$('rail'), rollL=$('rollL'), rollR=$('rollR'),
+      sheen=$('sheen'), foldEl=$('fold'), marksEl=$('marks'), marqEl=$('marquee'),
+      loc=$('loc'), locBox=$('locBox'), bar=$('bar'), dlabel=$('dlabel');
+
+const I18N={
+  en:{whole:'Whole',read:'Read',near:'Near',loc:'Locator',marks:'Marks',lang:'中',
+      title:'A Thousand Li of Rivers and Mountains',
+      seg:(i,n)=> i===0?'1 · opening' : i===n-1? n+' · end' : String(i+1)},
+  zh:{whole:'全卷',read:'展卷',near:'細看',loc:'卷影',marks:'標',lang:'EN',
+      title:'千里江山圖',
+      seg:(i,n)=> i===0?'一（起首）' : i===n-1? String(n)+'（卷末）' : String(i+1)}
+};
+let lang=localStorage.getItem('ccp_lang')||'en';
+const t=k=>I18N[lang][k];
+let mode='read', showLoc=false, showMarks=false;
+let apH=0, apW=0, scale=1, Z=1, x0=0, y0=0, vel=0, dragging=false, target=null;
+let core=0, thick=0, TX=0, TY=0;
+
+// ---- tiles ----------------------------------------------------------------
+const cum=[0]; S.tiles.forEach(t=>cum.push(cum[cum.length-1]+t.w));
+const imgs=S.tiles.map((t,i)=>{
+  const im=document.createElement('img');
+  im.src='assets/scroll/tiles/'+t.f; im.alt=''; im.decoding='async';
+  im.loading = i>=S.tiles.length-5 ? 'eager':'lazy';
+  rail.appendChild(im); return im;
+});
+
+const nativeZ=()=>Math.max(1.4, Math.min(3.2, 1/scale));
+const visW =()=>apW/(scale*Z);
+const visH =()=>apH/(scale*Z);
+
+function measure(){
+  const vw=innerWidth, vh=innerHeight;
+  apH=Math.min(vh*0.80, vh-96);
+  apW=apH;                                   // square aperture: the hand-span window
+  const maxW=vw*0.86-apH*0.34;
+  if(apW>maxW){ apW=Math.max(160,maxW); }
+  scale=apH/PH;
+  const xs=cum.map(c=>Math.round(c*scale));
+  for(let i=0;i<imgs.length;i++){
+    imgs[i].style.left=xs[i]+'px';
+    imgs[i].style.width=(xs[i+1]-xs[i])+'px';
+  }
+  rail.style.width=xs[xs.length-1]+'px';
+  desk.style.width=apW+'px'; desk.style.height=apH+'px';
+  win.style.width=apW+'px'; win.style.height=apH+'px';
+  const kb=Math.max(7,apH*0.022);
+  [rollL,rollR].forEach(r=>r.querySelectorAll('.knob').forEach(k=>k.style.height=kb+'px'));
+  core=apH*0.030;
+  const maxLen=(L-visW())*scale, rmax=apH*0.15;
+  thick=Math.PI*(rmax*rmax-core*core)/Math.max(1,maxLen);
+  loc.style.width=Math.min(vw*0.9,1100)+'px';
+  layoutFold(); clamp(); render();
+}
+const rollRadius=len=>Math.sqrt(core*core + thick*Math.max(0,len)*scale/Math.PI);
+
+function clamp(){
+  const mx=Math.max(0,L-visW()); x0=Math.max(0,Math.min(mx,x0));
+  const my=Math.max(0,PH-visH()); y0=Math.max(0,Math.min(my,y0));
+}
+
+// ---- fold (全卷): adaptive row count -------------------------------------
+let foldN=4;
+function layoutFold(){
+  const availW=Math.min(innerWidth*0.92,1360);
+  const availH=innerHeight-(showLoc?150:104);
+  // rows tall enough to fit: N = sqrt(availH * contentLength / (rowW * height))
+  let N=Math.round(Math.sqrt(availH*CR/(availW*PH)));
+  N=Math.max(2,Math.min(9,N));
+  foldN=N;
+  const gap=8, seg=CR/N;
+  let rowW=availW, rowH=rowW*PH/seg;
+  const total=N*rowH+(N-1)*gap;
+  if(total>availH){ const k=availH/total; rowW*=k; rowH*=k; }
+  foldEl.style.gap=gap+'px';
+  foldEl.innerHTML='';
+  for(let i=0;i<N;i++){
+    const a=CR-(i+1)*seg;                     // row 0 is the rightmost = the opening
+    const d=document.createElement('div');
+    d.className='row';
+    d.style.width=rowW+'px'; d.style.height=rowH+'px';
+    const bgW=(L/seg)*rowW;
+    d.style.backgroundSize=bgW+'px '+(bgW*PH/L)+'px';
+    d.style.backgroundPosition=(-(a/seg)*rowW)+'px 0px';
+    d.innerHTML='<span class="seg">'+t('seg')(i,N)+'</span>';
+    d.addEventListener('click',ev=>{
+      const r=d.getBoundingClientRect();
+      const sx=a+((ev.clientX-r.left)/rowW)*seg;
+      setMode('read'); Z=1; x0=sx-visW()/2; clamp(); render();
+    });
+    foldEl.appendChild(d);
+  }
+}
+
+// ---- render ---------------------------------------------------------------
+function render(){
+  if(mode==='fold'){ syncLoc(); return; }
+  const sE=scale*Z;
+  TX=-x0*sE; TY=-y0*sE;
+  rail.style.transform='translate3d('+TX.toFixed(2)+'px,'+TY.toFixed(2)+'px,0) scale('+Z.toFixed(4)+')';
+  const fade=Z<=1.03?1:Math.max(0,1-(Z-1)/0.5);
+  rollL.style.opacity=fade; rollR.style.opacity=fade;
+  if(fade>0){
+    const RL=rollRadius(x0), RR=rollRadius(Math.max(0,L-x0-visW()));
+    rollL.style.width=(2*RL)+'px'; rollL.style.left=(-2*RL)+'px';
+    rollR.style.width=(2*RR)+'px'; rollR.style.left=apW+'px';
+  }
+  const f=Math.max(0,Math.min(1,x0/Math.max(1,L-visW())));
+  sheen.style.setProperty('--sheenX',(12+f*76).toFixed(1)+'%');
+  renderMarks(sE); syncLoc();
+}
+
+const markEls=DET.map(d=>{
+  const el=document.createElement('div'); el.className='mk';
+  if(d.label) el.title=d.label;
+  el.addEventListener('click',ev=>{ ev.stopPropagation(); goDetail(d); });
+  marksEl.appendChild(el); return el;
+});
+function renderMarks(sE){
+  if(!showMarks||mode!=='read'){ marksEl.style.display='none'; return; }
+  marksEl.style.display='block';
+  for(let i=0;i<DET.length;i++){
+    const d=DET[i], el=markEls[i];
+    const sx=d.x*sE+TX, sy=d.y*sE+TY;
+    if(sx<-30||sx>apW+30||sy<-30||sy>apH+30){ el.style.display='none'; continue; }
+    el.style.display='block'; el.style.left=sx+'px'; el.style.top=sy+'px';
+  }
+}
+function syncLoc(){
+  loc.style.display=showLoc?'block':'none';
+  if(!showLoc) return;
+  const w=loc.clientWidth;
+  if(mode==='fold'){ locBox.style.left='0px'; locBox.style.width=w+'px'; return; }
+  const a=(x0/L)*w, b=(visW()/L)*w;
+  locBox.style.left=Math.max(0,Math.min(w-b,a))+'px';
+  locBox.style.width=Math.max(3,b)+'px';
+}
+
+// ---- modes ----------------------------------------------------------------
+function setMode(m){
+  if(m==='near'){ mode='read'; Z=nativeZ(); }
+  else if(m==='fold'){ mode='fold'; }
+  else { mode='read'; Z=1; y0=0; }
+  desk.style.display = mode==='read'?'block':'none';
+  foldEl.style.display= mode==='fold'?'flex':'none';
+  [...bar.querySelectorAll('a[data-m]')].forEach(a=>
+    a.classList.toggle('on', a.dataset.m===(mode==='fold'?'fold':(Z>1.03?'near':'read'))));
+  if(mode==='fold') layoutFold();
+  clamp(); render();
+}
+
+// ---- physics --------------------------------------------------------------
+let last=performance.now(), door={on:false,t0:0,fx:0,fy:0};
+const HOLD=1.0, PULL=2.4;
+function goDetail(d){ door={on:true,t0:performance.now(),fx:d.x,fy:d.y}; vel=0; target=null;
+  Z=nativeZ(); mode='read'; desk.style.display='block'; foldEl.style.display='none';
+  dlabel.textContent=d.label||''; dlabel.style.opacity=d.label?'1':'0'; }
+function endDoor(){ door.on=false; dlabel.style.opacity='0'; }
+
+function loop(now){
+  const dt=Math.min(.05,(now-last)/1000); last=now;
+  if(door.on){
+    const t=(now-door.t0)/1000, Z0=nativeZ();
+    if(t<HOLD) Z=Z0;
+    else if(t<HOLD+PULL){
+      const u=(t-HOLD)/PULL; Z=Z0+(1-Z0)*(1-Math.pow(1-u,3));
+      dlabel.style.opacity=String(Math.max(0,1-u*1.7));
+    } else { Z=1; endDoor(); }
+    x0=door.fx-visW()/2; y0=door.fy-visH()/2;
+  } else if(mode==='read'&&!dragging){
+    if(target!==null){
+      const d=target-x0;
+      if(Math.abs(d)<.6){ x0=target; target=null; vel=0; } else x0+=d*Math.min(1,dt*7);
+    } else if(vel!==0){
+      x0+=vel*dt; vel*=Math.pow(.94,dt*60);
+      if(Math.abs(vel)<8){ vel=0; snap(); }
+      const mx=Math.max(0,L-visW()); if(x0<0||x0>mx) vel=0;
+    }
+  }
+  clamp(); render(); requestAnimationFrame(loop);
+}
+function snap(){
+  if(Z>1.03||!EP.length) return;
+  let best=null,bd=1e9;
+  for(const e of EP){ const d=Math.abs(e.x0-x0); if(d<bd){bd=d;best=e.x0;} }
+  if(best!==null&&bd<visW()*0.32) target=best;
+}
+
+// ---- input ----------------------------------------------------------------
+let px=0,py=0,sx=0,sy=0,eng=false,dv=0,lt=0,lx=0,marq=null;
+win.addEventListener('pointerdown',e=>{
+  if(door.on) endDoor();
+  if(e.shiftKey){                                        // marquee: pull a rectangle
+    const r=win.getBoundingClientRect();
+    marq={x:e.clientX-r.left,y:e.clientY-r.top};
+    marqEl.style.display='block';
+    marqEl.style.left=marq.x+'px'; marqEl.style.top=marq.y+'px';
+    marqEl.style.width='0px'; marqEl.style.height='0px';
+    win.setPointerCapture(e.pointerId); return;
+  }
+  dragging=true; eng=false; target=null; vel=0;
+  px=e.clientX; py=e.clientY; sx=x0; sy=y0; lx=e.clientX; lt=performance.now();
+  win.setPointerCapture(e.pointerId); win.classList.add('pulling'); showBar();
+});
+win.addEventListener('pointermove',e=>{
+  const r=win.getBoundingClientRect();
+  if(marq){
+    const cx=e.clientX-r.left, cy=e.clientY-r.top;
+    marqEl.style.left=Math.min(marq.x,cx)+'px'; marqEl.style.top=Math.min(marq.y,cy)+'px';
+    marqEl.style.width=Math.abs(cx-marq.x)+'px'; marqEl.style.height=Math.abs(cy-marq.y)+'px';
+    return;
+  }
+  if(!dragging) return;
+  const dx=e.clientX-px;
+  if(!eng){ if(Math.abs(dx)<5) return; eng=true; px=e.clientX; py=e.clientY; sx=x0; sy=y0; }
+  const sE=scale*Z;
+  x0=sx-(e.clientX-px)/sE; y0=sy-(e.clientY-py)/sE;
+  const now=performance.now(), dt=(now-lt)/1000;
+  if(dt>.004){ dv=-((e.clientX-lx)/sE)/dt; lx=e.clientX; lt=now; }
+});
+function endPtr(){
+  if(marq){
+    const w=parseFloat(marqEl.style.width), h=parseFloat(marqEl.style.height);
+    const lft=parseFloat(marqEl.style.left), tp=parseFloat(marqEl.style.top);
+    marqEl.style.display='none';
+    if(w>24&&h>24){
+      const sE=scale*Z;
+      const sX=x0+lft/sE, sY=y0+tp/sE, sW=w/sE, sH=h/sE;
+      const want=Math.min(apW/(sW*scale), apH/(sH*scale));
+      Z=Math.max(1,Math.min(nativeZ(),want));
+      x0=sX+sW/2-visW()/2; y0=sY+sH/2-visH()/2;
+      setMode(Z>1.03?'near':'read');
+    }
+    marq=null; return;
+  }
+  if(!dragging) return;
+  dragging=false; vel=eng?dv:0; dv=0; win.classList.remove('pulling');
+}
+win.addEventListener('pointerup',endPtr);
+win.addEventListener('pointercancel',endPtr);
+addEventListener('keyup',e=>{ if(e.key==='Shift') win.classList.remove('marq'); });
+addEventListener('keydown',e=>{ if(e.key==='Shift') win.classList.add('marq'); });
+
+addEventListener('wheel',e=>{
+  if(mode!=='read') return;
+  if(door.on) endDoor();
+  const d=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;
+  target=null; x0+=d/(scale*Z)*1.1; vel=0; clamp(); render(); showBar();
+},{passive:true});
+
+// locator: click / scrub to travel
+let scrub=false;
+function seek(cx){
+  const r=loc.getBoundingClientRect();
+  const f=Math.max(0,Math.min(1,(cx-r.left)/r.width));
+  if(mode==='fold') setMode('read');
+  if(door.on) endDoor();
+  x0=f*L-visW()/2; vel=0; target=null; clamp(); render();
+}
+loc.addEventListener('pointerdown',e=>{scrub=true;loc.setPointerCapture(e.pointerId);seek(e.clientX);});
+loc.addEventListener('pointermove',e=>{if(scrub)seek(e.clientX);});
+loc.addEventListener('pointerup',()=>scrub=false);
+
+// ---- chrome ---------------------------------------------------------------
+let barT;
+function showBar(){ bar.classList.add('show'); clearTimeout(barT);
+  barT=setTimeout(()=>bar.classList.remove('show'),2800); }
+addEventListener('pointermove',e=>{ if(e.clientY>innerHeight-110) showBar(); });
+bar.addEventListener('click',e=>{
+  const a=e.target.closest('a'); if(!a) return;
+  if(a.dataset.m) setMode(a.dataset.m);
+  if(a.dataset.t==='loc'){ showLoc=!showLoc; a.classList.toggle('on',showLoc); layoutFold(); render(); }
+  if(a.dataset.t==='marks'){ showMarks=!showMarks; a.classList.toggle('on',showMarks); render(); }
+  if(a.hasAttribute('data-lang')){ lang = lang==='en'?'zh':'en';
+    localStorage.setItem('ccp_lang',lang); applyLang(); }
+  showBar();
+});
+addEventListener('keydown',e=>{
+  if(e.key==='1') setMode('fold'); else if(e.key==='2') setMode('read');
+  else if(e.key==='3') setMode('near');
+  else if(e.key==='c'){ showLoc=!showLoc; layoutFold(); render(); }
+  else if(e.key==='a'){ showMarks=!showMarks; render(); }
+  showBar();
+});
+function applyLang(){
+  document.documentElement.lang = lang==='en'?'en':'zh-Hans';
+  const slip=$('slip');
+  slip.textContent=t('title');
+  slip.style.textOrientation = lang==='en'?'mixed':'upright';
+  slip.style.fontSize = lang==='en'?'12px':'14px';
+  slip.style.letterSpacing = lang==='en'?'2px':'6px';
+  bar.querySelector('[data-m="fold"]').textContent=t('whole');
+  bar.querySelector('[data-m="read"]').textContent=t('read');
+  bar.querySelector('[data-m="near"]').textContent=t('near');
+  bar.querySelector('[data-t="loc"]').textContent=t('loc');
+  bar.querySelector('[data-t="marks"]').textContent=t('marks');
+  bar.querySelector('[data-lang]').textContent=t('lang');
+  document.title = lang==='en'?'A Thousand Li of Rivers and Mountains':'千里江山圖';
+  if(mode==='fold') layoutFold();
+}
+addEventListener('resize',measure);
+
+// ---- start ----------------------------------------------------------------
+measure();
+x0=Math.max(0,CR-visW());                    // open on the painting, not the mounting
+const bleed=$('bleed');
+const lastImg=imgs[imgs.length-1];
+function reveal(){ bleed.style.opacity='0'; }
+if(lastImg){ lastImg.complete?setTimeout(reveal,100):lastImg.addEventListener('load',()=>setTimeout(reveal,100)); }
+setTimeout(reveal,4000);
+const noDoor=/[?&]door=0/.test(location.search);
+if(!noDoor && DET.length) goDetail(DET[Math.floor(Math.random()*DET.length)]);
+applyLang(); setMode('read'); showBar();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
