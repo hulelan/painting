@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Road tracer — 千里江山圖</title>
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:#15130f;color:#c9bda4;overflow:hidden;
+  font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;-webkit-user-select:none;user-select:none}
+
+#stage{position:fixed;left:0;right:0;top:44px;bottom:30px;overflow:hidden;background:#0d0b09;
+  cursor:crosshair;touch-action:none}
+#stage.panning{cursor:grabbing}
+#plane{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+#plane img{position:absolute;top:0;display:block;-webkit-user-drag:none;pointer-events:none}
+#ov{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+
+/* ---- bars ---- */
+#top,#bot{position:fixed;left:0;right:0;z-index:10;background:#1c1913;
+  border-bottom:1px solid #2f2a20;display:flex;align-items:center;gap:10px;padding:0 12px}
+#top{top:0;height:44px;flex-wrap:wrap}
+#bot{bottom:0;top:auto;height:30px;border-bottom:none;border-top:1px solid #2f2a20;
+  font-size:11px;color:#7e7462}
+button{font:12px ui-monospace,Menlo,monospace;background:#241f18;color:#cbbd9c;
+  border:1px solid #3b342a;padding:5px 10px;cursor:pointer;border-radius:2px}
+button:hover{background:#2e2820;color:#f0e6cd}
+button.on{background:#5a4a22;border-color:#8a7333;color:#f7ecc9}
+button.danger:hover{background:#4a221c;border-color:#7d3a2e;color:#f3d0c6}
+.sep{width:1px;height:20px;background:#332d23}
+label{display:flex;align-items:center;gap:5px;color:#9d917a;font-size:12px}
+kbd{background:#2a251d;border:1px solid #3d362b;border-radius:2px;padding:0 4px;font-size:11px}
+#hint{color:#6f6656;font-size:11px}
+#paths{position:fixed;right:10px;top:54px;z-index:9;width:186px;max-height:52vh;overflow:auto;
+  background:rgba(22,19,15,.94);border:1px solid #2f2a20;border-radius:2px;padding:6px}
+#paths .row{display:flex;align-items:center;gap:6px;padding:3px 4px;cursor:pointer;font-size:11px;
+  color:#9d917a;border-radius:2px}
+#paths .row:hover{background:#241f18;color:#e6dabb}
+#paths .row.sel{background:#3a3122;color:#f7ecc9}
+#paths .row .sw{width:9px;height:9px;flex:0 0 auto;background:#e8e2d2;border:1px solid #000}
+#paths .row .x{margin-left:auto;color:#7d5a4e}
+#paths .row .x:hover{color:#e08a72}
+#paths h3{margin:2px 4px 6px;font-size:10px;letter-spacing:2px;color:#6e6552;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<div id="top">
+  <strong style="color:#e0ba78;font-weight:600">Road tracer</strong>
+  <span class="sep"></span>
+  <button id="bNew">New path <kbd>N</kbd></button>
+  <button id="bFinish">Finish <kbd>↵</kbd></button>
+  <button id="bUndo">Undo point <kbd>⌘Z</kbd></button>
+  <span class="sep"></span>
+  <label><input type="checkbox" id="cSnap" checked> snap</label>
+  <label><input type="checkbox" id="cPrev"> preview</label>
+  <span class="sep"></span>
+  <button id="bFit">Fit</button>
+  <button id="bIn">+</button>
+  <button id="bOut">−</button>
+  <span class="sep"></span>
+  <button id="bExport">Export roads.js</button>
+  <button id="bCopy">Copy JSON</button>
+  <button id="bImport">Import…</button>
+  <input type="file" id="fImport" accept=".js,.json" style="display:none">
+  <span id="hint">drag = pan · click = add point · drag a handle = move · ⌥click handle = delete</span>
+</div>
+
+<div id="stage">
+  <div id="plane">
+    <svg id="ov"></svg>
+  </div>
+</div>
+
+<div id="paths"><h3>Paths</h3><div id="plist"></div></div>
+
+<div id="bot">
+  <span id="sZoom">–</span><span class="sep"></span>
+  <span id="sPos">–</span><span class="sep"></span>
+  <span id="sCount">–</span><span class="sep"></span>
+  <span id="sSave">–</span><span class="sep"></span>
+  <span id="sSnap"></span>
+</div>
+
+<script src="assets/scroll/manifest.js"></script>
+<script src="assets/data/roads.js" onerror="void 0"></script>
+<script>
+(function(){
+const S=window.SCROLL, L=S.w, PH=S.h;
+const $=id=>document.getElementById(id);
+const stage=$('stage'), plane=$('plane'), ov=$('ov');
+const SVGNS='http://www.w3.org/2000/svg';
+
+// ---------- model ----------
+// points are stored in SOURCE pixel coordinates (0..41783, 0..1673)
+let paths = [];            // [{id, pts:[[x,y],...]}]
+let cur = null;            // path being drawn / selected
+let nextId = 1;
+const LSKEY='ccp_roads_v1';
+
+function loadInitial(){
+  const raw=localStorage.getItem(LSKEY);
+  if(raw){ try{ const o=JSON.parse(raw); paths=o.paths||[]; }catch(e){} }
+  else if(window.ROADS&&window.ROADS.paths) paths=window.ROADS.paths.map(p=>({id:p.id,pts:p.pts}));
+  nextId = paths.reduce((m,p)=>Math.max(m,p.id||0),0)+1;
+}
+function save(){
+  localStorage.setItem(LSKEY, JSON.stringify({srcW:L,srcH:PH,paths:paths}));
+  $('sSave').textContent='saved '+new Date().toLocaleTimeString();
+}
+
+// ---------- view ----------
+// plane is the painting at 1:1; Z scales it. source px == plane px.
+let Z=0.5, tx=0, ty=0;
+plane.style.width=L+'px'; plane.style.height=PH+'px';
+ov.setAttribute('viewBox','0 0 '+L+' '+PH);
+ov.setAttribute('preserveAspectRatio','none');
+ov.setAttribute('width',L); ov.setAttribute('height',PH);
+
+const cum=[0]; S.tiles.forEach(t=>cum.push(cum[cum.length-1]+t.w));
+const imgs=S.tiles.map((t,i)=>{
+  const im=document.createElement('img');
+  im.src='assets/scroll/tiles/'+t.f; im.alt='';
+  im.style.left=cum[i]+'px'; im.width=t.w; im.height=PH;
+  im.loading = i>=S.tiles.length-4?'eager':'lazy'; im.decoding='async';
+  plane.insertBefore(im, ov);
+  return im;
+});
+
+function applyView(){
+  plane.style.transform='translate3d('+tx+'px,'+ty+'px,0) scale('+Z+')';
+  $('sZoom').textContent='zoom '+(Z*100).toFixed(1)+'%';
+  drawAll();
+}
+function clampView(){
+  const w=stage.clientWidth, h=stage.clientHeight;
+  const pw=L*Z, ph=PH*Z;
+  tx=Math.min(w*0.5, Math.max(w*0.5-pw, tx));
+  ty=Math.min(h*0.5, Math.max(h*0.5-ph, ty));
+}
+function fit(){
+  const h=stage.clientHeight;
+  Z=Math.max(0.02,(h-30)/PH);
+  tx=-(S.contentRight||L)*Z + stage.clientWidth*0.9; ty=(h-PH*Z)/2;
+  clampView(); applyView();
+}
+function zoomAt(cx,cy,f){
+  const r=stage.getBoundingClientRect();
+  const sx=(cx-r.left-tx)/Z, sy=(cy-r.top-ty)/Z;
+  Z=Math.max(0.02,Math.min(3,Z*f));
+  tx=cx-r.left-sx*Z; ty=cy-r.top-sy*Z;
+  clampView(); applyView();
+}
+function toSrc(cx,cy){
+  const r=stage.getBoundingClientRect();
+  return [(cx-r.left-tx)/Z, (cy-r.top-ty)/Z];
+}
+
+// ---------- curve: Catmull-Rom -> cubic bezier ----------
+function dOf(pts){
+  if(pts.length===0) return '';
+  if(pts.length===1) return 'M '+pts[0][0]+' '+pts[0][1];
+  if(pts.length===2) return 'M '+pts[0][0]+' '+pts[0][1]+' L '+pts[1][0]+' '+pts[1][1];
+  let d='M '+pts[0][0]+' '+pts[0][1];
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[i-1]||pts[i], p1=pts[i], p2=pts[i+1], p3=pts[i+2]||pts[i+1];
+    const c1=[p1[0]+(p2[0]-p0[0])/6, p1[1]+(p2[1]-p0[1])/6];
+    const c2=[p2[0]-(p3[0]-p1[0])/6, p2[1]-(p3[1]-p1[1])/6];
+    d+=' C '+c1[0].toFixed(1)+' '+c1[1].toFixed(1)+', '+c2[0].toFixed(1)+' '+c2[1].toFixed(1)+
+       ', '+p2[0].toFixed(1)+' '+p2[1].toFixed(1);
+  }
+  return d;
+}
+
+// ---------- draw ----------
+function drawAll(){
+  while(ov.firstChild) ov.removeChild(ov.firstChild);
+  const prev=$('cPrev').checked;
+  paths.forEach(p=>{
+    const d=dOf(p.pts); if(!d) return;
+    if(prev){
+      ov.appendChild(mk('path',{d:d,fill:'none',stroke:'rgba(0,0,0,.55)','stroke-width':5,
+        'stroke-linecap':'round','stroke-linejoin':'round','vector-effect':'non-scaling-stroke'}));
+      ov.appendChild(mk('path',{d:d,fill:'none',stroke:'#fff','stroke-width':2,
+        'stroke-linecap':'round','stroke-linejoin':'round','vector-effect':'non-scaling-stroke'}));
+    } else {
+      const sel = cur&&cur.id===p.id;
+      ov.appendChild(mk('path',{d:d,fill:'none',stroke:'rgba(0,0,0,.5)','stroke-width':4,
+        'vector-effect':'non-scaling-stroke','stroke-linecap':'round'}));
+      ov.appendChild(mk('path',{d:d,fill:'none',stroke:sel?'#ffd76a':'#e8e2d2','stroke-width':sel?2.4:1.6,
+        'vector-effect':'non-scaling-stroke','stroke-linecap':'round'}));
+    }
+  });
+  if(!prev && cur){
+    const r=6/Z;
+    cur.pts.forEach((pt,i)=>{
+      const c=mk('circle',{cx:pt[0],cy:pt[1],r:r,fill:i===0?'#8fd6a0':'#ffd76a',
+        stroke:'#000','stroke-width':1/Z});
+      c.style.pointerEvents='auto'; c.style.cursor='move';
+      c.dataset.i=i;
+      ov.appendChild(c);
+    });
+  }
+  ov.style.pointerEvents='none';            // handles are hit-tested by distance
+  $('sCount').textContent=paths.length+' paths · '+paths.reduce((n,p)=>n+p.pts.length,0)+' points';
+  renderList();
+}
+function mk(t,a){ const e=document.createElementNS(SVGNS,t);
+  for(const k in a) e.setAttribute(k,a[k]); return e; }
+
+function renderList(){
+  const el=$('plist'); el.innerHTML='';
+  paths.forEach(p=>{
+    const row=document.createElement('div');
+    row.className='row'+(cur&&cur.id===p.id?' sel':'');
+    row.innerHTML='<span class="sw"></span>path '+p.id+' · '+p.pts.length+'<span class="x">✕</span>';
+    row.addEventListener('click',ev=>{
+      if(ev.target.className==='x'){ paths=paths.filter(q=>q!==p); if(cur===p)cur=null; save(); drawAll(); return; }
+      cur=p; drawAll();
+    });
+    el.appendChild(row);
+  });
+}
+
+// ---------- snap: pull a click onto the pale ridge of the path ----------
+const cv=document.createElement('canvas'), ctx=cv.getContext('2d',{willReadFrequently:true});
+let snapOK=true;
+function snap(sx,sy){
+  if(!$('cSnap').checked||!snapOK) return [sx,sy];
+  const R=Math.max(4,Math.round(9/Z));            // search radius in source px
+  const x0=Math.round(sx-R), y0=Math.round(sy-R), n=2*R+1;
+  cv.width=n; cv.height=n;
+  try{
+    ctx.clearRect(0,0,n,n);
+    for(let i=0;i<S.tiles.length;i++){
+      const tx0=cum[i], tw=S.tiles[i].w;
+      const a=Math.max(x0,tx0), b=Math.min(x0+n,tx0+tw);
+      if(b<=a) continue;
+      const im=imgs[i]; if(!im.complete||!im.naturalWidth) continue;
+      ctx.drawImage(im, a-tx0, y0, b-a, n, a-x0, 0, b-a, n);   // each tile at its own offset
+    }
+    const dat=ctx.getImageData(0,0,n,n).data;
+    let best=null,bv=-1e9,sum=0;
+    for(let k=0;k<n*n;k++) sum+=0.299*dat[k*4]+0.587*dat[k*4+1]+0.114*dat[k*4+2];
+    const mean=sum/(n*n);
+    for(let j=0;j<n;j++)for(let i=0;i<n;i++){
+      const k=(j*n+i)*4, r=dat[k],g=dat[k+1],b=dat[k+2];
+      const Y=0.299*r+0.587*g+0.114*b, mx=Math.max(r,g,b), mn=Math.min(r,g,b);
+      const sat=mx===0?0:(mx-mn)/mx;
+      const dist=Math.hypot(i-R,j-R);
+      const v=(Y-mean) - sat*70 - dist*1.6;       // bright, unsaturated, near the click
+      if(v>bv){bv=v;best=[x0+i,y0+j];}
+    }
+    return best||[sx,sy];
+  }catch(err){
+    snapOK=false; $('sSnap').textContent='snap off (canvas blocked — serve over http)';
+    return [sx,sy];
+  }
+}
+
+// ---------- interaction ----------
+let down=null, dragHandle=null, moved=false;
+stage.addEventListener('pointerdown',e=>{
+  const [sx,sy]=toSrc(e.clientX,e.clientY);
+  if(cur){                                        // grab an existing handle?
+    const r=9/Z;
+    for(let i=cur.pts.length-1;i>=0;i--){
+      const p=cur.pts[i];
+      if(Math.hypot(p[0]-sx,p[1]-sy)<r){
+        if(e.altKey){ cur.pts.splice(i,1); save(); drawAll(); return; }
+        dragHandle=i; stage.setPointerCapture(e.pointerId); return;
+      }
+    }
+  }
+  down={x:e.clientX,y:e.clientY,tx:tx,ty:ty}; moved=false;
+  stage.setPointerCapture(e.pointerId);
+});
+stage.addEventListener('pointermove',e=>{
+  const [sx,sy]=toSrc(e.clientX,e.clientY);
+  $('sPos').textContent='x '+Math.round(sx)+'  y '+Math.round(sy);
+  if(dragHandle!==null&&cur){ cur.pts[dragHandle]=[Math.round(sx),Math.round(sy)]; drawAll(); return; }
+  if(!down) return;
+  const dx=e.clientX-down.x, dy=e.clientY-down.y;
+  if(!moved&&Math.hypot(dx,dy)>4){ moved=true; stage.classList.add('panning'); }
+  if(moved){ tx=down.tx+dx; ty=down.ty+dy; clampView(); applyView(); }
+});
+stage.addEventListener('pointerup',e=>{
+  stage.classList.remove('panning');
+  if(dragHandle!==null){ dragHandle=null; save(); drawAll(); return; }
+  if(down&&!moved){                               // a click: add a point
+    let [sx,sy]=toSrc(e.clientX,e.clientY);
+    [sx,sy]=snap(sx,sy);
+    if(!cur){ cur={id:nextId++,pts:[]}; paths.push(cur); }
+    cur.pts.push([Math.round(sx),Math.round(sy)]);
+    save(); drawAll();
+  }
+  down=null;
+});
+stage.addEventListener('pointercancel',()=>{down=null;dragHandle=null;stage.classList.remove('panning');});
+
+stage.addEventListener('wheel',e=>{
+  e.preventDefault();
+  if(e.ctrlKey||e.metaKey){ zoomAt(e.clientX,e.clientY, e.deltaY<0?1.12:1/1.12); }
+  else { tx-=e.deltaX; ty-=e.deltaY; clampView(); applyView(); }
+},{passive:false});
+
+// ---------- commands ----------
+function newPath(){ cur={id:nextId++,pts:[]}; paths.push(cur); save(); drawAll(); }
+function finish(){ if(cur&&cur.pts.length<2) paths=paths.filter(p=>p!==cur); cur=null; save(); drawAll(); }
+function undoPt(){ if(cur&&cur.pts.length){ cur.pts.pop(); if(!cur.pts.length) paths=paths.filter(p=>p!==cur), cur=null; save(); drawAll(); } }
+$('bNew').onclick=newPath; $('bFinish').onclick=finish; $('bUndo').onclick=undoPt;
+$('bFit').onclick=fit;
+$('bIn').onclick=()=>zoomAt(innerWidth/2,innerHeight/2,1.3);
+$('bOut').onclick=()=>zoomAt(innerWidth/2,innerHeight/2,1/1.3);
+$('cPrev').onchange=drawAll; $('cSnap').onchange=()=>{ $('sSnap').textContent=$('cSnap').checked?'snap on':'snap off'; };
+addEventListener('keydown',e=>{
+  if(e.key==='n'||e.key==='N'){ newPath(); }
+  else if(e.key==='Enter'){ finish(); }
+  else if((e.metaKey||e.ctrlKey)&&e.key==='z'){ e.preventDefault(); undoPt(); }
+  else if(e.key==='Escape'){ cur=null; drawAll(); }
+});
+
+function payload(){
+  const out={srcW:L,srcH:PH,generated:'trace.html',
+    paths:paths.filter(p=>p.pts.length>1).map(p=>({id:p.id,pts:p.pts,d:dOf(p.pts)}))};
+  return out;
+}
+$('bExport').onclick=()=>{
+  const js='/* roads traced by hand over the master scan; source-pixel coords. */\n'+
+           'window.ROADS = '+JSON.stringify(payload())+';\n';
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([js],{type:'text/javascript'}));
+  a.download='roads.js'; a.click();
+};
+$('bCopy').onclick=()=>{
+  navigator.clipboard.writeText(JSON.stringify(payload(),null,1))
+    .then(()=>{$('sSave').textContent='copied to clipboard';});
+};
+$('bImport').onclick=()=>$('fImport').click();
+$('fImport').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const txt=rd.result;
+      const j=txt.indexOf('{'), k=txt.lastIndexOf('}');
+      const o=JSON.parse(txt.slice(j,k+1));
+      paths=(o.paths||[]).map(p=>({id:p.id,pts:p.pts}));
+      nextId=paths.reduce((m,p)=>Math.max(m,p.id||0),0)+1;
+      cur=null; save(); drawAll();
+    }catch(err){ alert('could not read that file: '+err.message); }
+  };
+  rd.readAsText(f);
+};
+
+addEventListener('resize',()=>{clampView();applyView();});
+loadInitial(); fit(); $('sSnap').textContent='snap on';
+})();
+</script>
+</body>
+</html>

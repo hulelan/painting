@@ -56,6 +56,16 @@ html,body{height:100%;margin:0;background:var(--room);overflow:hidden;
   transition:transform .3s ease, border-color .3s ease}
 .mk:hover{transform:scale(1.35);border-color:rgba(247,231,190,.95)}
 
+/* roads: white over a dark casing so the line survives both silk and shadow.
+   non-scaling-stroke keeps it a constant screen width at every zoom. */
+#roads{position:absolute;left:0;top:0;z-index:5;pointer-events:none;overflow:visible;
+  transform-origin:0 0;display:none}
+#roads path{fill:none;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
+#roads .case{stroke:rgba(0,0,0,.55);stroke-width:5}
+#roads .line{stroke:#fff;stroke-width:2;stroke-dasharray:14 10;animation:walk 2.4s linear infinite}
+@keyframes walk{to{stroke-dashoffset:-24}}
+.persp.off{opacity:.35;cursor:default}
+
 /* the dashed selection, and the outline kept afterwards for context */
 #marquee,#kept{position:absolute;z-index:9;display:none;pointer-events:none;
   border:1px dashed rgba(245,230,192,.95)}
@@ -143,6 +153,7 @@ html,body{height:100%;margin:0;background:var(--room);overflow:hidden;
     <div class="roll" id="rollL"><div class="body"></div></div>
     <div id="window">
       <div id="rail"></div>
+      <svg id="roads"></svg>
       <div id="sheen"></div>
       <div id="marks"></div>
       <div id="marquee"></div>
@@ -166,6 +177,7 @@ html,body{height:100%;margin:0;background:var(--room);overflow:hidden;
     <h2 id="hPersp">Perspectives</h2>
     <div class="persp" data-t="loc"><span class="box"></span><span class="lb"></span></div>
     <div class="persp" data-t="marks"><span class="box"></span><span class="lb"></span></div>
+  <div class="persp" data-t="roads"><span class="box"></span><span class="lb"></span></div>
   </div>
 </div>
 
@@ -176,6 +188,7 @@ html,body{height:100%;margin:0;background:var(--room);overflow:hidden;
 <script src="assets/scroll/manifest.js"></script>
 <script src="assets/data/episodes.js"></script>
 <script src="assets/data/details.js"></script>
+<script src="assets/data/roads.js" onerror="void 0"></script>
 <script>
 (function(){
 const S=window.SCROLL, EP=(window.EPISODES&&window.EPISODES.episodes)||[],
@@ -188,18 +201,19 @@ const desk=$('desk'), win=$('window'), rail=$('rail'), rollL=$('rollL'), rollR=$
 
 const I18N={
   en:{zoom:'Zoom', persp:'Perspectives', whole:'Whole', pane:'Pane', detail:'Detail',
-      loc:'Locator', marks:'Marks', lang:'中', back:'Return to Cabinet',
+      loc:'Locator', marks:'Marks', roads:'Roads', lang:'中', back:'Return to Cabinet',
       title:'A Thousand Li of Rivers and Mountains · Wang Ximeng · Northern Song',
       seg:(i,n)=> i===0?'1 · opening' : i===n-1? n+' · end' : String(i+1)},
   zh:{zoom:'縮放', persp:'視角', whole:'全卷', pane:'展卷', detail:'細看',
-      loc:'卷影', marks:'標', lang:'EN', back:'返回畫匣',
+      loc:'卷影', marks:'標', roads:'道路', lang:'EN', back:'返回畫匣',
       title:'千里江山圖　王希孟　北宋',
       seg:(i,n)=> i===0?'一（起首）' : i===n-1? String(n)+'（卷末）' : String(i+1)}
 };
 let lang=localStorage.getItem('ccp_lang')||'en';
 const t=k=>I18N[lang][k];
 
-let mode='pane', showLoc=false, showMarks=false, customUsed=false;
+let mode='pane', showLoc=false, showMarks=false, showRoads=false, customUsed=false;
+const ROADS=(window.ROADS&&window.ROADS.paths)||[];
 let apH=0, apW=0, scale=1, Z=1, x0=0, y0=0, vel=0, panning=false, target=null;
 let core=0, thick=0, TX=0, TY=0, kept=null, lastCustom=null;
 
@@ -209,6 +223,17 @@ const imgs=S.tiles.map((tt,i)=>{
   im.src='assets/scroll/tiles/'+tt.f; im.alt=''; im.decoding='async';
   im.loading = i>=S.tiles.length-5 ? 'eager':'lazy';
   rail.appendChild(im); return im;
+});
+const roadsEl=$('roads');
+roadsEl.setAttribute('viewBox','0 0 '+L+' '+PH);
+roadsEl.setAttribute('preserveAspectRatio','none');
+ROADS.forEach(p=>{
+  const d=p.d||''; if(!d) return;
+  ['case','line'].forEach(cls=>{
+    const el=document.createElementNS('http://www.w3.org/2000/svg','path');
+    el.setAttribute('d',d); el.setAttribute('class',cls);
+    roadsEl.appendChild(el);
+  });
 });
 const nativeZ=()=>Math.max(1.4, Math.min(3.2, 1/scale));
 const MINZ=1.25;                                  // lower reasonable bound
@@ -226,6 +251,7 @@ function measure(){
     imgs[i].style.left=xs[i]+'px'; imgs[i].style.width=(xs[i+1]-xs[i])+'px';
   }
   rail.style.width=xs[xs.length-1]+'px';
+  roadsEl.setAttribute('width',xs[xs.length-1]); roadsEl.setAttribute('height',apH);
   desk.style.width=apW+'px'; desk.style.height=apH+'px';
   win.style.width=apW+'px'; win.style.height=apH+'px';
   core=apH*0.030;
@@ -270,7 +296,10 @@ function render(){
   if(mode!=='fold'){
     const sE=scale*Z;
     TX=-x0*sE; TY=-y0*sE;
-    rail.style.transform='translate3d('+TX.toFixed(2)+'px,'+TY.toFixed(2)+'px,0) scale('+Z.toFixed(4)+')';
+    const tf='translate3d('+TX.toFixed(2)+'px,'+TY.toFixed(2)+'px,0) scale('+Z.toFixed(4)+')';
+    rail.style.transform=tf;
+    roadsEl.style.transform=tf;
+    roadsEl.style.display=(showRoads&&ROADS.length)?'block':'none';
     const fade=Z<=1.03?1:Math.max(0,1-(Z-1)/0.5);
     rollL.style.opacity=fade; rollR.style.opacity=fade;
     rollL.style.pointerEvents=fade>.4?'auto':'none';
@@ -528,6 +557,7 @@ document.querySelectorAll('.persp').forEach(el=>{
     const k=el.dataset.t;
     if(k==='loc'){ showLoc=!showLoc; el.classList.toggle('on',showLoc); layoutFold(); }
     if(k==='marks'){ showMarks=!showMarks; el.classList.toggle('on',showMarks); }
+    if(k==='roads'){ if(!ROADS.length) return; showRoads=!showRoads; el.classList.toggle('on',showRoads); }
     render();
   });
 });
@@ -540,6 +570,10 @@ function applyLang(){
   $('title').textContent=t('title');
   document.querySelector('.persp[data-t="loc"] .lb').textContent=t('loc');
   document.querySelector('.persp[data-t="marks"] .lb').textContent=t('marks');
+  const rp=document.querySelector('.persp[data-t="roads"]');
+  rp.querySelector('.lb').textContent=t('roads');
+  rp.classList.toggle('off', ROADS.length===0);
+  rp.title = ROADS.length? '' : 'no roads traced yet — use trace.html';
   document.title = lang==='en'?'A Thousand Li of Rivers and Mountains':'千里江山圖';
   buildTrack(); if(mode==='fold') layoutFold();
 }
