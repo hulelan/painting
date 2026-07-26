@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <title>A Thousand Li of Rivers and Mountains</title>
 <meta name="description" content="Wang Ximeng's handscroll — unroll it, fold it, or select a detail.">
+<link rel="stylesheet" href="css/type.css">
 <style>
 :root{
   --room:#0c0a08; --warm:#d9b45a; --line:rgba(217,180,90,.20);
-  --serif:"Songti SC","Noto Serif SC",Georgia,"Times New Roman",serif;
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:var(--room);overflow:hidden;
-  font-family:var(--serif);-webkit-font-smoothing:antialiased;
+  font-family:var(--type);-webkit-font-smoothing:antialiased;
   -webkit-user-select:none;user-select:none;touch-action:none}
 
 #room{position:fixed;inset:0;
@@ -89,7 +89,7 @@ html,body{height:100%;margin:0;background:var(--room);overflow:hidden;
   width:158px;opacity:.74;transition:opacity .35s ease}
 #panel:hover{opacity:1}
 .sect{margin-bottom:28px}
-.sect h2{margin:0 0 10px;font-size:10px;font-weight:400;letter-spacing:4px;
+.sect h2{margin:0 0 10px;font-size:11px;font-weight:500;letter-spacing:4px;
   text-transform:uppercase;color:#6e6552}
 
 #track{position:relative;height:38px;margin:0 22px 0 8px}
@@ -98,7 +98,7 @@ html,body{height:100%;margin:0;background:var(--room);overflow:hidden;
 .stop .dot{width:9px;height:9px;margin:5px auto 0;border-radius:50%;
   border:1px solid rgba(217,180,90,.55);background:#0c0a08;
   transition:background .3s, box-shadow .3s, transform .3s}
-.stop .lb{margin-top:7px;font-size:10px;letter-spacing:1px;color:#6e6552;white-space:nowrap;
+.stop .lb{margin-top:7px;font-size:11px;letter-spacing:1px;color:#6e6552;white-space:nowrap;
   transition:color .3s}
 .stop:hover .dot{background:rgba(217,180,90,.45)}
 .stop:hover .lb{color:#cbbd9c}
@@ -106,7 +106,7 @@ html,body{height:100%;margin:0;background:var(--room);overflow:hidden;
 .stop.on .lb{color:#f0e6cd}
 
 .persp{display:flex;align-items:center;gap:9px;padding:5px 0;cursor:pointer;
-  font-size:11px;letter-spacing:2px;color:#7d735f;transition:color .3s}
+  font-size:12px;letter-spacing:2px;color:#7d735f;transition:color .3s}
 .persp:hover{color:#e6dabb}
 .persp .box{width:12px;height:12px;border:1px solid rgba(217,180,90,.5);
   display:flex;align-items:center;justify-content:center;flex:0 0 auto;
@@ -117,15 +117,15 @@ html,body{height:100%;margin:0;background:var(--room);overflow:hidden;
 .persp.on .box{border-color:rgba(217,180,90,.95)}
 .persp.on .box::after{transform:scale(1)}
 
-#lang{position:fixed;right:22px;top:18px;z-index:17;font-size:10px;letter-spacing:3px;
+#lang{position:fixed;right:22px;top:18px;z-index:17;font-size:11px;letter-spacing:3px;
   color:#6b6151;cursor:pointer;border:1px solid var(--line);padding:5px 9px;
   transition:color .3s, border-color .3s}
 #lang:hover{color:#efe3c6;border-color:rgba(217,180,90,.5)}
-#back{position:fixed;right:22px;bottom:22px;z-index:17;font-size:11px;letter-spacing:3px;
+#back{position:fixed;right:22px;bottom:22px;z-index:17;font-size:12px;letter-spacing:3px;
   color:#7d735f;text-decoration:none;border-bottom:1px solid rgba(217,180,90,.22);
   padding-bottom:3px;transition:color .3s, border-color .3s}
 #back:hover{color:#f0e6cd;border-color:rgba(217,180,90,.6)}
-#title{position:fixed;left:22px;bottom:22px;z-index:15;font-size:11px;letter-spacing:3px;
+#title{position:fixed;left:22px;bottom:22px;z-index:15;font-size:12px;letter-spacing:3px;
   color:#5f5748;pointer-events:none;max-width:38vw}
 
 @media(max-width:760px){
