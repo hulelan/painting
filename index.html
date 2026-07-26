@@ -148,11 +148,24 @@ html,body{height:100%;margin:0;background:var(--room);overflow:hidden;
   color:#5f5748;pointer-events:none;max-width:38vw}
 
 @media(max-width:760px){
-  #panel{right:8px;width:118px;opacity:.9}
-  #track{margin-right:14px}
+  #panel{position:fixed;left:0;right:0;top:0;bottom:auto;width:auto;transform:none;
+    display:flex;align-items:center;gap:12px;padding:7px 10px;opacity:1;z-index:18;
+    background:linear-gradient(180deg,rgba(10,8,6,.97),rgba(10,8,6,.88));
+    border-bottom:1px solid var(--line);
+    overflow-x:auto;scrollbar-width:none;white-space:nowrap}
+  #panel::-webkit-scrollbar{display:none}
+  .sect{margin:0;display:flex;align-items:center;gap:9px;flex:0 0 auto}
+  .sect h2{margin:0;font-size:9px;letter-spacing:2px}
+  #track{width:128px;height:30px;margin:0 2px}
+  #track .line{top:6px}
+  .stop .dot{margin-top:2px;width:8px;height:8px}
+  .stop .lb{margin-top:4px;font-size:9px;letter-spacing:0}
+  .persp{padding:0;font-size:11px;letter-spacing:1px;gap:6px}
+  .persp .box{width:11px;height:11px}
   #title{display:none}
-  #back{right:10px;bottom:12px;font-size:10px;letter-spacing:2px}
-  #lang{right:10px;top:10px}
+  #back{right:10px;bottom:10px;font-size:11px;letter-spacing:2px}
+  #lang{left:10px;right:auto;top:auto;bottom:9px;font-size:11px}
+  #loc{top:60px;bottom:auto}          /* under the bar, clear of the bottom links */
 }
 </style>
 </head>
@@ -263,9 +276,10 @@ const visW=()=>apW/(scale*Z), visH=()=>apH/(scale*Z);
 
 function measure(){
   const vw=innerWidth, vh=innerHeight;
-  apH=Math.min(vh*0.80, vh-96);
+  const narrow=vw<=760;                       // panel is a top bar down here
+  apH=Math.min(vh*(narrow?0.74:0.80), vh-(narrow?112:96));
   apW=apH;
-  const maxW=vw-(vw>760?250:150);
+  const maxW=vw-(narrow?14:250);
   if(apW>maxW) apW=Math.max(160,maxW);
   scale=apH/PH;
   const xs=cum.map(c=>Math.round(c*scale));
@@ -279,7 +293,7 @@ function measure(){
   core=apH*0.030;
   const maxLen=(L-visW())*scale, rmax=apH*0.15;
   thick=Math.PI*(rmax*rmax-core*core)/Math.max(1,maxLen);
-  loc.style.width=Math.min(vw*0.60,740)+'px';
+  loc.style.width=Math.min(vw*(narrow?0.94:0.60),740)+'px';
   layoutFold(); clamp(); render();
 }
 const rollRadius=len=>Math.sqrt(core*core+thick*Math.max(0,len)*scale/Math.PI);
@@ -289,7 +303,9 @@ function clamp(){
 }
 
 function layoutFold(){
-  const availW=Math.min(innerWidth-250,1360), availH=innerHeight-(showLoc?130:88);
+  const narrow=innerWidth<=760;
+  const availW=Math.min(innerWidth-(narrow?14:250),1360);
+  const availH=innerHeight-(narrow?(showLoc?176:112):(showLoc?130:88));
   const N=Math.max(2,Math.min(9,Math.round(Math.sqrt(availH*CR/(availW*PH)))));
   const gap=8, seg=CR/N;
   let rowW=availW, rowH=rowW*PH/seg;
