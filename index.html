@@ -419,25 +419,10 @@ function setMode(m){
   clamp(); render();
 }
 
-let last=performance.now(), door={on:false,t0:0,fx:0,fy:0};
-const HOLD=1.0, PULL=2.4;
-function goDetail(d){
-  door={on:true,t0:performance.now(),fx:d.x,fy:d.y}; vel=0; target=null; kept=null;
-  Z=nativeZ(); mode='pane'; desk.style.display='block'; foldEl.style.display='none';
-  dlabel.textContent=d.label||''; dlabel.style.opacity=d.label?'1':'0';
-}
-function endDoor(){ door.on=false; dlabel.style.opacity='0'; }
+let last=performance.now();
 function loop(now){
   const dt=Math.min(.05,(now-last)/1000); last=now;
-  if(door.on){
-    const s=(now-door.t0)/1000, Z0=nativeZ();
-    if(s<HOLD) Z=Z0;
-    else if(s<HOLD+PULL){
-      const u=(s-HOLD)/PULL; Z=Z0+(1-Z0)*(1-Math.pow(1-u,3));
-      dlabel.style.opacity=String(Math.max(0,1-u*1.7));
-    } else { Z=1; endDoor(); }
-    x0=door.fx-visW()/2; y0=door.fy-visH()/2;
-  } else if(mode!=='fold'&&!panning){
+  if(mode!=='fold'&&!panning){
     if(target!==null){
       const d=target-x0;
       if(Math.abs(d)<.6){ x0=target; target=null; vel=0; } else x0+=d*Math.min(1,dt*7);
@@ -459,7 +444,6 @@ function snap(){
 // --- drag a ROLL to unroll -------------------------------------------------
 let px=0,sx=0,eng=false,dv=0,lt=0,lx=0;
 function rollDown(e){
-  if(door.on) endDoor();
   panning=true; eng=false; target=null; vel=0;
   px=e.clientX; sx=x0; lx=e.clientX; lt=performance.now();
   e.currentTarget.setPointerCapture(e.pointerId);
@@ -489,7 +473,6 @@ function rollUp(){
 // --- drag the SILK to select; when already zoomed, to pan ------------------
 let marq=null, panZ=null;
 win.addEventListener('pointerdown',e=>{
-  if(door.on) endDoor();
   if(pts.size>1) return;
   const r=win.getBoundingClientRect();
   if(Z>1.03){
@@ -548,14 +531,12 @@ addEventListener('wheel',e=>{
   if(mode==='fold') return;
   if(e.ctrlKey){
     e.preventDefault();
-    if(door.on) endDoor();
     const before=Z;
     Z=Math.max(1, Math.min(nativeZ(), Z*(1-e.deltaY*0.01)));
     if(Z<=1.02&&before>1.02){ setMode('pane'); return; }
     if(Z>1.02){ customUsed=true; mode='custom'; lastCustom={Z:Z,x0:x0,y0:y0,kept:kept}; buildTrack(); }
     clamp(); render(); return;
   }
-  if(door.on) endDoor();
   const d=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;
   target=null; x0+=d/(scale*Z)*1.1; vel=0; clamp(); render();
 },{passive:false});
@@ -587,7 +568,6 @@ function seek(cx){
   const r=loc.getBoundingClientRect();
   const f=Math.max(0,Math.min(1,(cx-r.left)/r.width));
   if(mode==='fold') setMode('pane');
-  if(door.on) endDoor();
   x0=f*L-visW()/2; vel=0; target=null; clamp(); render();
 }
 loc.addEventListener('pointerdown',e=>{scrub=true;loc.setPointerCapture(e.pointerId);seek(e.clientX);});
@@ -637,8 +617,6 @@ const bleed=$('bleed'), lastImg=imgs[imgs.length-1];
 const reveal=()=>{ bleed.style.opacity='0'; };
 if(lastImg){ lastImg.complete?setTimeout(reveal,100):lastImg.addEventListener('load',()=>setTimeout(reveal,100)); }
 setTimeout(reveal,4000);
-if(!/[?&]door=0/.test(location.search) && DET.length)
-  goDetail(DET[Math.floor(Math.random()*DET.length)]);
 setMode('pane');
 requestAnimationFrame(loop);
 })();
