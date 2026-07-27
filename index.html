@@ -491,8 +491,10 @@ let marq=null, panZ=null;
 win.addEventListener('pointerdown',e=>{
   if(pts.size>1) return;
   const r=win.getBoundingClientRect();
-  if(Z>1.03){
-    panZ={x:e.clientX,y:e.clientY,x0:x0,y0:y0};
+  // touch: a finger drag means "move the scroll", always. Zoom is pinch.
+  if(e.pointerType==='touch' || Z>1.03){
+    panZ={x:e.clientX,y:e.clientY,x0:x0,y0:y0,lx:e.clientX,lt:performance.now(),v:0};
+    target=null; vel=0;
     win.classList.add('panning'); win.setPointerCapture(e.pointerId); return;
   }
   marq={x:e.clientX-r.left,y:e.clientY-r.top};
@@ -505,6 +507,8 @@ win.addEventListener('pointermove',e=>{
   if(panZ){
     const sE=scale*Z;
     x0=panZ.x0-(e.clientX-panZ.x)/sE; y0=panZ.y0-(e.clientY-panZ.y)/sE;
+    const now=performance.now(), dt=(now-panZ.lt)/1000;
+    if(dt>.004){ panZ.v=-((e.clientX-panZ.lx)/sE)/dt; panZ.lx=e.clientX; panZ.lt=now; }
     clamp(); return;
   }
   if(!marq) return;
@@ -513,7 +517,7 @@ win.addEventListener('pointermove',e=>{
   marqEl.style.width=Math.abs(cx-marq.x)+'px'; marqEl.style.height=Math.abs(cy-marq.y)+'px';
 });
 function winUp(){
-  if(panZ){ panZ=null; win.classList.remove('panning'); return; }
+  if(panZ){ vel=panZ.v||0; panZ=null; win.classList.remove('panning'); return; }  // flick glides
   if(!marq) return;
   const w=parseFloat(marqEl.style.width)||0, h=parseFloat(marqEl.style.height)||0;
   const lf=parseFloat(marqEl.style.left)||0, tp=parseFloat(marqEl.style.top)||0;
@@ -559,7 +563,12 @@ addEventListener('wheel',e=>{
 
 // two-finger pinch
 const pts=new Map(); let pinch0=null;
-addEventListener('pointerdown',e=>{ if(e.pointerType==='touch') pts.set(e.pointerId,e); },true);
+addEventListener('pointerdown',e=>{
+  if(e.pointerType!=='touch') return;
+  pts.set(e.pointerId,e);
+  if(pts.size===2){ panZ=null; marq=null; marqEl.style.display='none';
+    win.classList.remove('panning'); vel=0; }
+},true);
 addEventListener('pointermove',e=>{
   if(e.pointerType!=='touch'||!pts.has(e.pointerId)) return;
   pts.set(e.pointerId,e);
