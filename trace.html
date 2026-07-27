@@ -42,6 +42,22 @@ kbd{background:#2a251d;border:1px solid #3d362b;border-radius:2px;padding:0 4px;
 #paths .row .x{margin-left:auto;color:#7d5a4e}
 #paths .row .x:hover{color:#e08a72}
 #paths h3{margin:2px 4px 6px;font-size:10px;letter-spacing:2px;color:#6e6552;text-transform:uppercase}
+#tog{display:none}
+html,body{overscroll-behavior:none}
+@media(max-width:760px){
+  #top{height:42px;flex-wrap:nowrap;gap:6px;padding:0 8px;overflow-x:auto;scrollbar-width:none}
+  #top::-webkit-scrollbar{display:none}
+  #top strong,#hint,kbd{display:none}
+  button{padding:5px 9px;font-size:11px;flex:0 0 auto}
+  label{flex:0 0 auto;font-size:11px}
+  .sep{flex:0 0 auto}
+  #stage{top:42px;bottom:26px}
+  #bot{height:26px;font-size:10px;gap:7px;overflow-x:auto;scrollbar-width:none}
+  #bot::-webkit-scrollbar{display:none}
+  #paths{display:none;right:6px;top:48px;width:154px;max-height:42vh}
+  #paths.open{display:block}
+  #tog{display:inline-block}
+}
 </style>
 </head>
 <body>
@@ -63,6 +79,7 @@ kbd{background:#2a251d;border:1px solid #3d362b;border-radius:2px;padding:0 4px;
   <button id="bExport">Export roads.js</button>
   <button id="bCopy">Copy JSON</button>
   <button id="bImport">Import…</button>
+  <button id="tog">Paths ≡</button>
   <input type="file" id="fImport" accept=".js,.json" style="display:none">
   <span id="hint">drag = pan · click = add point · drag a handle = move · ⌥click handle = delete</span>
 </div>
@@ -261,10 +278,25 @@ function snap(sx,sy){
 
 // ---------- interaction ----------
 let down=null, dragHandle=null, moved=false;
+// two-finger pinch: scale about the midpoint and let the midpoint drag the canvas
+const tpts=new Map(); let pinch=null;
+function gest(){
+  const [a,b]=[...tpts.values()];
+  return {d:Math.hypot(a.x-b.x,a.y-b.y), cx:(a.x+b.x)/2, cy:(a.y+b.y)/2};
+}
 stage.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='touch'){
+    tpts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(tpts.size===2){                            // second finger: start a pinch
+      const g=gest();
+      pinch={d:g.d,cx:g.cx,cy:g.cy,Z:Z,tx:tx,ty:ty};
+      down=null; dragHandle=null; moved=true;     // cancel any single-finger intent
+      return;
+    }
+  }
   const [sx,sy]=toSrc(e.clientX,e.clientY);
   if(cur){                                        // grab an existing handle?
-    const r=9/Z;
+    const r=(e.pointerType==='touch'?20:9)/Z;     // fingers need a bigger target
     for(let i=cur.pts.length-1;i>=0;i--){
       const p=cur.pts[i];
       if(Math.hypot(p[0]-sx,p[1]-sy)<r){
@@ -277,15 +309,28 @@ stage.addEventListener('pointerdown',e=>{
   stage.setPointerCapture(e.pointerId);
 });
 stage.addEventListener('pointermove',e=>{
+  if(e.pointerType==='touch'&&tpts.has(e.pointerId)){
+    tpts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(tpts.size===2&&pinch){
+      const g=gest(), r=stage.getBoundingClientRect();
+      const ax=(pinch.cx-r.left-pinch.tx)/pinch.Z, ay=(pinch.cy-r.top-pinch.ty)/pinch.Z;
+      Z=Math.max(0.02,Math.min(3,pinch.Z*(g.d/pinch.d)));
+      tx=g.cx-r.left-ax*Z; ty=g.cy-r.top-ay*Z;
+      clampView(); applyView();
+      return;
+    }
+  }
   const [sx,sy]=toSrc(e.clientX,e.clientY);
   $('sPos').textContent='x '+Math.round(sx)+'  y '+Math.round(sy);
   if(dragHandle!==null&&cur){ cur.pts[dragHandle]=[Math.round(sx),Math.round(sy)]; drawAll(); return; }
   if(!down) return;
   const dx=e.clientX-down.x, dy=e.clientY-down.y;
-  if(!moved&&Math.hypot(dx,dy)>4){ moved=true; stage.classList.add('panning'); }
+  const slop=(e.pointerType==='touch')?11:4;   // finger jitter is not a drag
+  if(!moved&&Math.hypot(dx,dy)>slop){ moved=true; stage.classList.add('panning'); }
   if(moved){ tx=down.tx+dx; ty=down.ty+dy; clampView(); applyView(); }
 });
 stage.addEventListener('pointerup',e=>{
+  if(e.pointerType==='touch'){ tpts.delete(e.pointerId); if(tpts.size<2) pinch=null; }
   stage.classList.remove('panning');
   if(dragHandle!==null){ dragHandle=null; save(); drawAll(); return; }
   if(down&&!moved){                               // a click: add a point
@@ -297,7 +342,8 @@ stage.addEventListener('pointerup',e=>{
   }
   down=null;
 });
-stage.addEventListener('pointercancel',()=>{down=null;dragHandle=null;stage.classList.remove('panning');});
+stage.addEventListener('pointercancel',e=>{tpts.delete(e.pointerId);if(tpts.size<2)pinch=null;
+  down=null;dragHandle=null;stage.classList.remove('panning');});
 
 stage.addEventListener('wheel',e=>{
   e.preventDefault();
@@ -311,6 +357,7 @@ function finish(){ if(cur&&cur.pts.length<2) paths=paths.filter(p=>p!==cur); cur
 function undoPt(){ if(cur&&cur.pts.length){ cur.pts.pop(); if(!cur.pts.length) paths=paths.filter(p=>p!==cur), cur=null; save(); drawAll(); } }
 $('bNew').onclick=newPath; $('bFinish').onclick=finish; $('bUndo').onclick=undoPt;
 $('bFit').onclick=fit;
+$('tog').onclick=()=>document.getElementById('paths').classList.toggle('open');
 $('bIn').onclick=()=>zoomAt(innerWidth/2,innerHeight/2,1.3);
 $('bOut').onclick=()=>zoomAt(innerWidth/2,innerHeight/2,1/1.3);
 $('cPrev').onchange=drawAll; $('cSnap').onchange=()=>{ $('sSnap').textContent=$('cSnap').checked?'snap on':'snap off'; };
