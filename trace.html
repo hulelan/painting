@@ -88,7 +88,8 @@ html,body{overscroll-behavior:none}
   <button id="bImport">Import…</button>
   <button id="tog">Paths ≡</button>
   <input type="file" id="fImport" accept=".js,.json" style="display:none">
-  <span id="hint">drag = pan · click = add point · drag a handle = move · ⌥click handle = delete</span>
+  <span id="hint">drag = pan · click = add point · drag a handle = move · ⌥click handle = delete
+    <em style="color:#6e6552">(phone: one finger pans, tap adds, pinch zooms, hold a handle to delete)</em></span>
 </div>
 
 <div id="stage">
@@ -323,6 +324,16 @@ function snap(sx,sy){
 let down=null, dragHandle=null, moved=false;
 // two-finger pinch: scale about the midpoint and let the midpoint drag the canvas
 const tpts=new Map(); let pinch=null;
+let holdT=null, holdAt=null;                  // long-press-to-delete (touch)
+let lastDel=null;                             // one level of restore for a delete
+function cancelHold(){ if(holdT){ clearTimeout(holdT); holdT=null; } holdAt=null; }
+function delPoint(i){
+  if(!cur||!cur.pts[i]) return;
+  lastDel={path:cur, i:i, pt:cur.pts[i]};
+  cur.pts.splice(i,1);
+  save(); drawAll();
+  $('sSave').textContent='point deleted — Undo restores it';
+}
 function gest(){
   const [a,b]=[...tpts.values()];
   return {d:Math.hypot(a.x-b.x,a.y-b.y), cx:(a.x+b.x)/2, cy:(a.y+b.y)/2};
@@ -343,8 +354,15 @@ stage.addEventListener('pointerdown',e=>{
     for(let i=cur.pts.length-1;i>=0;i--){
       const p=cur.pts[i];
       if(Math.hypot(p[0]-sx,p[1]-sy)<r){
-        if(e.altKey){ cur.pts.splice(i,1); save(); drawAll(); return; }
-        dragHandle=i; stage.setPointerCapture(e.pointerId); return;
+        if(e.altKey){ delPoint(i); return; }
+        dragHandle=i; stage.setPointerCapture(e.pointerId);
+        // no ⌥ on a phone — hold the handle instead
+        if(e.pointerType==='touch'){
+          holdAt={x:e.clientX,y:e.clientY};
+          holdT=setTimeout(()=>{ if(dragHandle!==null){ delPoint(dragHandle);
+            dragHandle=null; down=null; } }, 550);
+        }
+        return;
       }
     }
   }
@@ -365,6 +383,7 @@ stage.addEventListener('pointermove',e=>{
   }
   const [sx,sy]=toSrc(e.clientX,e.clientY);
   $('sPos').textContent='x '+Math.round(sx)+'  y '+Math.round(sy);
+  if(holdAt && Math.hypot(e.clientX-holdAt.x, e.clientY-holdAt.y)>8) cancelHold();
   if(dragHandle!==null&&cur){ cur.pts[dragHandle]=[Math.round(sx),Math.round(sy)]; drawAll(); return; }
   if(!down) return;
   const dx=e.clientX-down.x, dy=e.clientY-down.y;
@@ -374,6 +393,7 @@ stage.addEventListener('pointermove',e=>{
 });
 stage.addEventListener('pointerup',e=>{
   if(e.pointerType==='touch'){ tpts.delete(e.pointerId); if(tpts.size<2) pinch=null; }
+  cancelHold();
   stage.classList.remove('panning');
   if(dragHandle!==null){ dragHandle=null; save(); drawAll(); return; }
   if(down&&!moved){                               // a click: add a point
@@ -386,7 +406,7 @@ stage.addEventListener('pointerup',e=>{
   down=null;
 });
 stage.addEventListener('pointercancel',e=>{tpts.delete(e.pointerId);if(tpts.size<2)pinch=null;
-  down=null;dragHandle=null;stage.classList.remove('panning');});
+  cancelHold();down=null;dragHandle=null;stage.classList.remove('panning');});
 
 stage.addEventListener('wheel',e=>{
   e.preventDefault();
@@ -397,7 +417,13 @@ stage.addEventListener('wheel',e=>{
 // ---------- commands ----------
 function newPath(){ cur={id:nextId++,pts:[]}; paths.push(cur); save(); drawAll(); }
 function finish(){ if(cur&&cur.pts.length<2) paths=paths.filter(p=>p!==cur); cur=null; save(); drawAll(); }
-function undoPt(){ if(cur&&cur.pts.length){ cur.pts.pop(); if(!cur.pts.length) paths=paths.filter(p=>p!==cur), cur=null; save(); drawAll(); } }
+function undoPt(){
+  if(lastDel && cur===lastDel.path){            // put a deleted point back where it was
+    cur.pts.splice(lastDel.i,0,lastDel.pt); lastDel=null; save(); drawAll();
+    $('sSave').textContent='point restored'; return;
+  }
+  if(cur&&cur.pts.length){ cur.pts.pop(); if(!cur.pts.length) paths=paths.filter(p=>p!==cur), cur=null; save(); drawAll(); }
+}
 $('bNew').onclick=newPath; $('bFinish').onclick=finish; $('bUndo').onclick=undoPt;
 $('bFit').onclick=fit;
 $('tog').onclick=()=>document.getElementById('paths').classList.toggle('open');
