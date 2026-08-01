@@ -32,6 +32,13 @@ button.danger:hover{background:#4a221c;border-color:#7d3a2e;color:#f3d0c6}
 label{display:flex;align-items:center;gap:5px;color:#9d917a;font-size:12px}
 kbd{background:#2a251d;border:1px solid #3d362b;border-radius:2px;padding:0 4px;font-size:11px}
 #hint{color:#6f6656;font-size:11px}
+#rev{display:none;position:fixed;left:0;right:0;bottom:26px;z-index:12;padding:6px 12px;
+  background:#12212b;border-top:1px solid #2b475a;color:#9fc6db;font-size:11px;letter-spacing:.3px}
+#rev.on{display:block}
+#rev b{color:#7fd4ff;font-weight:600}
+#rev button,#rev a{margin-left:10px;background:#1d3a4a;color:#cfe7f4;border:1px solid #35586e;
+  border-radius:3px;padding:2px 8px;font:inherit;cursor:pointer;text-decoration:none}
+#rev button:hover,#rev a:hover{background:#27506a}
 #paths{position:fixed;right:10px;top:54px;z-index:9;width:186px;max-height:52vh;overflow:auto;
   background:rgba(22,19,15,.94);border:1px solid #2f2a20;border-radius:2px;padding:6px}
 #paths .row{display:flex;align-items:center;gap:6px;padding:3px 4px;cursor:pointer;font-size:11px;
@@ -90,6 +97,10 @@ html,body{overscroll-behavior:none}
   </div>
 </div>
 
+<div id="rev"><b>Review copy</b> — proposals in blue. Your own trace is untouched;
+  nothing here is saved to it. <button id="bReload">reload proposals</button>
+  <a href="trace.html">back to my trace</a></div>
+
 <div id="paths"><h3>Paths</h3><div id="plist"></div></div>
 
 <div id="bot">
@@ -114,13 +125,29 @@ const SVGNS='http://www.w3.org/2000/svg';
 let paths = [];            // [{id, pts:[[x,y],...]}]
 let cur = null;            // path being drawn / selected
 let nextId = 1;
-const LSKEY='ccp_roads_v1';
+// ?review opens a scratch copy — your own trace lives under a different key and
+// is never written to, so anything done in review mode is throwaway.
+const REVIEW = /(^|[?&])review(=|&|$)/.test(location.search);
+const LSKEY = REVIEW ? 'ccp_roads_review' : 'ccp_roads_v1';
+const PROPOSED = id => id>=900;      // ids 900+ are proposals awaiting approval
 
+let hadSaved=false;
 function loadInitial(){
   const raw=localStorage.getItem(LSKEY);
-  if(raw){ try{ const o=JSON.parse(raw); paths=o.paths||[]; }catch(e){} }
-  else if(window.ROADS&&window.ROADS.paths) paths=window.ROADS.paths.map(p=>({id:p.id,pts:p.pts}));
+  if(raw){ try{ const o=JSON.parse(raw); paths=o.paths||[]; hadSaved=true; }catch(e){} }
+  // in review mode the proposals file is the seed, not roads.js
+  else if(!REVIEW && window.ROADS && window.ROADS.paths)
+    paths=window.ROADS.paths.map(p=>({id:p.id,pts:p.pts}));
   nextId = paths.reduce((m,p)=>Math.max(m,p.id||0),0)+1;
+}
+function loadReview(){
+  return fetch('assets/data/roads_review_import.json',{cache:'no-store'})
+    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(o=>{
+      paths=(o.paths||[]).map(p=>({id:p.id,pts:p.pts}));
+      nextId=paths.reduce((m,p)=>Math.max(m,p.id||0),0)+1;
+      save(); drawAll(); fit();
+    });
 }
 function save(){
   localStorage.setItem(LSKEY, JSON.stringify({srcW:L,srcH:PH,paths:paths}));
@@ -169,6 +196,17 @@ function zoomAt(cx,cy,f){
   tx=cx-r.left-sx*Z; ty=cy-r.top-sy*Z;
   clampView(); applyView();
 }
+// frame a whole path in the stage — the proposals sit 30k px away from where
+// the view opens, so clicking a row has to take you there
+function gotoPath(p){
+  if(!p||!p.pts.length) return;
+  const xs=p.pts.map(q=>q[0]), ys=p.pts.map(q=>q[1]);
+  const x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
+  const w=stage.clientWidth, h=stage.clientHeight, pad=1.6;
+  Z=Math.max(0.02,Math.min(3, Math.min(w/((x1-x0)*pad+80), h/((y1-y0)*pad+80))));
+  tx=w/2-(x0+x1)/2*Z; ty=h/2-(y0+y1)/2*Z;
+  clampView(); applyView();
+}
 function toSrc(cx,cy){
   const r=stage.getBoundingClientRect();
   return [(cx-r.left-tx)/Z, (cy-r.top-ty)/Z];
@@ -203,10 +241,13 @@ function drawAll(){
         'stroke-linecap':'round','stroke-linejoin':'round','vector-effect':'non-scaling-stroke'}));
     } else {
       const sel = cur&&cur.id===p.id;
+      const prop = PROPOSED(p.id);
       ov.appendChild(mk('path',{d:d,fill:'none',stroke:'rgba(0,0,0,.5)','stroke-width':4,
         'vector-effect':'non-scaling-stroke','stroke-linecap':'round'}));
-      ov.appendChild(mk('path',{d:d,fill:'none',stroke:sel?'#ffd76a':'#e8e2d2','stroke-width':sel?2.4:1.6,
-        'vector-effect':'non-scaling-stroke','stroke-linecap':'round'}));
+      ov.appendChild(mk('path',Object.assign({d:d,fill:'none',
+        stroke:sel?'#ffd76a':(prop?'#7fd4ff':'#e8e2d2'),'stroke-width':sel?2.4:1.6,
+        'vector-effect':'non-scaling-stroke','stroke-linecap':'round'},
+        prop&&!sel?{'stroke-dasharray':'7 4'}:{})));
     }
   });
   if(!prev && cur){
@@ -231,10 +272,12 @@ function renderList(){
   paths.forEach(p=>{
     const row=document.createElement('div');
     row.className='row'+(cur&&cur.id===p.id?' sel':'');
-    row.innerHTML='<span class="sw"></span>path '+p.id+' · '+p.pts.length+'<span class="x">✕</span>';
+    const prop=PROPOSED(p.id);
+    row.innerHTML='<span class="sw"'+(prop?' style="background:#7fd4ff"':'')+'></span>'+
+      (prop?'proposed ':'path ')+p.id+' · '+p.pts.length+'<span class="x">✕</span>';
     row.addEventListener('click',ev=>{
       if(ev.target.className==='x'){ paths=paths.filter(q=>q!==p); if(cur===p)cur=null; save(); drawAll(); return; }
-      cur=p; drawAll();
+      cur=p; gotoPath(p); drawAll();
     });
     el.appendChild(row);
   });
@@ -402,7 +445,19 @@ $('fImport').onchange=e=>{
 };
 
 addEventListener('resize',()=>{clampView();applyView();});
+if(REVIEW){
+  document.getElementById('rev').classList.add('on');
+  document.getElementById('bReload').onclick=()=>{
+    localStorage.removeItem(LSKEY);
+    loadReview().catch(err=>alert('could not load proposals: '+err.message));
+  };
+}
 loadInitial(); fit(); $('sSnap').textContent='snap on';
+if(REVIEW && !hadSaved){
+  loadReview()
+    .then(()=>{ const p=paths.find(q=>PROPOSED(q.id)); if(p){ cur=p; gotoPath(p); drawAll(); } })
+    .catch(err=>{ $('sSave').textContent='proposals not loaded: '+err.message; });
+}
 })();
 </script>
 </body>
