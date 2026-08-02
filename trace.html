@@ -130,6 +130,7 @@ let nextId = 1;
 // is never written to, so anything done in review mode is throwaway.
 const REVIEW = /(^|[?&])review(=|&|$)/.test(location.search);
 const LSKEY = REVIEW ? 'ccp_roads_review' : 'ccp_roads_v1';
+const SEENKEY = 'ccp_roads_review_seen';   // proposal ids this browser has been shown
 const PROPOSED = id => id>=900;      // ids 900+ are proposals awaiting approval
 
 let hadSaved=false;
@@ -147,7 +148,29 @@ function loadReview(){
     .then(o=>{
       paths=(o.paths||[]).map(p=>({id:p.id,pts:p.pts}));
       nextId=paths.reduce((m,p)=>Math.max(m,p.id||0),0)+1;
+      localStorage.setItem(SEENKEY, JSON.stringify(paths.filter(p=>PROPOSED(p.id)).map(p=>p.id)));
       save(); drawAll(); fit();
+    });
+}
+// A returning reviewer already has a scratch copy, so the seed above never ran
+// again and new proposals stayed invisible. Pull in any proposal this browser
+// has never been shown — but not ones it has seen and deleted, since deleting
+// a proposal is how you reject it.
+function syncProposals(){
+  return fetch('assets/data/roads_review_import.json',{cache:'no-store'})
+    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(o=>{
+      let seen; try{ seen=JSON.parse(localStorage.getItem(SEENKEY))||[]; }catch(e){ seen=[]; }
+      const here=new Set(paths.map(p=>p.id));
+      const add=(o.paths||[]).filter(p=>PROPOSED(p.id)&&!here.has(p.id)&&seen.indexOf(p.id)<0);
+      const all=new Set(seen.concat((o.paths||[]).filter(p=>PROPOSED(p.id)).map(p=>p.id)));
+      localStorage.setItem(SEENKEY, JSON.stringify([...all]));
+      if(!add.length) return null;
+      add.forEach(p=>paths.push({id:p.id,pts:p.pts}));
+      nextId=paths.reduce((m,p)=>Math.max(m,p.id||0),0)+1;
+      save(); drawAll();
+      cur=paths.find(p=>p.id===add[0].id); gotoPath(cur);
+      return add.map(p=>p.id);
     });
 }
 function save(){
@@ -479,9 +502,14 @@ if(REVIEW){
   };
 }
 loadInitial(); fit(); $('sSnap').textContent='snap on';
-if(REVIEW && !hadSaved){
-  loadReview()
-    .then(()=>{ const p=paths.find(q=>PROPOSED(q.id)); if(p){ cur=p; gotoPath(p); drawAll(); } })
+if(REVIEW){
+  (hadSaved ? syncProposals() : loadReview()
+      .then(()=>{ const p=paths.find(q=>PROPOSED(q.id)); if(p){ cur=p; gotoPath(p); } return null; }))
+    .then(added=>{
+      if(added && added.length)
+        $('sSave').textContent='new proposal'+(added.length>1?'s':'')+': '+added.join(', ');
+      drawAll();
+    })
     .catch(err=>{ $('sSave').textContent='proposals not loaded: '+err.message; });
 }
 })();
