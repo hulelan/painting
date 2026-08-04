@@ -257,6 +257,26 @@ week one.
 
 ---
 
+## 7b. Measured, not assumed: an off-the-shelf VLM already does part of this
+
+Run 2026-08-04, after this proposal was first written. Qwen3-VL-235B, given 1000x500 crops
+and the taxonomy from `labelling-protocol.md`, locates **bridges to a median 11px** with
+buffer precision 0.66 at 20px, for **$0.50 per 1,000 crops**. It misses faint mountain
+paths entirely, and it falls for the shoreline trap even when told not to.
+
+Consequences for the phases below:
+
+- **Phase 1 now has a baseline to beat** (11px median, P@20 = 0.66 on bridges) rather than
+  a hand-crafted filter.
+- **Phase 3's active loop no longer waits on training.** A usable first-pass bridge
+  proposer exists today, off the shelf.
+- The right next move is therefore to **sweep the untraced 79% of this scroll with the VLM
+  and review the proposals**, which grows the label set without hunting by eye.
+
+Full method, per-case numbers and failure analysis: [`vlm-baseline.md`](vlm-baseline.md).
+
+---
+
 ## 8. If we start, start here
 
 In order, cheapest first:
@@ -298,3 +318,4 @@ road pixels @6px wide: 0.039% of the painting
 ```
 
 Source of truth: `assets/data/roads.js`. Tool: `trace.html`, review mode `trace.html?review`.
+Labelling rules: [`labelling-protocol.md`](labelling-protocol.md). VLM baseline: [`vlm-baseline.md`](vlm-baseline.md).
