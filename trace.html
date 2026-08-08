@@ -236,19 +236,15 @@ function toSrc(cx,cy){
   return [(cx-r.left-tx)/Z, (cy-r.top-ty)/Z];
 }
 
-// ---------- curve: Catmull-Rom -> cubic bezier ----------
+// ---------- straight segments between clicked points ----------
+// Was a Catmull-Rom spline. A spline invents curvature between sparse points and
+// can bow off the road where the road is in fact straight, which mattered once
+// machine proposals (4-12 points) joined hand traces (dense). Straight segments
+// only ever claim what was actually clicked.
 function dOf(pts){
   if(pts.length===0) return '';
-  if(pts.length===1) return 'M '+pts[0][0]+' '+pts[0][1];
-  if(pts.length===2) return 'M '+pts[0][0]+' '+pts[0][1]+' L '+pts[1][0]+' '+pts[1][1];
   let d='M '+pts[0][0]+' '+pts[0][1];
-  for(let i=0;i<pts.length-1;i++){
-    const p0=pts[i-1]||pts[i], p1=pts[i], p2=pts[i+1], p3=pts[i+2]||pts[i+1];
-    const c1=[p1[0]+(p2[0]-p0[0])/6, p1[1]+(p2[1]-p0[1])/6];
-    const c2=[p2[0]-(p3[0]-p1[0])/6, p2[1]-(p3[1]-p1[1])/6];
-    d+=' C '+c1[0].toFixed(1)+' '+c1[1].toFixed(1)+', '+c2[0].toFixed(1)+' '+c2[1].toFixed(1)+
-       ', '+p2[0].toFixed(1)+' '+p2[1].toFixed(1);
-  }
+  for(let i=1;i<pts.length;i++) d+=' L '+pts[i][0]+' '+pts[i][1];
   return d;
 }
 
