@@ -83,7 +83,7 @@ html,body{overscroll-behavior:none}
   <button id="bFinish">Finish <kbd>↵</kbd></button>
   <button id="bUndo">Undo point <kbd>⌘Z</kbd></button>
   <span class="sep"></span>
-  <label><input type="checkbox" id="cSnap" checked> snap</label>
+  <label><input type="checkbox" id="cSnap"> snap</label>
   <label><input type="checkbox" id="cPrev"> preview</label>
   <span class="sep"></span>
   <button id="bFit">Fit</button>
@@ -93,6 +93,7 @@ html,body{overscroll-behavior:none}
   <button id="bExport">Export roads.js</button>
   <button id="bCopy">Copy JSON</button>
   <button id="bDiff">Copy my edits</button>
+  <button id="bSend">Send to Claude</button>
   <button id="bImport">Import…</button>
   <button id="tog">Paths ≡</button>
   <input type="file" id="fImport" accept=".js,.json" style="display:none">
@@ -528,6 +529,22 @@ $('bDiff').onclick=()=>{
     },()=>{ $('sSave').textContent='clipboard blocked — see console'; console.log(JSON.stringify(out)); });
   }).catch(e=>{ $('sSave').textContent='diff failed: '+e.message; });
 };
+// Hand the work over without copy-paste. Only works when this page is served by
+// the session's local server, which accepts POST /_save; on GitHub Pages there is
+// no endpoint, so say so plainly and fall back to "Copy my edits".
+$('bSend').onclick=()=>{
+  const body=Object.assign({kind:REVIEW?'review':'roads', origin:location.origin,
+                            when:new Date().toISOString()}, payload());
+  $('sSave').textContent='sending…';
+  fetch('/_save',{method:'POST',headers:{'Content-Type':'application/json'},
+                  body:JSON.stringify(body)})
+    .then(r=>r.json().catch(()=>({ok:false,error:'HTTP '+r.status})))
+    .then(o=>{ $('sSave').textContent = o.ok
+        ? 'sent — '+o.paths+' paths saved as '+o.saved
+        : 'send failed: '+(o.error||'unknown'); })
+    .catch(()=>{ $('sSave').textContent =
+        'no local server here — use “Copy my edits” and paste it instead'; });
+};
 $('bImport').onclick=()=>$('fImport').click();
 $('fImport').onchange=e=>{
   const f=e.target.files[0]; if(!f) return;
@@ -553,7 +570,10 @@ if(REVIEW){
     loadReview().catch(err=>alert('could not load proposals: '+err.message));
   };
 }
-loadInitial(); fit(); $('sSnap').textContent='snap on';
+loadInitial(); fit();
+// snap defaults off: it pulls a click toward the brightest nearby ridge, which is
+// the wrong instinct where the ridge next to the deck is not the deck.
+$('sSnap').textContent=$('cSnap').checked?'snap on':'snap off';
 
 // A saved copy is never reseeded, so a browser that traced weeks ago still holds
 // that day's roads. Exporting from it and merging would silently undo everything
