@@ -85,6 +85,7 @@ html,body{overscroll-behavior:none}
   <span class="sep"></span>
   <button id="bExport">Export roads.js</button>
   <button id="bCopy">Copy JSON</button>
+  <button id="bDiff">Copy my edits</button>
   <button id="bImport">Import…</button>
   <button id="tog">Paths ≡</button>
   <input type="file" id="fImport" accept=".js,.json" style="display:none">
@@ -471,6 +472,50 @@ $('bExport').onclick=()=>{
 $('bCopy').onclick=()=>{
   navigator.clipboard.writeText(JSON.stringify(payload(),null,1))
     .then(()=>{$('sSave').textContent='copied to clipboard';});
+};
+// Copy only what differs from the published baseline. Edits live in this
+// browser's localStorage and nowhere else, so this is how they get out —
+// small enough to paste into a message, unlike the whole file.
+// Diffs against the file rather than a stored snapshot, so edits made before
+// this button existed are still picked up.
+$('bDiff').onclick=()=>{
+  const base=REVIEW ? fetch('assets/data/roads_review_import.json',{cache:'no-store'})
+                        .then(r=>r.json()).then(o=>o.paths||[])
+                    : Promise.resolve((window.ROADS&&window.ROADS.paths)||[]);
+  base.then(bp=>{
+    const B=new Map(bp.map(p=>[p.id,JSON.stringify(p.pts)]));
+    const mine=paths.filter(p=>p.pts.length>1);
+    const edited=[],added=[];
+    mine.forEach(p=>{
+      const b=B.get(p.id);
+      if(b===undefined) added.push({id:p.id,pts:p.pts});
+      else if(b!==JSON.stringify(p.pts)) edited.push({id:p.id,pts:p.pts});
+    });
+    const here=new Set(mine.map(p=>p.id));
+    let deleted=bp.filter(p=>!here.has(p.id)).map(p=>p.id);
+    // A browser that seeded before a proposal was approved still calls it 901,
+    // while the file now calls the same road path 8. That would read as one
+    // added and one deleted road. Re-pair them by geometry so an edit to a
+    // renumbered path is reported as an edit.
+    const near=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1])<60;
+    for(let i=added.length-1;i>=0;i--){
+      const a=added[i];
+      const m=bp.find(p=>deleted.indexOf(p.id)>=0 && p.pts.length>1 &&
+        ((near(p.pts[0],a.pts[0])&&near(p.pts[p.pts.length-1],a.pts[a.pts.length-1])) ||
+         (near(p.pts[0],a.pts[a.pts.length-1])&&near(p.pts[p.pts.length-1],a.pts[0]))));
+      if(!m) continue;
+      deleted=deleted.filter(id=>id!==m.id);
+      added.splice(i,1);
+      if(JSON.stringify(m.pts)!==JSON.stringify(a.pts)) edited.push({id:m.id,localId:a.id,pts:a.pts});
+    }
+    if(!edited.length&&!added.length&&!deleted.length){
+      $('sSave').textContent='no changes vs the published version'; return;
+    }
+    const out={from:REVIEW?'review':'trace', origin:location.origin, edited:edited, added:added, deleted:deleted};
+    navigator.clipboard.writeText(JSON.stringify(out)).then(()=>{
+      $('sSave').textContent='copied: '+edited.length+' edited, '+added.length+' added, '+deleted.length+' deleted';
+    },()=>{ $('sSave').textContent='clipboard blocked — see console'; console.log(JSON.stringify(out)); });
+  }).catch(e=>{ $('sSave').textContent='diff failed: '+e.message; });
 };
 $('bImport').onclick=()=>$('fImport').click();
 $('fImport').onchange=e=>{
