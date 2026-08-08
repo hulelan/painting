@@ -35,6 +35,13 @@ kbd{background:#2a251d;border:1px solid #3d362b;border-radius:2px;padding:0 4px;
 #rev{display:none;position:fixed;left:0;right:0;bottom:26px;z-index:12;padding:6px 12px;
   background:#12212b;border-top:1px solid #2b475a;color:#9fc6db;font-size:11px;letter-spacing:.3px}
 #rev.on{display:block}
+#stale{display:none;position:fixed;left:0;right:0;bottom:26px;z-index:13;padding:6px 12px;
+  background:#3a2c14;border-top:1px solid #6b5426;color:#e8d5aa;font-size:12px}
+#stale.on{display:block}
+#stale b{color:#f0c46a;font-weight:600}
+#stale button{margin-left:10px;background:#4a3a1d;color:#f0e2c4;border:1px solid #6e5730;
+  border-radius:4px;padding:3px 9px;font-size:11px;cursor:pointer}
+#stale button:hover{background:#5c4826}
 #rev b{color:#7fd4ff;font-weight:600}
 #rev button,#rev a{margin-left:10px;background:#1d3a4a;color:#cfe7f4;border:1px solid #35586e;
   border-radius:3px;padding:2px 8px;font:inherit;cursor:pointer;text-decoration:none}
@@ -102,6 +109,10 @@ html,body{overscroll-behavior:none}
 <div id="rev"><b>Review copy</b> — proposals in blue. Your own trace is untouched;
   nothing here is saved to it. <button id="bReload">reload proposals</button>
   <a href="trace.html">back to my trace</a></div>
+
+<div id="stale"><b>Heads up</b> <span id="staleMsg"></span>
+  <button id="bTakeLive">use the live version</button>
+  <button id="bKeepMine">keep mine</button></div>
 
 <div id="paths"><h3>Paths</h3><div id="plist"></div></div>
 
@@ -543,6 +554,33 @@ if(REVIEW){
   };
 }
 loadInitial(); fit(); $('sSnap').textContent='snap on';
+
+// A saved copy is never reseeded, so a browser that traced weeks ago still holds
+// that day's roads. Exporting from it and merging would silently undo everything
+// approved since. Say so before any tracing happens rather than after.
+if(!REVIEW && hadSaved && window.ROADS && window.ROADS.paths){
+  const live=new Map(window.ROADS.paths.map(p=>[p.id,JSON.stringify(p.pts)]));
+  const mine=new Map(paths.map(p=>[p.id,JSON.stringify(p.pts)]));
+  const changed=[...live].filter(([id,v])=>mine.has(id)&&mine.get(id)!==v).length;
+  const missing=[...live.keys()].filter(id=>!mine.has(id));
+  const extra=[...mine.keys()].filter(id=>!live.has(id));
+  if(changed||missing.length){
+    const bits=[];
+    if(missing.length) bits.push(missing.length+' road'+(missing.length>1?'s':'')+' live here that your copy lacks (path '+missing.join(', ')+')');
+    if(changed) bits.push(changed+' differ'+(changed>1?'':'s')+' from the live version');
+    if(extra.length) bits.push(extra.length+' of yours '+(extra.length>1?'are':'is')+' not live yet (path '+extra.join(', ')+')');
+    $('staleMsg').textContent='this browser’s trace is out of step with the published one — '+bits.join('; ')+'.';
+    $('stale').classList.add('on');
+  }
+}
+$('bKeepMine').onclick=()=>$('stale').classList.remove('on');
+$('bTakeLive').onclick=()=>{
+  if(!window.ROADS) return;
+  paths=window.ROADS.paths.map(p=>({id:p.id,pts:p.pts.map(q=>q.slice())}));
+  nextId=paths.reduce((m,p)=>Math.max(m,p.id||0),0)+1; cur=null;
+  save(); drawAll(); fit(); $('stale').classList.remove('on');
+  $('sSave').textContent='replaced with the live version ('+paths.length+' paths)';
+};
 if(REVIEW){
   (hadSaved ? syncProposals() : loadReview()
       .then(()=>{ const p=paths.find(q=>PROPOSED(q.id)); if(p){ cur=p; gotoPath(p); } return null; }))

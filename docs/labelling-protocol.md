@@ -91,6 +91,54 @@ walkway it was supposed to be on).
 6. Export. Re-render over the scan at 5–10× and fix what is off.
 7. Record anything the rules did not cover in §9 below.
 
+## 7b. Order of operations for a session
+
+The mechanics, as distinct from the tracing rules above. Every step here exists
+because skipping it has already cost work.
+
+**Before you draw anything**
+
+1. **Pick one origin and stay on it for the whole session.**
+   `localhost:8777` and `classicalchinesepainting.com` are different origins, so
+   they have *completely separate* localStorage. An edit made on one is invisible
+   on the other. Most "my edits vanished" moments are this.
+2. **Pick the right page.**
+   - `trace.html` — drawing new roads. Seeds from the live `roads.js`.
+   - `trace.html?review` — correcting proposals. A scratch copy; never writes to
+     your own trace.
+3. **Reload before starting.** Review mode pulls in any new proposals; your edits
+   survive a reload untouched. If the amber *out of step* banner appears, deal
+   with it now — it means this browser's copy predates something that has since
+   gone live, and exporting from it would undo that work.
+4. **Do not press `reload proposals`** unless you intend to throw the scratch copy
+   away. It is a reset, not a refresh.
+
+**Drawing** — see §7 for the tracing order (right to left, bridges first).
+Saving is automatic: every point added and every handle drag writes to
+localStorage, and the status bar shows `saved <time>`.
+
+**Before you call it done**
+
+5. **Zoom to 5–10× and check the line sits on the structure**, not on something
+   parallel to it. Bridges characteristically have two roughly parallel dark
+   features — the deck or railing, and a shadow or cross-brace beneath — and it
+   is easy to trace the wrong one. Paths 10, 11 and 12 went live wrong for
+   exactly this reason and had to be pulled.
+
+**Getting it out of the browser**
+
+6. **`Copy my edits`** — copies only what differs from the published version,
+   usually a few hundred characters. Paste it back.
+   Or **`Export roads.js`** for the whole file.
+7. It gets diffed against the published version, rendered back over the scan at
+   high zoom, and merged only if it survives that.
+8. `git pull` afterwards so the local checkout matches.
+
+**A rule worth keeping:** nothing goes live that has not been looked at on the
+painting at high magnification, in the styling the site actually uses. A thick
+solid line on a tightly-framed crop flatters alignment and hides exactly the
+error that matters.
+
 ## 8. Known-hard sites in 千里江山图
 
 Places where a careful person could reasonably disagree. Kept so we can measure agreement
@@ -103,6 +151,7 @@ on the same ground later.
 | ~15,624 | Watermill with a covered deck | Deck is walkable but cluttered by the roof. **Left untraced.** |
 | ~16,666 | Below the stilted walkway | Rocks and cascade, not a second bridge. **Not a road.** |
 | ~26,500 | Faint winding path on a mountain face | **Is a road, still untraced.** Found while building a test set. |
+| ~2,570 / ~16,620 / ~32,420 | Arched trestle, stilted walkway, stone arch | Traced wrong once (paths 10/11/12): the line followed a brace or shadow parallel to the deck. Pulled from live, awaiting a correct trace. |
 
 ## 9. Open questions
 
@@ -127,5 +176,7 @@ no GPU, and it gates everything downstream. Suggested sections: one dense
 
 ## Changelog
 
+- **v2 — 2026-08-08.** Added §7b, the session order of operations, and the
+  ruling that nothing goes live unchecked at high magnification in site styling.
 - **v1 — 2026-08-04.** First written, after 10 paths / 380 points / 4,581px on 千里江山图.
   Rules §3 and §4 are back-formed from mistakes actually made, not invented in advance.
