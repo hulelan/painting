@@ -49,6 +49,26 @@ html,body{height:100%;margin:0;background:var(--room);overflow:hidden;
 #rollL .body{border-right:1px solid rgba(217,180,90,.34)}
 #rollR .body{border-left:1px solid rgba(217,180,90,.34)}
 
+/* ---- roll treatments, switched with ?rolls=b|c|d|e ----
+   The default is a smooth three-stop gradient, i.e. a lit cylinder. These are
+   angular alternatives: the roll stated as flat planes rather than modelled. */
+body.rolls-b .roll .body{box-shadow:none;background:linear-gradient(90deg,
+  #14110a 0 12%,#241f16 12% 26%,#3a3327 26% 42%,#4a4132 42% 58%,
+  #3a3327 58% 74%,#241f16 74% 88%,#14110a 88% 100%)}
+body.rolls-c .roll .body{box-shadow:none}
+body.rolls-c #rollL .body{background:linear-gradient(90deg,
+  #0d0b07 0 18%,#1b1710 18% 36%,#282218 36% 54%,#352d20 54% 72%,#43392a 72% 88%,#524634 88% 100%)}
+body.rolls-c #rollR .body{background:linear-gradient(270deg,
+  #0d0b07 0 18%,#1b1710 18% 36%,#282218 36% 54%,#352d20 54% 72%,#43392a 72% 88%,#524634 88% 100%)}
+body.rolls-d .roll .body{background:#1a160f;box-shadow:none}
+body.rolls-d #rollL .body{border-right:2px solid rgba(217,180,90,.5)}
+body.rolls-d #rollR .body{border-left:2px solid rgba(217,180,90,.5)}
+body.rolls-e .roll .body{box-shadow:none;background:
+  repeating-linear-gradient(90deg,#2a241a 0 11px,#100e09 11px 12px)}
+#rollTag{position:fixed;left:12px;top:10px;z-index:40;font:11px/1 ui-monospace,Menlo,monospace;
+  letter-spacing:2px;color:#7a6f5a;display:none}
+body.rolltag #rollTag{display:block}
+
 #marks{position:absolute;inset:0;z-index:7;pointer-events:none;display:none}
 .mk{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;
   border:1px solid rgba(233,209,150,.5);pointer-events:auto;cursor:pointer;
@@ -211,6 +231,7 @@ body.topbar #loc{top:60px;bottom:auto}
 <a id="back" href="cabinet.html">Return to Cabinet</a>
 <div id="title"></div>
 
+<div id="rollTag"></div>
 <script src="assets/scroll/manifest.js"></script>
 <script src="assets/data/episodes.js"></script>
 <script src="assets/data/details.js"></script>
@@ -222,6 +243,16 @@ const S=window.SCROLL, EP=(window.EPISODES&&window.EPISODES.episodes)||[],
       DET=(window.DETAILS&&window.DETAILS.items)||[];
 const L=S.w, PH=S.h, CR=S.contentRight||S.w;
 const $=id=>document.getElementById(id);
+// ?rolls=b|c|d|e swaps how the rolls are drawn, so the variants can be judged on
+// the real thing at real size instead of in a mock-up.
+(function(){
+  const m=/[?&]rolls=([a-e])/.exec(location.search);
+  if(!m) return;
+  document.body.classList.add('rolls-'+m[1],'rolltag');
+  const NAME={b:'facets',c:'ply',d:'blade',e:'ribs'};
+  const t=document.getElementById('rollTag');
+  if(t) t.textContent='rolls · '+m[1].toUpperCase()+' '+NAME[m[1]];
+})();
 const desk=$('desk'), win=$('window'), rail=$('rail'), rollL=$('rollL'), rollR=$('rollR'),
       sheen=$('sheen'), foldEl=$('fold'), marksEl=$('marks'), marqEl=$('marquee'),
       keptEl=$('kept'), loc=$('loc'), locBox=$('locBox'), track=$('track'), dlabel=$('dlabel');
