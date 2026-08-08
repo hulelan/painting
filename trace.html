@@ -57,6 +57,18 @@ kbd{background:#2a251d;border:1px solid #3d362b;border-radius:2px;padding:0 4px;
 #paths .row .x:hover{color:#e08a72}
 #paths h3{margin:2px 4px 6px;font-size:10px;letter-spacing:2px;color:#6e6552;text-transform:uppercase}
 #tog{display:none}
+#note{display:none;position:fixed;right:10px;bottom:38px;z-index:14;width:280px;
+  background:rgba(24,21,16,.97);border:1px solid #3b342a;border-radius:4px;padding:10px}
+#note.on{display:block}
+#note h4{margin:0 0 7px;font-size:10px;letter-spacing:2px;color:#6e6552;text-transform:uppercase}
+#note select,#note input,#note textarea{width:100%;margin-bottom:6px;background:#15130f;
+  color:#e6dabb;border:1px solid #3b342a;border-radius:2px;padding:4px 6px;
+  font:12px ui-monospace,Menlo,monospace}
+#note textarea{height:74px;resize:vertical}
+#note .row{display:flex;gap:6px}
+#note .row button{flex:1}
+#noteXY{color:#6e6552;font-size:10px;margin-bottom:6px}
+#modeR.on,#modeN.on{background:#5a4a22;border-color:#8a7333;color:#f7ecc9}
 html,body{overscroll-behavior:none}
 @media(max-width:760px){
   #top{height:42px;flex-wrap:nowrap;gap:6px;padding:0 8px;overflow-x:auto;scrollbar-width:none}
@@ -79,6 +91,9 @@ html,body{overscroll-behavior:none}
 <div id="top">
   <strong style="color:#e0ba78;font-weight:600">Road tracer</strong>
   <span class="sep"></span>
+  <button id="modeR" class="on">Roads</button>
+  <button id="modeN">Notes</button>
+  <span class="sep"></span>
   <button id="bNew">New path <kbd>N</kbd></button>
   <button id="bFinish">Finish <kbd>↵</kbd></button>
   <button id="bUndo">Undo point <kbd>⌘Z</kbd></button>
@@ -94,6 +109,7 @@ html,body{overscroll-behavior:none}
   <button id="bCopy">Copy JSON</button>
   <button id="bDiff">Copy my edits</button>
   <button id="bSend">Send to Claude</button>
+  <button id="bPublish">Publish…</button>
   <button id="bImport">Import…</button>
   <button id="tog">Paths ≡</button>
   <input type="file" id="fImport" accept=".js,.json" style="display:none">
@@ -114,6 +130,22 @@ html,body{overscroll-behavior:none}
 <div id="stale"><b>Heads up</b> <span id="staleMsg"></span>
   <button id="bTakeLive">use the live version</button>
   <button id="bKeepMine">keep mine</button></div>
+
+<div id="note"><h4>Note</h4>
+  <div id="noteXY">–</div>
+  <select id="nType">
+    <option value="building">building</option><option value="pavilion">pavilion</option>
+    <option value="temple">temple</option><option value="watermill">watermill</option>
+    <option value="bridge">bridge</option><option value="boat">boat</option>
+    <option value="figure">figure</option><option value="animal">animal</option>
+    <option value="fence">fence</option><option value="jetty">jetty</option>
+    <option value="gate">gate</option><option value="tree">tree</option>
+    <option value="water">water feature</option><option value="other">other</option>
+  </select>
+  <input id="nTitle" placeholder="short title">
+  <textarea id="nText" placeholder="what is it, and what is worth knowing about it"></textarea>
+  <div class="row"><button id="nDone">done</button><button id="nDel" class="danger">delete</button></div>
+</div>
 
 <div id="paths"><h3>Paths</h3><div id="plist"></div></div>
 
@@ -146,6 +178,19 @@ const LSKEY = REVIEW ? 'ccp_roads_review' : 'ccp_roads_v1';
 const SEENKEY = 'ccp_roads_review_seen';   // proposal ids this browser has been shown
 const PROPOSED = id => id>=900;      // ids 900+ are proposals awaiting approval
 
+// ---- notes: a second, independent layer. Roads are geometry; notes are what a
+// thing is and why it matters. Different key, so neither can corrupt the other.
+let MODE='roads';
+let notes=[];
+let curNote=null, dragNote=null;
+const NKEY='ccp_notes_v1';
+function loadNotes(){
+  try{ const o=JSON.parse(localStorage.getItem(NKEY)); if(o&&o.notes) notes=o.notes; }catch(e){}
+}
+function saveNotes(){
+  localStorage.setItem(NKEY,JSON.stringify({srcW:L,srcH:PH,notes:notes}));
+  $('sSave').textContent='saved '+new Date().toLocaleTimeString();
+}
 let hadSaved=false;
 function loadInitial(){
   const raw=localStorage.getItem(LSKEY);
@@ -293,8 +338,20 @@ function drawAll(){
       ov.appendChild(c);
     });
   }
+  notes.forEach(n=>{
+    const sel=curNote===n, r=(sel?8:6)/Z;
+    ov.appendChild(mk('circle',{cx:n.x,cy:n.y,r:r,fill:sel?'#ffd76a':'rgba(255,215,106,.5)',
+      stroke:'#000','stroke-width':1.4/Z, opacity:MODE==='notes'?1:0.45}));
+    if(MODE==='notes'&&n.title){
+      const t=mk('text',{x:n.x+r+3/Z,y:n.y+3/Z,fill:'#ffe9b0','font-size':(11/Z)+'px',
+        'paint-order':'stroke',stroke:'#000','stroke-width':2.5/Z});
+      t.textContent=n.title; ov.appendChild(t);
+    }
+  });
   ov.style.pointerEvents='none';            // handles are hit-tested by distance
-  $('sCount').textContent=paths.length+' paths · '+paths.reduce((n,p)=>n+p.pts.length,0)+' points';
+  $('sCount').textContent = MODE==='notes'
+      ? notes.length+' notes'
+      : paths.length+' paths · '+paths.reduce((n,p)=>n+p.pts.length,0)+' points';
   renderList();
 }
 function mk(t,a){ const e=document.createElementNS(SVGNS,t);
@@ -380,6 +437,18 @@ stage.addEventListener('pointerdown',e=>{
       return;
     }
   }
+  if(MODE==='notes'){
+    const [nx,ny]=toSrc(e.clientX,e.clientY);
+    const rr=(e.pointerType==='touch'?24:13)/Z;
+    for(let i=notes.length-1;i>=0;i--){
+      if(Math.hypot(notes[i].x-nx,notes[i].y-ny)<rr){
+        dragNote=i; curNote=notes[i]; openNote(); drawAll();
+        stage.setPointerCapture(e.pointerId); return;
+      }
+    }
+    down={x:e.clientX,y:e.clientY,tx:tx,ty:ty}; moved=false;
+    stage.setPointerCapture(e.pointerId); return;
+  }
   const [sx,sy]=toSrc(e.clientX,e.clientY);
   if(cur){                                        // grab an existing handle?
     const r=(e.pointerType==='touch'?20:9)/Z;     // fingers need a bigger target
@@ -415,6 +484,10 @@ stage.addEventListener('pointermove',e=>{
   }
   const [sx,sy]=toSrc(e.clientX,e.clientY);
   $('sPos').textContent='x '+Math.round(sx)+'  y '+Math.round(sy);
+  if(dragNote!==null){
+    const n=notes[dragNote]; n.x=Math.round(sx); n.y=Math.round(sy);
+    $('noteXY').textContent='x '+n.x+'   y '+n.y; drawAll(); return;
+  }
   if(holdAt && Math.hypot(e.clientX-holdAt.x, e.clientY-holdAt.y)>8) cancelHold();
   if(dragHandle!==null&&cur){ cur.pts[dragHandle]=[Math.round(sx),Math.round(sy)]; drawAll(); return; }
   if(!down) return;
@@ -427,6 +500,16 @@ stage.addEventListener('pointerup',e=>{
   if(e.pointerType==='touch'){ tpts.delete(e.pointerId); if(tpts.size<2) pinch=null; }
   cancelHold();
   stage.classList.remove('panning');
+  if(dragNote!==null){ dragNote=null; saveNotes(); drawAll(); return; }
+  if(MODE==='notes'){
+    if(down&&!moved){
+      const [sx,sy]=toSrc(e.clientX,e.clientY);
+      curNote={id:(notes.reduce((m,n)=>Math.max(m,n.id||0),0)+1),
+               x:Math.round(sx),y:Math.round(sy),type:'building',title:'',text:''};
+      notes.push(curNote); saveNotes(); openNote(); drawAll();
+    }
+    down=null; return;
+  }
   if(dragHandle!==null){ dragHandle=null; save(); drawAll(); return; }
   if(down&&!moved){                               // a click: add a point
     let [sx,sy]=toSrc(e.clientX,e.clientY);
@@ -545,6 +628,98 @@ $('bSend').onclick=()=>{
     .catch(()=>{ $('sSave').textContent =
         'no local server here — use “Copy my edits” and paste it instead'; });
 };
+// ---------- notes editor ----------
+function openNote(){
+  if(!curNote){ $('note').classList.remove('on'); return; }
+  $('noteXY').textContent='x '+curNote.x+'   y '+curNote.y;
+  $('nType').value=curNote.type||'building';
+  $('nTitle').value=curNote.title||''; $('nText').value=curNote.text||'';
+  $('note').classList.add('on');
+}
+['nType','nTitle','nText'].forEach(id=>$(id).addEventListener('input',()=>{
+  if(!curNote) return;
+  curNote.type=$('nType').value; curNote.title=$('nTitle').value; curNote.text=$('nText').value;
+  saveNotes(); drawAll();
+}));
+$('nDone').onclick=()=>{ curNote=null; $('note').classList.remove('on'); drawAll(); };
+$('nDel').onclick=()=>{
+  if(!curNote) return;
+  notes=notes.filter(n=>n!==curNote); curNote=null;
+  $('note').classList.remove('on'); saveNotes(); drawAll();
+};
+function setMode(m){
+  MODE=m; curNote=null; $('note').classList.remove('on');
+  $('modeR').classList.toggle('on',m==='roads');
+  $('modeN').classList.toggle('on',m==='notes');
+  $('paths').style.display = m==='notes' ? 'none' : '';
+  $('hint').textContent = m==='notes'
+    ? 'click empty ground = new note · click a dot = edit it · drag a dot = move it'
+    : 'drag = pan · click = add point · drag a handle = move · ⌥click handle = delete';
+  drawAll();
+}
+$('modeR').onclick=()=>setMode('roads');
+$('modeN').onclick=()=>setMode('notes');
+
+// ---------- publish ----------
+// The live site is static, so there is no endpoint to POST to. A prefilled GitHub
+// issue is the way out that needs no credential in the browser: the payload rides
+// in the URL, you press submit, and it is readable from the repo afterwards.
+function roadsDiff(){
+  const base = REVIEW ? fetch('assets/data/roads_review_import.json',{cache:'no-store'})
+                          .then(r=>r.json()).then(o=>o.paths||[])
+                      : Promise.resolve((window.ROADS&&window.ROADS.paths)||[]);
+  return base.then(bp=>{
+    const B=new Map(bp.map(p=>[p.id,JSON.stringify(p.pts)]));
+    const mine=paths.filter(p=>p.pts.length>1);
+    const edited=[],added=[];
+    mine.forEach(p=>{
+      const b=B.get(p.id);
+      if(b===undefined) added.push({id:p.id,pts:p.pts});
+      else if(b!==JSON.stringify(p.pts)) edited.push({id:p.id,pts:p.pts});
+    });
+    const here=new Set(mine.map(p=>p.id));
+    let deleted=bp.filter(p=>!here.has(p.id)).map(p=>p.id);
+    const near=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1])<60;
+    for(let i=added.length-1;i>=0;i--){
+      const a=added[i];
+      const m=bp.find(q=>deleted.indexOf(q.id)>=0 && q.pts.length>1 &&
+        ((near(q.pts[0],a.pts[0])&&near(q.pts[q.pts.length-1],a.pts[a.pts.length-1])) ||
+         (near(q.pts[0],a.pts[a.pts.length-1])&&near(q.pts[q.pts.length-1],a.pts[0]))));
+      if(!m) continue;
+      deleted=deleted.filter(id=>id!==m.id); added.splice(i,1);
+      if(JSON.stringify(m.pts)!==JSON.stringify(a.pts)) edited.push({id:m.id,localId:a.id,pts:a.pts});
+    }
+    return {edited:edited,added:added,deleted:deleted};
+  });
+}
+const REPO='hulelan/painting';
+$('bPublish').onclick=()=>{
+  $('sSave').textContent='preparing…';
+  roadsDiff().then(rd=>{
+    const body={kind:'label', origin:location.origin, when:new Date().toISOString(),
+                roads:rd, notes:notes};
+    const n=rd.edited.length+rd.added.length, summary=n+' road change'+(n===1?'':'s')+', '+notes.length+' note'+(notes.length===1?'':'s');
+    if(location.hostname==='localhost'||location.hostname==='127.0.0.1'){
+      return fetch('/_save',{method:'POST',headers:{'Content-Type':'application/json'},
+                             body:JSON.stringify(body)})
+        .then(r=>r.json()).then(o=>{ $('sSave').textContent = o.ok
+          ? 'sent — '+summary+' saved as '+o.saved : 'send failed: '+(o.error||'?'); });
+    }
+    const json=JSON.stringify(body);
+    const md='Pasted from the tracer.\n\n```json\n'+json+'\n```';
+    const url='https://github.com/'+REPO+'/issues/new?title='+
+      encodeURIComponent('labels: '+summary)+'&body='+encodeURIComponent(md);
+    if(url.length<7500){
+      window.open(url,'_blank','noopener');
+      $('sSave').textContent='opened a GitHub issue — press Submit and tell me';
+    } else {
+      navigator.clipboard.writeText(json).then(()=>{
+        window.open('https://github.com/'+REPO+'/issues/new','_blank','noopener');
+        $('sSave').textContent='too big for a URL — copied instead, paste it into the issue';
+      },()=>{ $('sSave').textContent='too big for a URL and the clipboard is blocked'; });
+    }
+  }).catch(e=>{ $('sSave').textContent='publish failed: '+e.message; });
+};
 $('bImport').onclick=()=>$('fImport').click();
 $('fImport').onchange=e=>{
   const f=e.target.files[0]; if(!f) return;
@@ -570,7 +745,7 @@ if(REVIEW){
     loadReview().catch(err=>alert('could not load proposals: '+err.message));
   };
 }
-loadInitial(); fit();
+loadInitial(); loadNotes(); fit();
 // snap defaults off: it pulls a click toward the brightest nearby ridge, which is
 // the wrong instinct where the ridge next to the deck is not the deck.
 $('sSnap').textContent=$('cSnap').checked?'snap on':'snap off';
