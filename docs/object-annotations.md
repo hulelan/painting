@@ -109,6 +109,47 @@ something this pass establishes. A Song levy on water mills is plausible — wat
 milling was contested between state and monastic interests — but the exact term 水磨課稅
 should be verified against a source, not accepted because a model said it confidently.
 
+## Follow-up: the fix did not work
+
+*2026-08-09.* Recommendations 1 and 2 above were implemented and measured on the same 46
+objects: annotate from the **same crop the census used** with the subject ringed, and ask for
+**observation only**, no significance. $0.02.
+
+**Recommendation 2 worked.** Zero interpretation leaked — 隱逸, 文人, 象徵 and 理想 appear in
+0 of 46 descriptions, against 46 of 46 before. The model hedges properly now
+(「看不清」, 「無法辨識」 four times) instead of narrating confidently past what it can see.
+The descriptions are usable.
+
+**Recommendation 1 did not.** The disagreement rate with the census is **unchanged: 42%**
+(26 agree, 19 disagree — the identical split). The crop framing was not the cause, so that
+hypothesis was wrong.
+
+Worse, the two passes do not even disagree about the *same* objects: 19 each, only 15 shared.
+On the contested objects **the two independent annotation passes agree with each other just
+47% of the time**. Three passes over the same coordinate produce three answers.
+
+| id | census | tight crop | census crop |
+|---|---|---|---|
+| 84 | jetty | 水磨坊 water mill | 茅屋 thatched hut |
+| 83 | jetty | 水邊木構亭榭 kiosk | 茅屋 thatched hut |
+| 189 | wall | 水磨坊 water mill | 茅屋 thatched hut |
+| 188 | gate | 木構門樓 gatehouse | 茅屋 thatched hut |
+| 73 | building | 水邊木構亭閣 | 木構棧道 walkway |
+
+Six of the nineteen are the benign case — a *figure* named as the 烏篷船 he is sitting in, and
+both passes agree on those. The rest are genuine three-way confusion.
+
+**The real cause is that a bare coordinate does not identify a subject.** These objects are
+5–30px across in a 41,783px painting. A ring drawn at a point covers several of them, and
+which one the model names is close to arbitrary. Re-prompting cannot fix that; nor can
+re-framing.
+
+**What would fix it: store extent, not a centre.** If the census recorded a bounding box, the
+ring would be unambiguous and all three passes would be looking at the same thing. That is a
+change to how objects are detected, not to how they are described — and it should happen
+before any click-to-reveal feature is built, because such a feature assumes a click maps to a
+subject, which is exactly what these numbers say it does not.
+
 ## Recommendation
 
 Do not put these on the site as they stand. Two-fifths point at the wrong object, and the
