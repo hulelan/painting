@@ -92,7 +92,7 @@ html,body{overscroll-behavior:none}
   <strong style="color:#e0ba78;font-weight:600">Road tracer</strong>
   <span class="sep"></span>
   <button id="modeR" class="on">Roads</button>
-  <button id="modeN">Notes</button>
+  <button id="modeN">Objects</button>
   <span class="sep"></span>
   <button id="bNew">New path <kbd>N</kbd></button>
   <button id="bFinish">Finish <kbd>↵</kbd></button>
@@ -183,6 +183,10 @@ const PROPOSED = id => id>=900;      // ids 900+ are proposals awaiting approval
 let MODE='roads';
 let notes=[];
 let curNote=null, dragNote=null;
+// An object is recorded as a BOX, not a point. Three independent passes over a
+// bare coordinate named three different things, because at this scale a point
+// sits inside several objects at once. Two clicks fix that: opposite corners.
+let boxA=null, boxPrev=null;
 const NKEY='ccp_notes_v1';
 function loadNotes(){
   try{ const o=JSON.parse(localStorage.getItem(NKEY)); if(o&&o.notes) notes=o.notes; }catch(e){}
@@ -339,15 +343,28 @@ function drawAll(){
     });
   }
   notes.forEach(n=>{
-    const sel=curNote===n, r=(sel?8:6)/Z;
-    ov.appendChild(mk('circle',{cx:n.x,cy:n.y,r:r,fill:sel?'#ffd76a':'rgba(255,215,106,.5)',
-      stroke:'#000','stroke-width':1.4/Z, opacity:MODE==='notes'?1:0.45}));
+    const sel=curNote===n, op=MODE==='notes'?1:0.45;
+    if(n.w&&n.h){
+      ov.appendChild(mk('rect',{x:n.x-n.w/2,y:n.y-n.h/2,width:n.w,height:n.h,fill:'none',
+        stroke:sel?'#ffd76a':'rgba(255,215,106,.62)','stroke-width':(sel?2.2:1.4)/Z,opacity:op}));
+    } else {
+      const r=(sel?8:6)/Z;
+      ov.appendChild(mk('circle',{cx:n.x,cy:n.y,r:r,fill:sel?'#ffd76a':'rgba(255,215,106,.5)',
+        stroke:'#000','stroke-width':1.4/Z,opacity:op}));
+    }
     if(MODE==='notes'&&n.title){
-      const t=mk('text',{x:n.x+r+3/Z,y:n.y+3/Z,fill:'#ffe9b0','font-size':(11/Z)+'px',
-        'paint-order':'stroke',stroke:'#000','stroke-width':2.5/Z});
+      const off=(n.h?n.h/2:6/Z)+11/Z;
+      const t=mk('text',{x:n.x,y:n.y-off+3/Z,fill:'#ffe9b0','font-size':(11/Z)+'px',
+        'text-anchor':'middle','paint-order':'stroke',stroke:'#000','stroke-width':2.5/Z});
       t.textContent=n.title; ov.appendChild(t);
     }
   });
+  if(boxA&&boxPrev){
+    const x=Math.min(boxA[0],boxPrev[0]), y=Math.min(boxA[1],boxPrev[1]);
+    ov.appendChild(mk('rect',{x:x,y:y,width:Math.abs(boxPrev[0]-boxA[0]),
+      height:Math.abs(boxPrev[1]-boxA[1]),fill:'rgba(255,215,106,.10)',
+      stroke:'#ffd76a','stroke-width':1.4/Z,'stroke-dasharray':(5/Z)+' '+(4/Z)}));
+  }
   ov.style.pointerEvents='none';            // handles are hit-tested by distance
   $('sCount').textContent = MODE==='notes'
       ? notes.length+' notes'
@@ -441,7 +458,11 @@ stage.addEventListener('pointerdown',e=>{
     const [nx,ny]=toSrc(e.clientX,e.clientY);
     const rr=(e.pointerType==='touch'?24:13)/Z;
     for(let i=notes.length-1;i>=0;i--){
-      if(Math.hypot(notes[i].x-nx,notes[i].y-ny)<rr){
+      const nn=notes[i];
+      const hit = (nn.w&&nn.h)
+        ? (Math.abs(nn.x-nx)<=nn.w/2+rr*0.35 && Math.abs(nn.y-ny)<=nn.h/2+rr*0.35)
+        : (Math.hypot(nn.x-nx,nn.y-ny)<rr);
+      if(hit){
         dragNote=i; curNote=notes[i]; openNote(); drawAll();
         stage.setPointerCapture(e.pointerId); return;
       }
@@ -484,6 +505,7 @@ stage.addEventListener('pointermove',e=>{
   }
   const [sx,sy]=toSrc(e.clientX,e.clientY);
   $('sPos').textContent='x '+Math.round(sx)+'  y '+Math.round(sy);
+  if(MODE==='notes'&&boxA){ boxPrev=[Math.round(sx),Math.round(sy)]; drawAll(); }
   if(dragNote!==null){
     const n=notes[dragNote]; n.x=Math.round(sx); n.y=Math.round(sy);
     $('noteXY').textContent='x '+n.x+'   y '+n.y; drawAll(); return;
@@ -504,9 +526,19 @@ stage.addEventListener('pointerup',e=>{
   if(MODE==='notes'){
     if(down&&!moved){
       const [sx,sy]=toSrc(e.clientX,e.clientY);
-      curNote={id:(notes.reduce((m,n)=>Math.max(m,n.id||0),0)+1),
-               x:Math.round(sx),y:Math.round(sy),type:'building',title:'',text:''};
-      notes.push(curNote); saveNotes(); openNote(); drawAll();
+      if(!boxA){
+        boxA=[Math.round(sx),Math.round(sy)]; boxPrev=boxA.slice();
+        $('sSave').textContent='now click the opposite corner  (esc to cancel)';
+        drawAll();
+      } else {
+        const w=Math.abs(sx-boxA[0]), h=Math.abs(sy-boxA[1]);
+        const cx=Math.round((sx+boxA[0])/2), cy=Math.round((sy+boxA[1])/2);
+        curNote={id:(notes.reduce((m,n)=>Math.max(m,n.id||0),0)+1),
+                 x:cx,y:cy,w:Math.max(4,Math.round(w)),h:Math.max(4,Math.round(h)),
+                 type:'building',title:'',text:''};
+        notes.push(curNote); boxA=null; boxPrev=null;
+        saveNotes(); openNote(); drawAll();
+      }
     }
     down=null; return;
   }
@@ -631,7 +663,8 @@ $('bSend').onclick=()=>{
 // ---------- notes editor ----------
 function openNote(){
   if(!curNote){ $('note').classList.remove('on'); return; }
-  $('noteXY').textContent='x '+curNote.x+'   y '+curNote.y;
+  $('noteXY').textContent='x '+curNote.x+'   y '+curNote.y+
+    (curNote.w? '     '+curNote.w+' x '+curNote.h+' px' : '     (point, no extent)');
   $('nType').value=curNote.type||'building';
   $('nTitle').value=curNote.title||''; $('nText').value=curNote.text||'';
   $('note').classList.add('on');
@@ -648,12 +681,12 @@ $('nDel').onclick=()=>{
   $('note').classList.remove('on'); saveNotes(); drawAll();
 };
 function setMode(m){
-  MODE=m; curNote=null; $('note').classList.remove('on');
+  MODE=m; curNote=null; boxA=null; boxPrev=null; $('note').classList.remove('on');
   $('modeR').classList.toggle('on',m==='roads');
   $('modeN').classList.toggle('on',m==='notes');
   $('paths').style.display = m==='notes' ? 'none' : '';
   $('hint').textContent = m==='notes'
-    ? 'click empty ground = new note · click a dot = edit it · drag a dot = move it'
+    ? 'two clicks = box an object (corner, then opposite corner) · click a box = edit · drag = pan · esc cancels'
     : 'drag = pan · click = add point · drag a handle = move · ⌥click handle = delete';
   drawAll();
 }
@@ -737,6 +770,10 @@ $('fImport').onchange=e=>{
   rd.readAsText(f);
 };
 
+addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&boxA){ boxA=null; boxPrev=null; drawAll();
+    $('sSave').textContent='box cancelled'; }
+});
 addEventListener('resize',()=>{clampView();applyView();});
 if(REVIEW){
   document.getElementById('rev').classList.add('on');

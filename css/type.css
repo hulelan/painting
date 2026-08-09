@@ -37,3 +37,28 @@
 body{ font-family:var(--type); font-size:16px; }
 .t-ui{ font-family:var(--type-ui); font-weight:500; }
 :lang(zh) .t-ui{ font-weight:400; }
+
+/* ---- alternate stacks, switched with ?font=b|c|d|e -------------------------
+   If the Latin goes sans the Chinese has to move with it: a Song face beside a
+   grotesque reads as an accident. Each option below pairs its Latin with a Hei
+   (黑体) stack rather than the Song default. All are system faces — nothing to
+   download, nothing to serve. */
+body.font-b{ --type:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,
+             "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+             --type-ui:var(--type); font-size:15px; }
+body.font-c{ --type:"Helvetica Neue",Helvetica,Arial,
+             "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+             --type-ui:var(--type); font-size:15px; }
+body.font-d{ --type:"Avenir Next",Avenir,"Segoe UI",Roboto,
+             "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+             --type-ui:var(--type); font-size:15px; }
+body.font-e{ --type:Futura,"Century Gothic","Avenir Next",
+             "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+             --type-ui:var(--type); font-size:15px; letter-spacing:.2px; }
+/* Garamond needs the extra weight on tiny letterspaced labels; a sans does not,
+   and at 500 the same labels turn muddy on the dark ground. */
+body[class*="font-"] .t-ui{ font-weight:400; }
+#fontTag{position:fixed;left:12px;top:26px;z-index:40;
+  font:11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:2px;
+  color:#7a6f5a;display:none}
+body.fonttag #fontTag{display:block}
