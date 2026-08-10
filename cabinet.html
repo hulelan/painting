@@ -16,6 +16,29 @@ html,body{height:100%;margin:0;background:var(--room);color:#c9bda4;overflow:hid
 #room{position:fixed;inset:0;
   background:radial-gradient(70% 56% at 30% 2%, rgba(224,186,120,.11), transparent 64%), var(--room)}
 
+/* ---- grounds, switched with ?bg=paper|silk|blush|dawn.
+   Kept in step with index.html so the cabinet and the viewer never disagree
+   about what room they are in. */
+body[class*="bg-"]{ --line:var(--th-line); --warm:var(--th-accent); color:var(--th-ink) }
+body[class*="bg-"] #room{background:linear-gradient(180deg,var(--th-bg),var(--th-bg2))}
+body[class*="bg-"] #geo h1{color:var(--th-muted)}
+body[class*="bg-"] #geo .sub{color:var(--th-muted)}
+body[class*="bg-"] .cell{background:var(--th-bg2)}
+body[class*="bg-"] .cell.open:hover{background:var(--th-bg)}
+body[class*="bg-"] .cell .name{color:var(--th-ink)}
+body[class*="bg-"] .cell .meta{color:var(--th-muted)}
+body[class*="bg-"] .cell.empty .name{color:var(--th-line)}
+body[class*="bg-"] .bar::after{background:rgba(255,255,255,.5)}
+body[class*="bg-"] .bar i{background:rgba(255,255,255,.55)}
+body.bg-paper{ --th-bg:#efe9dc; --th-bg2:#f6f1e7; --th-ink:#4a463c; --th-muted:#8a8375;
+  --th-accent:#b6412e; --th-line:rgba(90,80,60,.20) }
+body.bg-silk{ --th-bg:#ded2bb; --th-bg2:#e7ddc7; --th-ink:#4a4234; --th-muted:#8b8069;
+  --th-accent:#a8402f; --th-line:rgba(80,68,46,.22) }
+body.bg-blush{ --th-bg:#f6eff0; --th-bg2:#fbf6f6; --th-ink:#6a5b60; --th-muted:#9b8d92;
+  --th-accent:#c98a9e; --th-line:rgba(120,95,105,.18) }
+body.bg-dawn{ --th-bg:#fdf6ef; --th-bg2:#f7f0f3; --th-ink:#6b6069; --th-muted:#968a94;
+  --th-accent:#e0a08c; --th-line:rgba(120,105,105,.16) }
+
 /* ======================= GEOMETRIC ======================= */
 #geo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(86vw,900px)}
 #geo h1{margin:0 0 5px;font-size:12px;font-weight:500;letter-spacing:6px;color:#7d735f;
@@ -136,7 +159,7 @@ const I18N={
       items:[{n:'千里江山圖', m:'王希孟　北宋　絹本設色'},
              {n:'詩　淵',    m:'古詩古文 二九六六篇'}]}
 };
-const HREF=['./','https://classicalchinesepoetry.com/'];
+const HREF=[('./'+location.search),'https://classicalchinesepoetry.com/'];
 const GEO_C=['#5c7a72','#9c8558'];                          // silk: celadon, gold-tan
 const PIC_C=[['#5d7186','#3b5063'],['#8a6a52','#5e4335']];  // the earlier blue / russet
 const SLOTS=6;
@@ -213,6 +236,8 @@ build();
 <script>
 // ?font=b|c|d|e swaps the type stack so the options can be judged in place.
 (function(){
+  var g=/[?&]bg=(paper|silk|blush|dawn)/.exec(location.search);
+  if(g) document.body.classList.add('bg-'+g[1]);
   var m=/[?&]font=([a-e])/.exec(location.search); if(!m||m[1]==='b') return;
   document.body.classList.add('font-'+m[1],'fonttag');
   var N={a:'EB Garamond (was default)',c:'Helvetica Neue',d:'Avenir Next',e:'Futura'};

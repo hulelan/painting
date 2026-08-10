@@ -70,6 +70,69 @@ body.rolls-e .roll .body{box-shadow:none;background:
   letter-spacing:2px;color:#7a6f5a;display:none}
 body.rolltag #rollTag{display:block}
 
+/* ---- grounds, switched with ?bg=paper|silk|blush|dawn ---------------------
+   The default is a dark room: the painting glows, like a lit object in a vitrine.
+   These invert that — the scroll lies on paper, as an album leaf does, and the
+   chrome recedes to low-contrast ink. Everything below is expressed through
+   variables so a theme is a palette, not a fork of the stylesheet. */
+body[class*="bg-"]{ --line:var(--th-line); --warm:var(--th-accent); }
+body[class*="bg-"] #room{background:linear-gradient(180deg,var(--th-bg),var(--th-bg2))}
+body[class*="bg-"] #room::after{background:radial-gradient(130% 100% at 50% 46%,
+  transparent 55%, rgba(120,104,78,.13) 100%)}
+body[class*="bg-"] #window{background:var(--th-bg2);
+  box-shadow:0 18px 46px var(--th-shadow), 0 0 0 1px var(--th-line)}
+body[class*="bg-"] .roll .body{background:var(--th-roll)}
+body[class*="bg-"] #rollL .body{border-right:2px solid var(--th-accent)}
+body[class*="bg-"] #rollR .body{border-left:2px solid var(--th-accent)}
+body[class*="bg-"] #sheen{opacity:.22}
+body[class*="bg-"] .sect h2,
+body[class*="bg-"] .stop .lb,
+body[class*="bg-"] .persp,
+body[class*="bg-"] #title,
+body[class*="bg-"] #lang,
+body[class*="bg-"] #back{color:var(--th-muted)}
+body[class*="bg-"] .stop:hover .lb,
+body[class*="bg-"] .stop.on .lb,
+body[class*="bg-"] .persp:hover,
+body[class*="bg-"] #lang:hover,
+body[class*="bg-"] #back:hover{color:var(--th-ink)}
+body[class*="bg-"] .stop .dot{background:var(--th-bg2);border-color:var(--th-accent)}
+body[class*="bg-"] .stop.on .dot{background:var(--th-accent);box-shadow:none}
+body[class*="bg-"] #card{background:var(--th-bg2);border-color:var(--th-line);
+  box-shadow:0 8px 26px var(--th-shadow)}
+body[class*="bg-"] #card .k{color:var(--th-ink)}
+body[class*="bg-"] #card .n{color:var(--th-muted)}
+body[class*="bg-"] #card .c{color:var(--th-muted)}
+body[class*="bg-"] #loc{background:var(--th-bg2);border-color:var(--th-line)}
+body[class*="bg-"] #locBox{border-color:var(--th-accent);
+  box-shadow:0 0 0 9999px rgba(120,104,78,.22)}
+body[class*="bg-"] #bleed{background:var(--th-bg)}
+body[class*="bg-"] #dlabel{color:var(--th-ink);text-shadow:0 0 12px var(--th-bg)}
+body[class*="bg-"] .mk{border-color:var(--th-accent);box-shadow:none}
+body[class*="bg-"] #roads .case{stroke:rgba(255,255,255,.65)}
+body[class*="bg-"] #roads .line{stroke:#3b3428}
+body[class*="bg-"] #fold .row{border-color:var(--th-line);
+  box-shadow:0 5px 16px var(--th-shadow)}
+body[class*="bg-"] #marquee,body[class*="bg-"] #kept{border-color:var(--th-ink)}
+body[class*="bg-"] body.topbar #panel{background:var(--th-bg)}
+
+body.bg-paper{ --th-bg:#efe9dc; --th-bg2:#f6f1e7; --th-ink:#4a463c; --th-muted:#8a8375;
+  --th-accent:#b6412e; --th-line:rgba(90,80,60,.20); --th-roll:#d6cbb4;
+  --th-shadow:rgba(90,78,56,.22) }
+body.bg-silk{ --th-bg:#ded2bb; --th-bg2:#e7ddc7; --th-ink:#4a4234; --th-muted:#8b8069;
+  --th-accent:#a8402f; --th-line:rgba(80,68,46,.22); --th-roll:#c9bb9c;
+  --th-shadow:rgba(80,66,42,.24) }
+body.bg-blush{ --th-bg:#f6eff0; --th-bg2:#fbf6f6; --th-ink:#6a5b60; --th-muted:#9b8d92;
+  --th-accent:#c98a9e; --th-line:rgba(120,95,105,.18); --th-roll:#e2d6da;
+  --th-shadow:rgba(120,95,105,.18) }
+body.bg-dawn{ --th-bg:#fdf6ef; --th-bg2:#f7f0f3; --th-ink:#6b6069; --th-muted:#968a94;
+  --th-accent:#e0a08c; --th-line:rgba(120,105,105,.16); --th-roll:#ece0da;
+  --th-shadow:rgba(120,105,100,.16) }
+#bgTag{position:fixed;left:12px;top:42px;z-index:40;
+  font:11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:2px;
+  color:var(--th-muted,#7a6f5a);display:none}
+body.bgtag #bgTag{display:block}
+
 #marks{position:absolute;inset:0;z-index:7;pointer-events:none;display:none}
 .mk{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;
   border:1px solid rgba(233,209,150,.5);pointer-events:auto;cursor:pointer;
@@ -729,6 +792,15 @@ requestAnimationFrame(loop);
 })();
 </script>
 <script>
+// ?bg=paper|silk|blush|dawn puts the scroll on a light ground instead of in a
+// dark room. Same switcher pattern as ?rolls= and ?font=.
+(function(){
+  var m=/[?&]bg=(paper|silk|blush|dawn)/.exec(location.search); if(!m) return;
+  document.body.classList.add('bg-'+m[1],'bgtag');
+  var d=document.createElement('div'); d.id='bgTag';
+  d.textContent='ground \u00b7 '+m[1];
+  document.body.appendChild(d);
+})();
 // ?font=b|c|d|e swaps the type stack so the options can be judged in place.
 (function(){
   var m=/[?&]font=([a-e])/.exec(location.search); if(!m||m[1]==='b') return;
