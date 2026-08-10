@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hans">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <title>The Case</title>
 <meta name="description" content="A case of handscrolls — choose one to unroll.">
-<link rel="stylesheet" href="css/type.css">
+<link rel="stylesheet" href="css/type.css?v=3">
 <style>
 :root{ --room:#0a0908; --warm:#d9b45a; --line:rgba(217,180,90,.20); }
 *{box-sizing:border-box}
@@ -140,7 +140,7 @@ const HREF=['./','https://classicalchinesepoetry.com/'];
 const GEO_C=['#5c7a72','#9c8558'];                          // silk: celadon, gold-tan
 const PIC_C=[['#5d7186','#3b5063'],['#8a6a52','#5e4335']];  // the earlier blue / russet
 const SLOTS=6;
-let lang=localStorage.getItem('ccp_lang')||'en';
+let lang=localStorage.getItem('ccp_lang')||'zh';
 let skin=localStorage.getItem('ccp_skin')||'geo';
 
 const grid=document.getElementById('grid'), shelf=document.getElementById('shelf');
