@@ -26,26 +26,32 @@
 }
 
 :root{
-  --type:'EB Garamond',"Songti SC","Source Han Serif SC","Noto Serif SC",
-         "STSong","SimSun",Georgia,serif;
-  --type-ui:'EB Garamond',"Songti SC","Source Han Serif SC","Noto Serif SC",
-            "STSong","SimSun",Georgia,serif;
+  /* Default: system-ui, paired with a Hei stack. The Garamond/Song pairing it
+     replaced is still here as .font-a — see the block at the foot of this file. */
+  --type:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,
+         "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+  --type-ui:var(--type);
 }
 
 /* Garamond runs small and light; nudge it up so it sits level with the Song faces
    beside it, and lean on 500 for the tiny letterspaced labels. */
-body{ font-family:var(--type); font-size:16px; }
-.t-ui{ font-family:var(--type-ui); font-weight:500; }
+body{ font-family:var(--type); font-size:15px; }
+.t-ui{ font-family:var(--type-ui); font-weight:400; }
 :lang(zh) .t-ui{ font-weight:400; }
+/* Garamond runs small and light: when it is selected, put the size and the
+   label weight back up so it sits level with the Song faces beside it. */
+body.font-a{ font-size:16px; }
+body.font-a .t-ui{ font-weight:500; }
+body.font-a:lang(zh) .t-ui{ font-weight:400; }
 
 /* ---- alternate stacks, switched with ?font=b|c|d|e -------------------------
    If the Latin goes sans the Chinese has to move with it: a Song face beside a
    grotesque reads as an accident. Each option below pairs its Latin with a Hei
    (黑体) stack rather than the Song default. All are system faces — nothing to
    download, nothing to serve. */
-body.font-b{ --type:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,
-             "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
-             --type-ui:var(--type); font-size:15px; }
+body.font-a{ --type:'EB Garamond',"Songti SC","Source Han Serif SC","Noto Serif SC",
+             "STSong","SimSun",Georgia,serif;
+             --type-ui:var(--type); }
 body.font-c{ --type:"Helvetica Neue",Helvetica,Arial,
              "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
              --type-ui:var(--type); font-size:15px; }
@@ -57,7 +63,7 @@ body.font-e{ --type:Futura,"Century Gothic","Avenir Next",
              --type-ui:var(--type); font-size:15px; letter-spacing:.2px; }
 /* Garamond needs the extra weight on tiny letterspaced labels; a sans does not,
    and at 500 the same labels turn muddy on the dark ground. */
-body[class*="font-"] .t-ui{ font-weight:400; }
+
 #fontTag{position:fixed;left:12px;top:26px;z-index:40;
   font:11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:2px;
   color:#7a6f5a;display:none}

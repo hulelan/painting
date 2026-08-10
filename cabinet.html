@@ -213,9 +213,9 @@ build();
 <script>
 // ?font=b|c|d|e swaps the type stack so the options can be judged in place.
 (function(){
-  var m=/[?&]font=([a-e])/.exec(location.search); if(!m||m[1]==='a') return;
+  var m=/[?&]font=([a-e])/.exec(location.search); if(!m||m[1]==='b') return;
   document.body.classList.add('font-'+m[1],'fonttag');
-  var N={b:'system-ui',c:'Helvetica Neue',d:'Avenir Next',e:'Futura'};
+  var N={a:'EB Garamond (was default)',c:'Helvetica Neue',d:'Avenir Next',e:'Futura'};
   var d=document.createElement('div'); d.id='fontTag';
   d.textContent='type \u00b7 '+m[1].toUpperCase()+' '+N[m[1]];
   document.body.appendChild(d);

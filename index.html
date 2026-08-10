@@ -44,10 +44,9 @@ html,body{height:100%;margin:0;background:var(--room);overflow:hidden;
 .roll{position:absolute;top:0;height:100%;z-index:6;cursor:grab;transition:opacity .25s}
 .roll.pulling{cursor:grabbing}
 .roll .body{position:absolute;inset:0;
-  background:linear-gradient(90deg, rgba(14,11,8,.96), rgba(52,45,34,.92) 46%, rgba(14,11,8,.96));
-  box-shadow:0 18px 44px rgba(0,0,0,.55)}
-#rollL .body{border-right:1px solid rgba(217,180,90,.34)}
-#rollR .body{border-left:1px solid rgba(217,180,90,.34)}
+  background:#1a160f}                       /* D "blade": flat, no modelling */
+#rollL .body{border-right:2px solid rgba(217,180,90,.5)}
+#rollR .body{border-left:2px solid rgba(217,180,90,.5)}
 
 /* ---- roll treatments, switched with ?rolls=b|c|d|e ----
    The default is a smooth three-stop gradient, i.e. a lit cylinder. These are
@@ -60,9 +59,11 @@ body.rolls-c #rollL .body{background:linear-gradient(90deg,
   #0d0b07 0 18%,#1b1710 18% 36%,#282218 36% 54%,#352d20 54% 72%,#43392a 72% 88%,#524634 88% 100%)}
 body.rolls-c #rollR .body{background:linear-gradient(270deg,
   #0d0b07 0 18%,#1b1710 18% 36%,#282218 36% 54%,#352d20 54% 72%,#43392a 72% 88%,#524634 88% 100%)}
-body.rolls-d .roll .body{background:#1a160f;box-shadow:none}
-body.rolls-d #rollL .body{border-right:2px solid rgba(217,180,90,.5)}
-body.rolls-d #rollR .body{border-left:2px solid rgba(217,180,90,.5)}
+/* D is now the default; ?rolls=a restores the original lit cylinder. */
+body.rolls-a .roll .body{box-shadow:0 18px 44px rgba(0,0,0,.55);
+  background:linear-gradient(90deg, rgba(14,11,8,.96), rgba(52,45,34,.92) 46%, rgba(14,11,8,.96))}
+body.rolls-a #rollL .body{border-right:1px solid rgba(217,180,90,.34)}
+body.rolls-a #rollR .body{border-left:1px solid rgba(217,180,90,.34)}
 body.rolls-e .roll .body{box-shadow:none;background:
   repeating-linear-gradient(90deg,#2a241a 0 11px,#100e09 11px 12px)}
 #rollTag{position:fixed;left:12px;top:10px;z-index:40;font:11px/1 ui-monospace,Menlo,monospace;
@@ -158,16 +159,20 @@ body.rolltag #rollTag{display:block}
 .persp.on .box{border-color:rgba(217,180,90,.95)}
 .persp.on .box::after{transform:scale(1)}
 
-#lang{position:fixed;right:22px;top:18px;z-index:17;font-size:11px;letter-spacing:3px;
-  color:#6b6151;cursor:pointer;border:1px solid var(--line);padding:5px 9px;
+/* corner: the two controls in a row, the title beneath them and aligned to
+   their right edge, so the whole block reads as one piece of chrome. */
+#corner{position:fixed;right:22px;top:18px;z-index:17;display:flex;
+  flex-direction:column;align-items:flex-end;gap:9px}
+#corner .btns{display:flex;align-items:center;gap:8px}
+#lang,#back{font-size:11px;letter-spacing:3px;color:#6b6151;cursor:pointer;
+  border:1px solid var(--line);padding:5px 9px;text-decoration:none;
+  display:inline-flex;align-items:center;justify-content:center;
   transition:color .3s, border-color .3s}
-#lang:hover{color:#efe3c6;border-color:rgba(217,180,90,.5)}
-#back{position:fixed;right:22px;bottom:22px;z-index:17;font-size:12px;letter-spacing:3px;
-  color:#7d735f;text-decoration:none;border-bottom:1px solid rgba(217,180,90,.22);
-  padding-bottom:3px;transition:color .3s, border-color .3s}
-#back:hover{color:#f0e6cd;border-color:rgba(217,180,90,.6)}
-#title{position:fixed;left:22px;bottom:22px;z-index:15;font-size:12px;letter-spacing:3px;
-  color:#5f5748;pointer-events:none;max-width:38vw}
+#lang:hover,#back:hover{color:#efe3c6;border-color:rgba(217,180,90,.5)}
+/* a bare chevron: unmistakable, and it stops competing with the painting */
+#back{font-size:15px;letter-spacing:0;line-height:1;width:30px;height:26px;padding:0}
+#title{font-size:12px;letter-spacing:3px;color:#5f5748;pointer-events:none;
+  max-width:34vw;text-align:right}
 
 /* top-bar chrome: used on narrow screens, and in Wide mode at any width,
    so the painting can have the full breadth of the display */
@@ -185,11 +190,13 @@ body.topbar .stop .dot{margin-top:2px;width:8px;height:8px}
 body.topbar .stop .lb{margin-top:4px;font-size:9px;letter-spacing:0}
 body.topbar .persp{padding:0;font-size:11px;letter-spacing:1px;gap:6px}
 body.topbar .persp .box{width:11px;height:11px}
-body.topbar #lang{left:10px;right:auto;top:auto;bottom:9px;font-size:11px}
+body.topbar #corner{right:10px;top:auto;bottom:9px;flex-direction:row;
+  align-items:center;gap:10px}
+body.topbar #title{display:none}
 body.topbar #loc{top:60px;bottom:auto}
 @media(max-width:760px){
+  #corner{right:10px;top:10px;gap:6px}
   #title{display:none}
-  #back{right:10px;bottom:10px;font-size:11px;letter-spacing:2px}
 }
 </style>
 </head>
@@ -227,9 +234,13 @@ body.topbar #loc{top:60px;bottom:auto}
   </div>
 </div>
 
-<div id="lang">中</div>
-<a id="back" href="cabinet.html">Return to Cabinet</a>
-<div id="title"></div>
+<div id="corner">
+  <div class="btns">
+    <a id="back" href="cabinet.html" title="Return to Cabinet" aria-label="Return to Cabinet">&lsaquo;</a>
+    <div id="lang">中</div>
+  </div>
+  <div id="title"></div>
+</div>
 
 <div id="rollTag"></div>
 <script src="assets/scroll/manifest.js"></script>
@@ -247,9 +258,9 @@ const $=id=>document.getElementById(id);
 // the real thing at real size instead of in a mock-up.
 (function(){
   const m=/[?&]rolls=([a-e])/.exec(location.search);
-  if(!m) return;
+  if(!m||m[1]==='d') return;               // d is the default now
   document.body.classList.add('rolls-'+m[1],'rolltag');
-  const NAME={b:'facets',c:'ply',d:'blade',e:'ribs'};
+  const NAME={a:'cylinder (was default)',b:'facets',c:'ply',e:'ribs'};
   const t=document.getElementById('rollTag');
   if(t) t.textContent='rolls · '+m[1].toUpperCase()+' '+NAME[m[1]];
 })();
@@ -683,7 +694,9 @@ document.querySelectorAll('.persp').forEach(el=>{
 function applyLang(){
   document.documentElement.lang = lang==='en'?'en':'zh-Hans';
   $('hZoom').textContent=t('zoom'); $('hPersp').textContent=t('persp');
-  $('lang').textContent=t('lang'); $('back').textContent=t('back');
+  $('lang').textContent=t('lang');
+  // the chevron IS the label; the translated string becomes its tooltip
+  $('back').title=t('back'); $('back').setAttribute('aria-label',t('back'));
   $('title').textContent=t('title');
   document.querySelector('.persp[data-t="loc"] .lb').textContent=t('loc');
   document.querySelector('.persp[data-t="marks"] .lb').textContent=t('marks');
@@ -718,9 +731,9 @@ requestAnimationFrame(loop);
 <script>
 // ?font=b|c|d|e swaps the type stack so the options can be judged in place.
 (function(){
-  var m=/[?&]font=([a-e])/.exec(location.search); if(!m||m[1]==='a') return;
+  var m=/[?&]font=([a-e])/.exec(location.search); if(!m||m[1]==='b') return;
   document.body.classList.add('font-'+m[1],'fonttag');
-  var N={b:'system-ui',c:'Helvetica Neue',d:'Avenir Next',e:'Futura'};
+  var N={a:'EB Garamond (was default)',c:'Helvetica Neue',d:'Avenir Next',e:'Futura'};
   var d=document.createElement('div'); d.id='fontTag';
   d.textContent='type \u00b7 '+m[1].toUpperCase()+' '+N[m[1]];
   document.body.appendChild(d);
