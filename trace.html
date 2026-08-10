@@ -743,8 +743,13 @@ $('bPublish').onclick=()=>{
     const url='https://github.com/'+REPO+'/issues/new?title='+
       encodeURIComponent('labels: '+summary)+'&body='+encodeURIComponent(md);
     if(url.length<7500){
+      // Always put the payload on the clipboard as well. The issue is only a
+      // DRAFT until Submit is pressed, and "opened an issue" read as done —
+      // so a publish could look successful while nothing had been sent.
+      navigator.clipboard.writeText(json).catch(()=>{});
       window.open(url,'_blank','noopener');
-      $('sSave').textContent='opened a GitHub issue — press Submit and tell me';
+      $('sSave').textContent='DRAFT opened — you must press Submit there. '+
+        'Also copied to your clipboard, so you can just paste it instead.';
     } else {
       navigator.clipboard.writeText(json).then(()=>{
         window.open('https://github.com/'+REPO+'/issues/new','_blank','noopener');
