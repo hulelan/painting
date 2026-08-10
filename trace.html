@@ -177,6 +177,31 @@ const REVIEW = /(^|[?&])review(=|&|$)/.test(location.search);
 const LSKEY = REVIEW ? 'ccp_roads_review' : 'ccp_roads_v1';
 const SEENKEY = 'ccp_roads_review_seen';   // proposal ids this browser has been shown
 const PROPOSED = id => id>=900;      // ids 900+ are proposals awaiting approval
+// A new road must never be given an id in the proposal range. It used to take
+// max(all ids)+1, so with proposal 1020 in the copy a freshly drawn road became
+// 1021 -- indistinguishable from a proposal, and any cleanup keyed on the range
+// would have deleted real work. Allocate below the range and the range means
+// what it says.
+function nextUserId(){
+  return paths.reduce((m,p)=>(p.id&&!PROPOSED(p.id))?Math.max(m,p.id):m,0)+1;
+}
+// Proposals that have been resolved -- merged, or withdrawn as wrong. They are
+// listed explicitly rather than matched by range, because a range rule cannot
+// tell a proposal from a road drawn while the allocator was broken. Anything
+// removed is stashed first, so nothing is destroyed.
+const RETIRED=[901,902,903,904,905,906,907,908,909,910,911,912,1000,1010,1020];
+function pruneRetired(){
+  const gone=paths.filter(p=>RETIRED.indexOf(p.id)>=0);
+  if(!gone.length) return [];
+  try{
+    const prev=JSON.parse(localStorage.getItem('ccp_roads_pruned')||'{"paths":[]}');
+    prev.paths=prev.paths.concat(gone); prev.when=new Date().toISOString();
+    localStorage.setItem('ccp_roads_pruned',JSON.stringify(prev));
+  }catch(e){}
+  paths=paths.filter(p=>RETIRED.indexOf(p.id)<0);
+  if(cur&&RETIRED.indexOf(cur.id)>=0) cur=null;
+  return gone.map(p=>p.id);
+}
 
 // ---- notes: a second, independent layer. Roads are geometry; notes are what a
 // thing is and why it matters. Different key, so neither can corrupt the other.
@@ -202,14 +227,14 @@ function loadInitial(){
   // in review mode the proposals file is the seed, not roads.js
   else if(!REVIEW && window.ROADS && window.ROADS.paths)
     paths=window.ROADS.paths.map(p=>({id:p.id,pts:p.pts}));
-  nextId = paths.reduce((m,p)=>Math.max(m,p.id||0),0)+1;
+  nextId = nextUserId();
 }
 function loadReview(){
   return fetch('assets/data/roads_review_import.json',{cache:'no-store'})
     .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
     .then(o=>{
       paths=(o.paths||[]).map(p=>({id:p.id,pts:p.pts}));
-      nextId=paths.reduce((m,p)=>Math.max(m,p.id||0),0)+1;
+      nextId=nextUserId();
       localStorage.setItem(SEENKEY, JSON.stringify(paths.filter(p=>PROPOSED(p.id)).map(p=>p.id)));
       save(); drawAll(); fit();
     });
@@ -229,7 +254,7 @@ function syncProposals(){
       localStorage.setItem(SEENKEY, JSON.stringify([...all]));
       if(!add.length) return null;
       add.forEach(p=>paths.push({id:p.id,pts:p.pts}));
-      nextId=paths.reduce((m,p)=>Math.max(m,p.id||0),0)+1;
+      nextId=nextUserId();
       save(); drawAll();
       cur=paths.find(p=>p.id===add[0].id); gotoPath(cur);
       return add.map(p=>p.id);
@@ -768,7 +793,7 @@ $('fImport').onchange=e=>{
       const j=txt.indexOf('{'), k=txt.lastIndexOf('}');
       const o=JSON.parse(txt.slice(j,k+1));
       paths=(o.paths||[]).map(p=>({id:p.id,pts:p.pts}));
-      nextId=paths.reduce((m,p)=>Math.max(m,p.id||0),0)+1;
+      nextId=nextUserId();
       cur=null; save(); drawAll();
     }catch(err){ alert('could not read that file: '+err.message); }
   };
@@ -787,7 +812,18 @@ if(REVIEW){
     loadReview().catch(err=>alert('could not load proposals: '+err.message));
   };
 }
-loadInitial(); loadNotes(); fit();
+loadInitial(); loadNotes();
+// Retired proposals are cleared from this browser's copy on load, in both modes.
+// Your own roads are untouched: they are matched by id against an explicit list,
+// never by range.
+(function(){
+  const gone=pruneRetired();
+  if(gone.length){ nextId=nextUserId(); save(); 
+    setTimeout(()=>{ $('sSave').textContent='cleared '+gone.length+
+      ' retired proposal'+(gone.length>1?'s':'')+' ('+gone.join(', ')+') — your roads are untouched'; },50);
+  }
+})();
+fit();
 // snap defaults off: it pulls a click toward the brightest nearby ridge, which is
 // the wrong instinct where the ridge next to the deck is not the deck.
 $('sSnap').textContent=$('cSnap').checked?'snap on':'snap off';
@@ -814,7 +850,7 @@ $('bKeepMine').onclick=()=>$('stale').classList.remove('on');
 $('bTakeLive').onclick=()=>{
   if(!window.ROADS) return;
   paths=window.ROADS.paths.map(p=>({id:p.id,pts:p.pts.map(q=>q.slice())}));
-  nextId=paths.reduce((m,p)=>Math.max(m,p.id||0),0)+1; cur=null;
+  nextId=nextUserId(); cur=null;
   save(); drawAll(); fit(); $('stale').classList.remove('on');
   $('sSave').textContent='replaced with the live version ('+paths.length+' paths)';
 };
