@@ -121,6 +121,7 @@ html,body{overscroll-behavior:none}
   <button id="bPublish">Publish…</button>
   <button id="bLink">Copy device link</button>
   <button id="bLoad">Load by name…</button>
+  <button id="bSync">Sync</button>
   <button id="bUndoMerge">Undo restore</button>
   <button id="bImport">Import…</button>
   <button id="tog">Paths ≡</button>
@@ -918,6 +919,55 @@ $('bUndoMerge').onclick=()=>{
   paths=prev.paths; if(prev.notes) notes=prev.notes;
   cur=null; nextId=nextUserId(); save(); saveNotes(); drawAll(); fit();
   $('sSave').textContent='restored '+n+' paths from before the last merge';
+};
+
+// ---------- sync ----------
+// One button. It uploads this device's trace and merges whatever the other
+// device left, under a single key, so there is no link to carry and no name to
+// remember. Needs a writable endpoint -- a static site cannot accept a save --
+// so tools/sync-worker.js is a 50-line Cloudflare Worker to paste and deploy.
+// The URL and write key are entered once per device and kept locally; they are
+// never in the page source, so nothing is exposed by the site being public.
+function syncCfg(ask){
+  let c=null;
+  try{ c=JSON.parse(localStorage.getItem('ccp_sync')||'null'); }catch(e){}
+  if(c&&c.url&&!ask) return c;
+  const url=(window.prompt('Sync endpoint URL (see tools/sync-worker.js):',(c&&c.url)||'')||'').trim();
+  if(!url) return null;
+  const key=(window.prompt('Write key (the secret you set on the worker):',(c&&c.key)||'')||'').trim();
+  c={url:url.replace(/\/+$/,''),key:key};
+  localStorage.setItem('ccp_sync',JSON.stringify(c));
+  return c;
+}
+$('bSync').onclick=()=>{
+  const c=syncCfg(false); if(!c){ $('sSave').textContent='sync not configured'; return; }
+  $('sSave').textContent='syncing…';
+  fetch(c.url+'/live',{cache:'no-store'})
+    .then(r=>r.ok?r.json():Promise.reject(new Error('HTTP '+r.status)))
+    .then(remote=>{
+      let pulled=0;
+      if(remote&&!remote.empty&&remote.paths){
+        // merge by id, then push the union back so both devices converge
+        remote.paths.forEach(p=>{
+          const i=paths.findIndex(q=>q.id===p.id);
+          if(i<0){ paths.push({id:p.id,pts:p.pts}); pulled++; }
+          else if(JSON.stringify(paths[i].pts)!==JSON.stringify(p.pts)
+                  && (remote.savedAt||'') > (localStorage.getItem('ccp_sync_at')||'')){
+            paths[i]={id:p.id,pts:p.pts}; pulled++;
+          }
+        });
+        (remote.notes||[]).forEach(n=>{ if(!notes.some(q=>q.id===n.id)){ notes.push(n); } });
+        if(pulled){ nextId=nextUserId(); save(); saveNotes(); drawAll(); }
+      }
+      return fetch(c.url+'/live',{method:'PUT',
+        headers:{'Content-Type':'application/json','X-Key':c.key},
+        body:JSON.stringify({paths:paths,notes:notes})})
+        .then(r=>r.ok?r.json():Promise.reject(new Error(r.status===403?'wrong write key':'HTTP '+r.status)))
+        .then(o=>{ localStorage.setItem('ccp_sync_at',o.savedAt||'');
+          $('sSave').textContent='synced — pulled '+pulled+', pushed '+paths.length+' paths'; });
+    })
+    .catch(e=>{ $('sSave').textContent='sync failed: '+e.message+
+      ' (press Sync again to re-enter the URL/key)'; syncCfg(true); });
 };
 
 // ---------- carry work between devices ----------
