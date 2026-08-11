@@ -69,6 +69,15 @@ kbd{background:#2a251d;border:1px solid #3d362b;border-radius:2px;padding:0 4px;
 #note .row button{flex:1}
 #noteXY{color:#6e6552;font-size:10px;margin-bottom:6px}
 #modeR.on,#modeN.on{background:#5a4a22;border-color:#8a7333;color:#f7ecc9}
+#pick{display:none;position:fixed;right:10px;bottom:38px;z-index:15;width:300px;
+  background:rgba(24,21,16,.98);border:1px solid #3b342a;border-radius:4px;padding:10px}
+#pick.on{display:block}
+#pick h4{margin:0 0 7px;font-size:10px;letter-spacing:2px;color:#6e6552;text-transform:uppercase}
+#pick .it{padding:6px 7px;border:1px solid #2f2a20;border-radius:2px;margin-bottom:5px;
+  cursor:pointer;font-size:12px;color:#cbbd9c}
+#pick .it:hover{background:#2e2820;color:#f0e6cd}
+#pick .it small{display:block;color:#7e7462;font-size:10px;margin-top:2px}
+#pick .row{display:flex;gap:6px}#pick .row button{flex:1}
 html,body{overscroll-behavior:none}
 @media(max-width:760px){
   #top{height:42px;flex-wrap:nowrap;gap:6px;padding:0 8px;overflow-x:auto;scrollbar-width:none}
@@ -111,6 +120,7 @@ html,body{overscroll-behavior:none}
   <button id="bSend">Send to Claude</button>
   <button id="bPublish">Publish…</button>
   <button id="bLink">Copy device link</button>
+  <button id="bLoad">Load by name…</button>
   <button id="bImport">Import…</button>
   <button id="tog">Paths ≡</button>
   <input type="file" id="fImport" accept=".js,.json" style="display:none">
@@ -147,6 +157,9 @@ html,body{overscroll-behavior:none}
   <textarea id="nText" placeholder="what is it, and what is worth knowing about it"></textarea>
   <div class="row"><button id="nDone">done</button><button id="nDel" class="danger">delete</button></div>
 </div>
+
+<div id="pick"><h4>Published traces</h4><div id="picklist">loading…</div>
+  <div class="row"><button id="pkClose">close</button></div></div>
 
 <div id="paths"><h3>Paths</h3><div id="plist"></div></div>
 
@@ -758,6 +771,9 @@ $('bPublish').onclick=()=>{
     const body={kind:'label', origin:location.origin, when:new Date().toISOString(),
                 roads:rd, notes:notes};
     const n=rd.edited.length+rd.added.length, summary=n+' road change'+(n===1?'':'s')+', '+notes.length+' note'+(notes.length===1?'':'s');
+    // a name, so another device can find this without a 2000-character URL
+    const nick=(window.prompt('Name this so you can pull it up on another device:',
+                 'wip '+new Date().toISOString().slice(5,16).replace('T',' '))||'').trim();
     if(location.hostname==='localhost'||location.hostname==='127.0.0.1'){
       return fetch('/_save',{method:'POST',headers:{'Content-Type':'application/json'},
                              body:JSON.stringify(body)})
@@ -767,7 +783,8 @@ $('bPublish').onclick=()=>{
     const json=JSON.stringify(body);
     const md='Pasted from the tracer.\n\n```json\n'+json+'\n```';
     const url='https://github.com/'+REPO+'/issues/new?title='+
-      encodeURIComponent('labels: '+summary)+'&body='+encodeURIComponent(md);
+      encodeURIComponent(nick? nick+' — '+summary : 'labels: '+summary)+
+      '&body='+encodeURIComponent(md);
     if(url.length<7500){
       // Always put the payload on the clipboard as well. The issue is only a
       // DRAFT until Submit is pressed, and "opened an issue" read as done —
@@ -784,6 +801,56 @@ $('bPublish').onclick=()=>{
     }
   }).catch(e=>{ $('sSave').textContent='publish failed: '+e.message; });
 };
+// One merge path for every source -- a link, or a published trace pulled by name.
+function mergeIncoming(inc,label){
+  const rd=inc.roads||{edited:[],added:[]};
+  const incoming=(rd.edited||[]).concat(rd.added||[]);
+  try{ localStorage.setItem('ccp_roads_beforelink',JSON.stringify({paths:paths,notes:notes})); }catch(e){}
+  incoming.forEach(p=>{ const i=paths.findIndex(q=>q.id===p.id);
+    if(i>=0) paths[i]={id:p.id,pts:p.pts}; else paths.push({id:p.id,pts:p.pts}); });
+  (inc.notes||[]).forEach(n=>{ const i=notes.findIndex(q=>q.id===n.id);
+    if(i>=0) notes[i]=n; else notes.push(n); });
+  nextId=nextUserId(); save(); saveNotes(); drawAll(); fit();
+  $('sSave').textContent='merged '+(label||'')+' — '+incoming.length+' road'+
+    (incoming.length===1?'':'s')+'; previous state kept in ccp_roads_beforelink';
+}
+// Pull a published trace by the name it was given. Reading public issues needs no
+// login and no token, so any device can fetch what any other device published.
+function parsePayload(body){
+  const m=/```json\s*([\s\S]*?)```/.exec(body)||/(\{[\s\S]*\})/.exec(body);
+  if(!m) return null;
+  try{ return JSON.parse(m[1]); }catch(e){ return null; }
+}
+$('bLoad').onclick=()=>{
+  $('pick').classList.add('on'); $('picklist').textContent='loading…';
+  fetch('https://api.github.com/repos/'+REPO+'/issues?state=all&per_page=20',
+        {headers:{'Accept':'application/vnd.github+json'}})
+    .then(r=>r.ok?r.json():Promise.reject(new Error('HTTP '+r.status)))
+    .then(list=>{
+      const el=$('picklist'); el.innerHTML='';
+      const rows=list.filter(i=>!i.pull_request);
+      if(!rows.length){ el.textContent='nothing published yet'; return; }
+      rows.forEach(it=>{
+        const inc=parsePayload(it.body||''); if(!inc) return;
+        const rd=inc.roads||{}, n=((rd.edited||[]).length+(rd.added||[]).length);
+        const div=document.createElement('div'); div.className='it';
+        div.innerHTML='<span></span><small></small>';
+        div.querySelector('span').textContent=it.title;
+        // closed means already merged into the live roads; still listed, because
+        // hiding it would make a trace vanish the moment it was accepted
+        div.querySelector('small').textContent='#'+it.number+' · '+n+' road'+(n===1?'':'s')+
+          ' · '+((inc.notes||[]).length)+' notes · '+new Date(it.created_at).toLocaleDateString()+
+          (it.state==='closed'?' · already merged live':'');
+        if(it.state==='closed') div.style.opacity='.6';
+        div.onclick=()=>{ mergeIncoming(inc,'“'+it.title+'”'); $('pick').classList.remove('on'); };
+        el.appendChild(div);
+      });
+      if(!el.children.length) el.textContent='published items carry no readable payload';
+    })
+    .catch(e=>{ $('picklist').textContent='could not load: '+e.message; });
+};
+$('pkClose').onclick=()=>$('pick').classList.remove('on');
+
 // ---------- carry work between devices ----------
 // localStorage never syncs, so a trace made on a phone is invisible on a laptop.
 // This puts the edits in a URL fragment: fragments are never sent to the server,
@@ -821,18 +888,8 @@ $('bLink').onclick=()=>{
   document.getElementById('wSkip').onclick=()=>{ bar.remove();
     history.replaceState(null,'',location.pathname+location.search); };
   document.getElementById('wTake').onclick=()=>{
-    try{ localStorage.setItem('ccp_roads_beforelink',JSON.stringify({paths:paths,notes:notes})); }catch(e){}
-    incoming.forEach(p=>{
-      const i=paths.findIndex(q=>q.id===p.id);
-      if(i>=0) paths[i]={id:p.id,pts:p.pts}; else paths.push({id:p.id,pts:p.pts});
-    });
-    (inc.notes||[]).forEach(n=>{
-      const i=notes.findIndex(q=>q.id===n.id);
-      if(i>=0) notes[i]=n; else notes.push(n);
-    });
-    nextId=nextUserId(); save(); saveNotes(); drawAll(); fit();
+    mergeIncoming(inc,'from link');
     bar.remove(); history.replaceState(null,'',location.pathname+location.search);
-    $('sSave').textContent='merged from link — previous state kept in ccp_roads_beforelink';
   };
 })();
 $('bImport').onclick=()=>$('fImport').click();
