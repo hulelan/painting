@@ -821,9 +821,60 @@ function parsePayload(body){
   if(!m) return null;
   try{ return JSON.parse(m[1]); }catch(e){ return null; }
 }
+// Named traces served from THIS site: assets/data/wip/<name>.json, listed in
+// index.json. No GitHub, no api.github.com, no login — some networks block all
+// three. ?load=<name> opens one directly, which is the whole point: a short URL
+// you can type from memory on a machine that cannot reach anything else.
+function loadNamed(name){
+  return fetch('assets/data/wip/'+encodeURIComponent(name)+'.json',{cache:'no-store'})
+    .then(r=>r.ok?r.json():Promise.reject(new Error('no trace called “'+name+'”')));
+}
+(function(){
+  const m=/[?&]load=([A-Za-z0-9_\-]+)/.exec(location.search); if(!m) return;
+  loadNamed(m[1]).then(inc=>{
+    const rd=inc.roads||{}, n=((rd.edited||[]).length+(rd.added||[]).length);
+    const bar=document.createElement('div'); bar.id='stale'; bar.className='on';
+    bar.innerHTML='<b>“'+m[1]+'”</b> <span></span> '+
+      '<button id="nTake">merge it in</button><button id="nSkip">ignore</button>';
+    bar.querySelector('span').textContent=n+' road'+(n===1?'':'s')+' and '+
+      ((inc.notes||[]).length)+' note'+((inc.notes||[]).length===1?'':'s')+' in this trace.';
+    document.body.appendChild(bar);
+    document.getElementById('nSkip').onclick=()=>bar.remove();
+    document.getElementById('nTake').onclick=()=>{ mergeIncoming(inc,'“'+m[1]+'”'); bar.remove(); };
+  }).catch(e=>{ $('sSave').textContent=e.message; });
+})();
 $('bLoad').onclick=()=>{
   $('pick').classList.add('on'); $('picklist').textContent='loading…';
-  fetch('https://api.github.com/repos/'+REPO+'/issues?state=all&per_page=20',
+  // this site first; GitHub only as a fallback, and only if it is reachable
+  fetch('assets/data/wip/index.json',{cache:'no-store'})
+    .then(r=>r.ok?r.json():{items:[]})
+    .then(ix=>{
+      const el=$('picklist');
+      if(ix.items&&ix.items.length){
+        el.innerHTML='';
+        ix.items.forEach(it=>{
+          const div=document.createElement('div'); div.className='it';
+          div.innerHTML='<span></span><small></small>';
+          div.querySelector('span').textContent=it.name;
+          div.querySelector('small').textContent=(it.roads||0)+' roads · '+(it.notes||0)+
+            ' notes · '+(it.when||'')+' · /trace.html?load='+it.name;
+          div.onclick=()=>loadNamed(it.name).then(inc=>{
+            mergeIncoming(inc,'“'+it.name+'”'); $('pick').classList.remove('on'); })
+            .catch(e=>{ el.textContent=e.message; });
+          el.appendChild(div);
+        });
+        return null;
+      }
+      return 'fallback';
+    })
+    .then(f=>{ if(f!=='fallback') return;
+      $('picklist').textContent='nothing published to this site yet — checking GitHub…';
+      return fetchGithubList();
+    })
+    .catch(()=>fetchGithubList());
+};
+function fetchGithubList(){
+  return fetch('https://api.github.com/repos/'+REPO+'/issues?state=all&per_page=20',
         {headers:{'Accept':'application/vnd.github+json'}})
     .then(r=>r.ok?r.json():Promise.reject(new Error('HTTP '+r.status)))
     .then(list=>{
@@ -847,8 +898,9 @@ $('bLoad').onclick=()=>{
       });
       if(!el.children.length) el.textContent='published items carry no readable payload';
     })
-    .catch(e=>{ $('picklist').textContent='could not load: '+e.message; });
-};
+    .catch(e=>{ $('picklist').textContent=
+        'nothing on this site, and GitHub is unreachable from here ('+e.message+')'; });
+}
 $('pkClose').onclick=()=>$('pick').classList.remove('on');
 
 // ---------- carry work between devices ----------

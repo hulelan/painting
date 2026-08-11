@@ -1,0 +1,12 @@
+{
+ "note": "Named traces. Each entry points at a file in this folder, fetched from this site only — no GitHub, no login. Open one at /trace.html?load=<name>",
+ "items": [
+  {
+   "name": "live",
+   "roads": 10,
+   "notes": 0,
+   "when": "2026-08-11",
+   "what": "every road currently published on the site"
+  }
+ ]
+}
