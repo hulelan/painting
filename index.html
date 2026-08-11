@@ -133,6 +133,25 @@ body.bg-dawn{ --th-bg:#fdf6ef; --th-bg2:#f7f0f3; --th-ink:#6b6069; --th-muted:#9
   color:var(--th-muted,#7a6f5a);display:none}
 body.bgtag #bgTag{display:block}
 
+/* ---- pictograms, switched with ?icons=1 --------------------------------
+   Each zoom icon is the SHAPE OF THE WINDOW that mode gives you: four stacked
+   bars for the four-row fold, one wide bar for full breadth, a near-square for
+   the pane, a marquee around a crop for a detail. The perspectives are the
+   thing itself — a frame with a block sliding in it, rings, a winding line.
+   With icons the headings are redundant, so they go. */
+body.icons .sect h2{display:none}
+body.icons .sect{margin-bottom:22px}
+body.icons #track{margin-top:2px}
+body.icons .stop .lb{margin-top:6px;line-height:0}
+body.icons .persp .lb{line-height:0;display:inline-flex;align-items:center}
+body.icons .ico{display:block;width:26px;height:26px}
+body.icons .stop .ico{margin:0 auto}
+body.icons .persp .ico{width:30px;height:22px}
+.ico{fill:none;stroke:currentColor;stroke-width:1.6;
+  stroke-linecap:square;stroke-linejoin:miter;vector-effect:non-scaling-stroke}
+.ico .f{fill:currentColor;stroke:none}
+body.topbar.icons .stop .lb{margin-top:3px}
+body.topbar.icons .ico{width:22px;height:22px}
 #marks{position:absolute;inset:0;z-index:7;pointer-events:none;display:none}
 .mk{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;
   border:1px solid rgba(233,209,150,.5);pointer-events:auto;cursor:pointer;
@@ -551,7 +570,8 @@ function buildTrack(){
     const el=document.createElement('div');
     el.className='stop'; el.dataset.k=k;
     el.style.left=(i/(stops.length-1))*100+'%';
-    el.innerHTML='<div class="dot"></div><div class="lb">'+label+'</div>';
+    el.innerHTML='<div class="dot"></div><div class="lb"></div>';
+    iconise(el.querySelector('.lb'),k,label);
     el.addEventListener('click',()=>setMode(k));
     track.appendChild(el);
   });
@@ -753,18 +773,42 @@ document.querySelectorAll('.persp').forEach(el=>{
   });
 });
 
+// ?icons=1 replaces the panel's words with pictograms.
+const ICONS_ON=/[?&]icons=1/.test(location.search);
+const ICO={
+  fold:'<rect class="f" x="3" y="3" width="18" height="3"/><rect class="f" x="3" y="8.5" width="18" height="3"/>'+
+       '<rect class="f" x="3" y="14" width="18" height="3"/><rect class="f" x="3" y="19.5" width="18" height="3"/>',
+  wide:'<rect class="f" x="1" y="9.5" width="22" height="5"/>',
+  pane:'<rect class="f" x="6" y="4" width="12" height="16"/>',
+  custom:'<rect x="3" y="3" width="18" height="18" stroke-dasharray="3 2.4"/><rect class="f" x="9" y="9" width="6" height="6"/>',
+  loc:'<rect x="1.5" y="8.5" width="21" height="7"/><rect class="f" x="5" y="8.5" width="5" height="7"/>',
+  marks:'<circle cx="7" cy="9" r="2.2"/><circle cx="16" cy="7" r="2.2"/>'+
+        '<circle cx="11" cy="17" r="2.2"/><circle cx="19.5" cy="15" r="2.2"/>',
+  roads:'<path d="M2 17 L6 12 L10 14 L14 8 L18 10 L22 6" stroke-width="2"/>'
+};
+function ico(k){
+  return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">'+(ICO[k]||'')+'</svg>';
+}
+// Words become the accessible name and the tooltip, so nothing is lost by
+// dropping them from the screen.
+function iconise(el,key,word){
+  if(!el) return;
+  if(ICONS_ON&&ICO[key]){ el.innerHTML=ico(key); el.setAttribute('aria-label',word); el.title=word; }
+  else el.textContent=word;
+}
 // --- language --------------------------------------------------------------
 function applyLang(){
+  if(ICONS_ON) document.body.classList.add('icons');
   document.documentElement.lang = lang==='en'?'en':'zh-Hans';
   $('hZoom').textContent=t('zoom'); $('hPersp').textContent=t('persp');
   $('lang').textContent=t('lang');
   // the chevron IS the label; the translated string becomes its tooltip
   $('back').title=t('back'); $('back').setAttribute('aria-label',t('back'));
   $('title').textContent=t('title');
-  document.querySelector('.persp[data-t="loc"] .lb').textContent=t('loc');
-  document.querySelector('.persp[data-t="marks"] .lb').textContent=t('marks');
+  iconise(document.querySelector('.persp[data-t="loc"] .lb'),'loc',t('loc'));
+  iconise(document.querySelector('.persp[data-t="marks"] .lb'),'marks',t('marks'));
   const rp=document.querySelector('.persp[data-t="roads"]');
-  rp.querySelector('.lb').textContent=t('roads');
+  iconise(rp.querySelector('.lb'),'roads',t('roads'));
   rp.classList.toggle('off', ROADS.length===0);
   rp.title = ROADS.length? '' : 'no roads traced yet — use trace.html';
   const mp=document.querySelector('.persp[data-t="marks"]');
