@@ -121,6 +121,7 @@ html,body{overscroll-behavior:none}
   <button id="bPublish">Publish…</button>
   <button id="bLink">Copy device link</button>
   <button id="bLoad">Load by name…</button>
+  <button id="bUndoMerge">Undo restore</button>
   <button id="bImport">Import…</button>
   <button id="tog">Paths ≡</button>
   <input type="file" id="fImport" accept=".js,.json" style="display:none">
@@ -903,6 +904,22 @@ function fetchGithubList(){
 }
 $('pkClose').onclick=()=>$('pick').classList.remove('on');
 
+// Every destructive path -- replace-with-live, merge a link, merge a name --
+// stashes the previous state under one key. This puts it back.
+$('bUndoMerge').onclick=()=>{
+  let prev=null;
+  try{ prev=JSON.parse(localStorage.getItem('ccp_roads_beforelink')||'null'); }catch(e){}
+  if(!prev||!prev.paths){ $('sSave').textContent='nothing to undo'; return; }
+  const n=prev.paths.length;
+  if(!window.confirm('Put back the copy from before the last merge or restore? '+
+     'It has '+n+' path'+(n===1?'':'s')+'. The current copy is kept, so this is reversible.')) return;
+  try{ localStorage.setItem('ccp_roads_redo',
+       JSON.stringify({paths:paths,notes:notes,when:new Date().toISOString()})); }catch(e){}
+  paths=prev.paths; if(prev.notes) notes=prev.notes;
+  cur=null; nextId=nextUserId(); save(); saveNotes(); drawAll(); fit();
+  $('sSave').textContent='restored '+n+' paths from before the last merge';
+};
+
 // ---------- carry work between devices ----------
 // localStorage never syncs, so a trace made on a phone is invisible on a laptop.
 // This puts the edits in a URL fragment: fragments are never sent to the server,
@@ -1010,10 +1027,15 @@ if(!REVIEW && hadSaved && window.ROADS && window.ROADS.paths){
 $('bKeepMine').onclick=()=>$('stale').classList.remove('on');
 $('bTakeLive').onclick=()=>{
   if(!window.ROADS) return;
+  // This discards the whole local set, so keep a copy first. It shipped without
+  // one, which made a single click an unrecoverable way to lose unsent work.
+  try{ localStorage.setItem('ccp_roads_beforelink',
+       JSON.stringify({paths:paths,notes:notes,when:new Date().toISOString()})); }catch(e){}
   paths=window.ROADS.paths.map(p=>({id:p.id,pts:p.pts.map(q=>q.slice())}));
   nextId=nextUserId(); cur=null;
   save(); drawAll(); fit(); $('stale').classList.remove('on');
-  $('sSave').textContent='replaced with the live version ('+paths.length+' paths)';
+  $('sSave').textContent='replaced with the live version ('+paths.length+
+    ' paths) — the previous copy is recoverable with “Undo restore”';
 };
 if(REVIEW){
   (hadSaved ? syncProposals() : loadReview()
