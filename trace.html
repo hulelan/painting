@@ -110,6 +110,7 @@ html,body{overscroll-behavior:none}
   <button id="bDiff">Copy my edits</button>
   <button id="bSend">Send to Claude</button>
   <button id="bPublish">Publish…</button>
+  <button id="bLink">Copy device link</button>
   <button id="bImport">Import…</button>
   <button id="tog">Paths ≡</button>
   <input type="file" id="fImport" accept=".js,.json" style="display:none">
@@ -783,6 +784,57 @@ $('bPublish').onclick=()=>{
     }
   }).catch(e=>{ $('sSave').textContent='publish failed: '+e.message; });
 };
+// ---------- carry work between devices ----------
+// localStorage never syncs, so a trace made on a phone is invisible on a laptop.
+// This puts the edits in a URL fragment: fragments are never sent to the server,
+// so the payload stays on your devices and needs no account, token or backend.
+function b64e(str){ return btoa(unescape(encodeURIComponent(str)))
+  .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function b64d(str){ str=str.replace(/-/g,'+').replace(/_/g,'/');
+  return decodeURIComponent(escape(atob(str))); }
+$('bLink').onclick=()=>{
+  roadsDiff().then(rd=>{
+    const payload={v:1,roads:rd,notes:notes};
+    const url=location.origin+location.pathname+location.search+'#w='+b64e(JSON.stringify(payload));
+    const n=rd.edited.length+rd.added.length;
+    if(url.length>60000){ $('sSave').textContent='too much to carry in a link — use Publish'; return; }
+    navigator.clipboard.writeText(url).then(
+      ()=>{ $('sSave').textContent='link copied ('+n+' road change'+(n===1?'':'s')+', '+
+              notes.length+' note'+(notes.length===1?'':'s')+') — open it on the other device'; },
+      ()=>{ $('sSave').textContent='clipboard blocked; link is in the console'; console.log(url); });
+  }).catch(e=>{ $('sSave').textContent='link failed: '+e.message; });
+};
+// Arriving with a link: never merge silently, and never lose what is already here.
+(function(){
+  const m=/[#&]w=([A-Za-z0-9\-_]+)/.exec(location.hash); if(!m) return;
+  let inc; try{ inc=JSON.parse(b64d(m[1])); }catch(e){ return; }
+  const rd=inc.roads||{edited:[],added:[]};
+  const incoming=(rd.edited||[]).concat(rd.added||[]);
+  const nNotes=(inc.notes||[]).length;
+  if(!incoming.length && !nNotes) return;
+  const bar=document.createElement('div'); bar.id='stale'; bar.className='on';
+  bar.innerHTML='<b>From another device</b> <span></span> '+
+    '<button id="wTake">merge it in</button><button id="wSkip">ignore</button>';
+  bar.querySelector('span').textContent=incoming.length+' road'+(incoming.length===1?'':'s')+
+    ' and '+nNotes+' note'+(nNotes===1?'':'s')+' are carried in this link.';
+  document.body.appendChild(bar);
+  document.getElementById('wSkip').onclick=()=>{ bar.remove();
+    history.replaceState(null,'',location.pathname+location.search); };
+  document.getElementById('wTake').onclick=()=>{
+    try{ localStorage.setItem('ccp_roads_beforelink',JSON.stringify({paths:paths,notes:notes})); }catch(e){}
+    incoming.forEach(p=>{
+      const i=paths.findIndex(q=>q.id===p.id);
+      if(i>=0) paths[i]={id:p.id,pts:p.pts}; else paths.push({id:p.id,pts:p.pts});
+    });
+    (inc.notes||[]).forEach(n=>{
+      const i=notes.findIndex(q=>q.id===n.id);
+      if(i>=0) notes[i]=n; else notes.push(n);
+    });
+    nextId=nextUserId(); save(); saveNotes(); drawAll(); fit();
+    bar.remove(); history.replaceState(null,'',location.pathname+location.search);
+    $('sSave').textContent='merged from link — previous state kept in ccp_roads_beforelink';
+  };
+})();
 $('bImport').onclick=()=>$('fImport').click();
 $('fImport').onchange=e=>{
   const f=e.target.files[0]; if(!f) return;
