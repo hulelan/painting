@@ -251,6 +251,9 @@ body.topbar.icons .ico{width:22px;height:22px}
   display:inline-flex;align-items:center;justify-content:center;
   transition:color .3s, border-color .3s}
 #lang:hover,#back:hover{color:#efe3c6;border-color:rgba(217,180,90,.5)}
+/* third stop on the toggle: the button becomes a picture of pictures */
+#lang.asIcon{width:30px;height:26px;padding:0;letter-spacing:0}
+#lang.asIcon .ico{display:block;width:14px;height:14px}
 /* a bare chevron: unmistakable, and it stops competing with the painting */
 #back{font-size:15px;letter-spacing:0;line-height:1;width:30px;height:26px;padding:0}
 #title{font-size:12px;letter-spacing:3px;color:#5f5748;pointer-events:none;
@@ -353,16 +356,26 @@ const desk=$('desk'), win=$('window'), rail=$('rail'), rollL=$('rollL'), rollR=$
 const I18N={
   en:{zoom:'Zoom', persp:'Perspectives', whole:'Whole', pane:'Pane', detail:'Detail',
       wide:'Wide', loc:'Locator', marks:'Things', roads:'Roads', lang:'中', back:'Return to Cabinet',
+      uiZh:'中文', uiEn:'English', uiIco:'pictograms — no words',
       hidden:'hidden — click the painting to find them', found:'you found',
       title:'A Thousand Li of Rivers and Mountains · Wang Ximeng · Northern Song',
       seg:(i,n)=> i===0?'1 · opening' : i===n-1? n+' · end' : String(i+1)},
   zh:{zoom:'縮放', persp:'視角', whole:'全卷', pane:'展卷', detail:'細看',
       wide:'通幅', loc:'卷影', marks:'物', roads:'道路', lang:'EN', back:'返回畫匣',
+      uiZh:'中文', uiEn:'English', uiIco:'圖示 —— 不用文字',
       hidden:'已隱藏 —— 點畫面自己找', found:'你找到了',
       title:'千里江山圖　王希孟　北宋',
       seg:(i,n)=> i===0?'一（起首）' : i===n-1? String(n)+'（卷末）' : String(i+1)}
 };
-let lang=localStorage.getItem('ccp_lang')||'zh';
+// The toggle has three stops, not two: 中 → EN → pictograms → 中.
+// `ui` is the stop; `lang` is the language the words are in. Pictograms keep
+// whichever language you last read, so the tooltips still make sense, and the
+// few words the mode can't replace (the scroll's own name) stay in Chinese.
+const UI_NEXT={zh:'en', en:'ico', ico:'zh'};
+let ui=/[?&]icons=1/.test(location.search) ? 'ico'
+      : (localStorage.getItem('ccp_ui')||localStorage.getItem('ccp_lang')||'zh');
+if(!UI_NEXT[ui]) ui='zh';
+let lang = ui==='ico' ? (localStorage.getItem('ccp_lang')||'zh') : ui;
 const t=k=>I18N[lang][k];
 
 let mode='pane', showLoc=false, showMarks=false, showRoads=false, customUsed=false;
@@ -773,9 +786,13 @@ document.querySelectorAll('.persp').forEach(el=>{
   });
 });
 
-// ?icons=1 replaces the panel's words with pictograms.
-const ICONS_ON=/[?&]icons=1/.test(location.search);
+// Pictogram mode (the third stop on the toggle, or ?icons=1) replaces the
+// panel's words with shapes.
+let ICONS_ON = ui==='ico';
 const ICO={
+  // the toggle's own label when the next stop is pictograms: four plain shapes
+  ui:'<rect x="2.5" y="2.5" width="8" height="8"/><rect class="f" x="13.5" y="2.5" width="8" height="8"/>'+
+     '<circle cx="6.5" cy="17.5" r="4"/><path d="M17.5 13 L21.5 21.5 L13.5 21.5 Z"/>',
   fold:'<rect class="f" x="3" y="3" width="18" height="3"/><rect class="f" x="3" y="8.5" width="18" height="3"/>'+
        '<rect class="f" x="3" y="14" width="18" height="3"/><rect class="f" x="3" y="19.5" width="18" height="3"/>',
   wide:'<rect class="f" x="1" y="9.5" width="22" height="5"/>',
@@ -798,13 +815,21 @@ function iconise(el,key,word){
 }
 // --- language --------------------------------------------------------------
 function applyLang(){
-  if(ICONS_ON) document.body.classList.add('icons');
+  ICONS_ON = ui==='ico';
+  document.body.classList.toggle('icons', ICONS_ON);
   document.documentElement.lang = lang==='en'?'en':'zh-Hans';
   $('hZoom').textContent=t('zoom'); $('hPersp').textContent=t('persp');
-  $('lang').textContent=t('lang');
+  // the button shows the stop you'd land on next, which is how it read before
+  const nxt=UI_NEXT[ui], L=$('lang');
+  L.classList.toggle('asIcon', nxt==='ico');
+  if(nxt==='ico') L.innerHTML=ico('ui');
+  else L.textContent = nxt==='en' ? 'EN' : '中';
+  L.title=t(nxt==='zh'?'uiZh':nxt==='en'?'uiEn':'uiIco');
+  L.setAttribute('aria-label',L.title);
   // the chevron IS the label; the translated string becomes its tooltip
   $('back').title=t('back'); $('back').setAttribute('aria-label',t('back'));
-  $('title').textContent=t('title');
+  // pictograms are wordless, so the one caption left keeps the scroll's own name
+  $('title').textContent = ICONS_ON ? I18N.zh.title : t('title');
   iconise(document.querySelector('.persp[data-t="loc"] .lb'),'loc',t('loc'));
   iconise(document.querySelector('.persp[data-t="marks"] .lb'),'marks',t('marks'));
   const rp=document.querySelector('.persp[data-t="roads"]');
@@ -817,7 +842,10 @@ function applyLang(){
   buildTrack(); if(mode==='fold') layoutFold();
 }
 $('lang').addEventListener('click',()=>{
-  lang = lang==='en'?'zh':'en'; localStorage.setItem('ccp_lang',lang); applyLang();
+  ui=UI_NEXT[ui];
+  if(ui!=='ico'){ lang=ui; localStorage.setItem('ccp_lang',lang); }
+  localStorage.setItem('ccp_ui',ui);
+  applyLang();
 });
 addEventListener('keydown',e=>{
   if(e.key==='1') setMode('fold'); else if(e.key==='2') setMode('wide');
