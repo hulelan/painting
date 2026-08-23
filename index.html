@@ -372,8 +372,13 @@ const I18N={
 // whichever language you last read, so the tooltips still make sense, and the
 // few words the mode can't replace (the scroll's own name) stay in Chinese.
 const UI_NEXT={zh:'en', en:'ico', ico:'zh'};
+// Pictograms are the default arrival: the panel says what it does in shapes,
+// which needs no language at all. The words are one tap away and remembered.
+// Only an explicit choice on this toggle is honoured -- ccp_lang is written by
+// the cabinet too, so falling back to it would hand most visitors words they
+// never asked for.
 let ui=/[?&]icons=1/.test(location.search) ? 'ico'
-      : (localStorage.getItem('ccp_ui')||localStorage.getItem('ccp_lang')||'zh');
+      : (localStorage.getItem('ccp_ui')||'ico');
 if(!UI_NEXT[ui]) ui='zh';
 let lang = ui==='ico' ? (localStorage.getItem('ccp_lang')||'zh') : ui;
 const t=k=>I18N[lang][k];
