@@ -124,7 +124,8 @@ html,body{overscroll-behavior:none}
   <button id="bImport">Import…</button>
   <button id="tog">Paths ≡</button>
   <input type="file" id="fImport" accept=".js,.json" style="display:none">
-  <span id="hint">drag = pan · click = add point · drag a handle = move · ⌥click handle = delete
+  <span id="hint"><b style="color:#e8e2d2">—</b> live · <b style="color:#8fd6a0">—</b> yours · <b style="color:#ffb86a">—</b> edited · <b style="color:#7fd4ff">—</b> proposal<br>
+    drag = pan · click = add point · drag a handle = move · ⌥click handle = delete
     <em style="color:#6e6552">(phone: one finger pans, tap adds, pinch zooms, hold a handle to delete)</em></span>
 </div>
 
@@ -139,6 +140,7 @@ html,body{overscroll-behavior:none}
   <a href="trace.html">back to my trace</a></div>
 
 <div id="stale"><b>Heads up</b> <span id="staleMsg"></span>
+  <button id="bAddMissing">add the ones I lack</button>
   <button id="bTakeLive">use the live version</button>
   <button id="bKeepMine">keep mine</button></div>
 
@@ -196,6 +198,13 @@ const PROPOSED = id => id>=900;      // ids 900+ are proposals awaiting approval
 // 1021 -- indistinguishable from a proposal, and any cleanup keyed on the range
 // would have deleted real work. Allocate below the range and the range means
 // what it says.
+// What is already published, so the tracer can show it as such. A road you can
+// see in cream is on the live site and does not need drawing again; anything
+// green is yours and has not been published yet. Without this the two look
+// identical and the only way to tell is to remember.
+const PUB=new Map(((window.ROADS&&window.ROADS.paths)||[]).map(p=>[p.id,JSON.stringify(p.pts)]));
+const pubState = p => !PUB.has(p.id) ? 'mine'
+                    : (PUB.get(p.id)===JSON.stringify(p.pts) ? 'live' : 'edited');
 function nextUserId(){
   return paths.reduce((m,p)=>(p.id&&!PROPOSED(p.id))?Math.max(m,p.id):m,0)+1;
 }
@@ -363,10 +372,15 @@ function drawAll(){
     } else {
       const sel = cur&&cur.id===p.id;
       const prop = PROPOSED(p.id);
+      const st = pubState(p);
+      const hue = prop ? '#7fd4ff'                     // machine proposal
+                : st==='mine' ? '#8fd6a0'              // yours, not published
+                : st==='edited' ? '#ffb86a'            // published, you changed it
+                : '#e8e2d2';                           // published, untouched
       ov.appendChild(mk('path',{d:d,fill:'none',stroke:'rgba(0,0,0,.5)','stroke-width':4,
         'vector-effect':'non-scaling-stroke','stroke-linecap':'round'}));
       ov.appendChild(mk('path',Object.assign({d:d,fill:'none',
-        stroke:sel?'#ffd76a':(prop?'#7fd4ff':'#e8e2d2'),'stroke-width':sel?2.4:1.6,
+        stroke:sel?'#ffd76a':hue,'stroke-width':sel?2.4:1.6,
         'vector-effect':'non-scaling-stroke','stroke-linecap':'round'},
         prop&&!sel?{'stroke-dasharray':'7 4'}:{})));
     }
@@ -407,7 +421,9 @@ function drawAll(){
   ov.style.pointerEvents='none';            // handles are hit-tested by distance
   $('sCount').textContent = MODE==='notes'
       ? notes.length+' notes'
-      : paths.length+' paths · '+paths.reduce((n,p)=>n+p.pts.length,0)+' points';
+      : (()=>{ const mine=paths.filter(p=>!PROPOSED(p.id)&&pubState(p)!=='live').length;
+               return paths.length+' paths · '+paths.reduce((n,p)=>n+p.pts.length,0)+' points'+
+                      (mine? ' · '+mine+' unpublished':''); })();
   renderList();
 }
 function mk(t,a){ const e=document.createElementNS(SVGNS,t);
@@ -418,9 +434,11 @@ function renderList(){
   paths.forEach(p=>{
     const row=document.createElement('div');
     row.className='row'+(cur&&cur.id===p.id?' sel':'');
-    const prop=PROPOSED(p.id);
-    row.innerHTML='<span class="sw"'+(prop?' style="background:#7fd4ff"':'')+'></span>'+
-      (prop?'proposed ':'path ')+p.id+' · '+p.pts.length+'<span class="x">✕</span>';
+    const prop=PROPOSED(p.id), st=pubState(p);
+    const sw = prop?'#7fd4ff' : st==='mine'?'#8fd6a0' : st==='edited'?'#ffb86a' : '#e8e2d2';
+    const tag = prop?'proposed ' : st==='mine'?'new ' : st==='edited'?'edited ' : 'path ';
+    row.innerHTML='<span class="sw" style="background:'+sw+'"></span>'+
+      tag+p.id+' · '+p.pts.length+'<span class="x">✕</span>';
     row.addEventListener('click',ev=>{
       if(ev.target.className==='x'){ paths=paths.filter(q=>q!==p); if(cur===p)cur=null; save(); drawAll(); return; }
       cur=p; gotoPath(p); drawAll();
@@ -1009,6 +1027,21 @@ if(!REVIEW && hadSaved && window.ROADS && window.ROADS.paths){
   }
 }
 $('bKeepMine').onclick=()=>$('stale').classList.remove('on');
+// The safe half of "use the live version": add published roads this browser has
+// never seen and touch nothing else. This is what stops the same road being
+// traced twice -- once here, once on the phone -- without putting a single
+// local edit at risk.
+$('bAddMissing').onclick=()=>{
+  if(!window.ROADS) return;
+  const have=new Set(paths.map(p=>p.id));
+  const add=window.ROADS.paths.filter(p=>!have.has(p.id));
+  if(!add.length){ $('sSave').textContent='nothing missing — you already have every published road'; return; }
+  add.forEach(p=>paths.push({id:p.id,pts:p.pts.map(q=>q.slice())}));
+  nextId=nextUserId(); save(); drawAll();
+  $('stale').classList.remove('on');
+  $('sSave').textContent='added '+add.length+' published road'+(add.length>1?'s':'')+
+    ' (path '+add.map(p=>p.id).join(', ')+') — nothing of yours was changed';
+};
 $('bTakeLive').onclick=()=>{
   if(!window.ROADS) return;
   // This discards the whole local set, so keep a copy first. It shipped without
