@@ -64,23 +64,32 @@ or Sync if you have annotated anything.
   button calls it, but until it is deployed to a Cloudflare account the only
   cross-device routes are the device link and a hand-committed named trace.
 
-## Views (original note)
-
-| Tab | File | What it is |
-|---|---|---|
-| 展卷 | `index.html` | Immersive full-height scroll. Opens at the right and unrolls leftward, the way a handscroll is actually read. |
-| 叠卷 | `grid.html` | The whole scroll folded into four equal bands — rightmost (the opening) on top, leftmost (the end) at the bottom — so the entire composition is visible at once. |
-
 ## Structure
 
 ```
-index.html            展卷 — immersive viewer
-grid.html             叠卷 — four-band overview
+index.html            the viewer
+cabinet.html          the case — the front door
+trace.html            the workbench — roads + objects
+grid.html             叠卷 — four-band overview      ) earlier viewers,
+classic.html          展卷 — first scrolling viewer  ) still served,
+nav.html              导览 — viewer + thumbnail rail ) not linked to
+view.html             redirect to ./
 css/shell.css         two-layer tab strip, shared with the poetry site
+css/type.css          type scale; ?font=a restores the serif pairing
 assets/scroll/
   manifest.js         window.SCROLL — dimensions + tile list
   tiles/tile-NN.jpg   21 full-height strips, 2048px wide (24 MB total)
 assets/grid/row-N.jpg 4 downscaled bands (2.8 MB total)
+assets/data/
+  roads.js            LIVE — 15 hand-traced paths
+  things.js           LIVE — object catalogue the Things overlay reads
+  episodes.js         LIVE — named stretches of the scroll
+  details.js          LIVE — the seeded detail marks
+  roads_proposed.js   empty; proposals that were reviewed and dropped
+  *_qwen.js           machine output — proposals only, nothing reads these
+  wip/<name>.json     named traces, pulled by trace.html?load=<name>
+tools/sync-worker.js  Cloudflare worker for the Sync button — NOT deployed
+docs/                 labelling protocol, road-model proposal, model write-ups
 CNAME                 classicalchinesepainting.com
 ```
 
