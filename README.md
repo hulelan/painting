@@ -6,7 +6,65 @@ Rivers and Mountains*, Northern Song, ink and colour on silk).
 Sister site to [诗渊 · classicalchinesepoetry.com](https://classicalchinesepoetry.com) —
 the two are linked only by the tab strip at the top of every page.
 
-## Views
+## Pages
+
+| Page | What it is | Can you edit anything on it? |
+|---|---|---|
+| `index.html` | The viewer. Full-height handscroll, opens at the right. Four zooms (whole / wide / pane / detail), three overlays (locator, things, roads). Toggle cycles 中 → EN → pictograms. `?bg=` `?rolls=` `?font=` `?icons=1`. | No — read-only |
+| `cabinet.html` | The case. Two doors: this scroll, and the poetry site. | No |
+| `trace.html` | The workbench. Two modes: **Roads** (draw polylines) and **Objects** (draw a box, give it a title and a note). Everything lives in this browser's localStorage. `?review` opens a scratch copy for correcting machine proposals; `?load=<name>` pulls a named trace. | **Yes — this is the only page you can edit on** |
+| `grid.html` | 叠卷 — the scroll folded into four bands, whole composition at once. Predates the viewer. | No |
+| `classic.html` | 展卷 — the first scrolling viewer. Superseded by `index.html`. | No |
+| `nav.html` | 导览 — viewer with a thumbnail strip. Superseded. | No |
+| `view.html` | A redirect to `./`, kept so old links work. | — |
+
+`grid`, `classic` and `nav` are reachable only if you know the filename; the
+cabinet links to `index.html` alone.
+
+## The five ways something gets added
+
+1. **Roads mode**, `trace.html` — you draw the geometry.
+2. **Objects mode**, `trace.html` — you draw a box and write a note on it.
+3. **Review mode**, `trace.html?review` — you correct a machine proposal instead
+   of drawing from scratch.
+4. **A model sweep** — Qwen over the tiles via OpenRouter, run offline. Produces
+   `*_qwen.js` proposals, never live data.
+5. **A commit** to `assets/data/*.js` — the only thing the public site reads.
+
+Everything in 1–4 is a draft. Step 5 is the publication, and it is a commit, so
+it is reviewable and revertible. There is no path from a browser to the live site
+that skips it.
+
+## The eight ways work leaves a browser
+
+localStorage is per-device and never syncs, so a trace made on a phone is
+invisible on a laptop until one of these is used.
+
+| Button | Carries | Needs |
+|---|---|---|
+| Export roads.js | roads only | — |
+| Copy JSON | roads only | — |
+| Copy my edits | roads only, as a diff vs the published file | — |
+| Send to Claude | roads only | a local server (`POST /_save`); dead on GitHub Pages |
+| Publish… | roads **and** notes | opens a prefilled GitHub issue; also copies to clipboard |
+| Copy device link | roads **and** notes | nothing — the payload rides in a `#w=` fragment, never sent to any server |
+| Sync | roads **and** notes | the Cloudflare worker in `tools/`, **not yet deployed** |
+| Load by name… | pulls a named trace in | a file under `assets/data/wip/`, committed by hand |
+
+Note the split: the first four drop notes silently. Use Publish, the device link,
+or Sync if you have annotated anything.
+
+## Two gaps, stated plainly
+
+- **Annotations have no way onto the site.** The viewer loads `things.js` — the
+  object catalogue — but nothing loads notes. An annotation written in Objects
+  mode can reach a commit, and stops there. Rendering it needs a `notes.js` and
+  a panel in the viewer; neither exists yet.
+- **Sync is a file, not a service.** `tools/sync-worker.js` is written and the
+  button calls it, but until it is deployed to a Cloudflare account the only
+  cross-device routes are the device link and a hand-committed named trace.
+
+## Views (original note)
 
 | Tab | File | What it is |
 |---|---|---|
