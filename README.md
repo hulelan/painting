@@ -35,7 +35,7 @@ Everything in 1–4 is a draft. Step 5 is the publication, and it is a commit, s
 it is reviewable and revertible. There is no path from a browser to the live site
 that skips it.
 
-## The eight ways work leaves a browser
+## The six ways work leaves a browser
 
 localStorage is per-device and never syncs, so a trace made on a phone is
 invisible on a laptop until one of these is used.
@@ -45,13 +45,11 @@ invisible on a laptop until one of these is used.
 | Export roads.js | roads only | — |
 | Copy JSON | roads only | — |
 | Copy my edits | roads only, as a diff vs the published file | — |
-| Send to Claude | roads only | a local server (`POST /_save`); dead on GitHub Pages |
 | Publish… | roads **and** notes | opens a prefilled GitHub issue; also copies to clipboard |
 | Copy device link | roads **and** notes | nothing — the payload rides in a `#w=` fragment, never sent to any server |
-| Sync | roads **and** notes | the Cloudflare worker in `tools/`, **not yet deployed** |
 | Load by name… | pulls a named trace in | a file under `assets/data/wip/`, committed by hand |
 
-Note the split: the first four drop notes silently. Use Publish, the device link,
+Note the split: the first three drop notes silently. Use Publish, the device link,
 or Sync if you have annotated anything.
 
 ## Two gaps, stated plainly
@@ -60,9 +58,9 @@ or Sync if you have annotated anything.
   object catalogue — but nothing loads notes. An annotation written in Objects
   mode can reach a commit, and stops there. Rendering it needs a `notes.js` and
   a panel in the viewer; neither exists yet.
-- **Sync is a file, not a service.** `tools/sync-worker.js` is written and the
-  button calls it, but until it is deployed to a Cloudflare account the only
-  cross-device routes are the device link and a hand-committed named trace.
+- **There is no live sync.** A Cloudflare worker was written for it and then
+  removed unused (commit `ad5679b`, if it is ever wanted). Cross-device means
+  the device link, or a named trace committed by hand.
 
 ## Structure
 
@@ -88,7 +86,6 @@ assets/data/
   roads_proposed.js   empty; proposals that were reviewed and dropped
   *_qwen.js           machine output — proposals only, nothing reads these
   wip/<name>.json     named traces, pulled by trace.html?load=<name>
-tools/sync-worker.js  Cloudflare worker for the Sync button — NOT deployed
 docs/                 labelling protocol, road-model proposal, model write-ups
 CNAME                 classicalchinesepainting.com
 ```
