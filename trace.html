@@ -120,6 +120,7 @@ html,body{overscroll-behavior:none}
   <button id="bPublish">Publish…</button>
   <button id="bLink">Copy device link</button>
   <button id="bLoad">Load by name…</button>
+  <button id="bCatch">Get official roads</button>
   <button id="bUndoMerge">Undo restore</button>
   <button id="bImport">Import…</button>
   <button id="tog">Paths ≡</button>
@@ -1031,17 +1032,23 @@ $('bKeepMine').onclick=()=>$('stale').classList.remove('on');
 // never seen and touch nothing else. This is what stops the same road being
 // traced twice -- once here, once on the phone -- without putting a single
 // local edit at risk.
-$('bAddMissing').onclick=()=>{
-  if(!window.ROADS) return;
-  const have=new Set(paths.map(p=>p.id));
-  const add=window.ROADS.paths.filter(p=>!have.has(p.id));
-  if(!add.length){ $('sSave').textContent='nothing missing — you already have every published road'; return; }
+function addMissing(){
+  if(!window.ROADS||!window.ROADS.paths){ $('sSave').textContent='roads.js did not load — reload the page'; return; }
+  const live=window.ROADS.paths, have=new Set(paths.map(p=>p.id));
+  const add=live.filter(p=>!have.has(p.id));
+  if(!add.length){
+    // say the number even when there is nothing to do, so "is my copy complete?"
+    // has an answer that is not silence
+    $('sSave').textContent='you have all '+live.length+' published roads'; return;
+  }
   add.forEach(p=>paths.push({id:p.id,pts:p.pts.map(q=>q.slice())}));
   nextId=nextUserId(); save(); drawAll();
   $('stale').classList.remove('on');
-  $('sSave').textContent='added '+add.length+' published road'+(add.length>1?'s':'')+
+  $('sSave').textContent='added '+add.length+' of '+live.length+' published road'+(live.length>1?'s':'')+
     ' (path '+add.map(p=>p.id).join(', ')+') — nothing of yours was changed';
-};
+}
+$('bAddMissing').onclick=addMissing;
+$('bCatch').onclick=addMissing;
 $('bTakeLive').onclick=()=>{
   if(!window.ROADS) return;
   // This discards the whole local set, so keep a copy first. It shipped without
