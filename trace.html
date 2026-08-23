@@ -32,6 +32,15 @@ button.danger:hover{background:#4a221c;border-color:#7d3a2e;color:#f3d0c6}
 label{display:flex;align-items:center;gap:5px;color:#9d917a;font-size:12px}
 kbd{background:#2a251d;border:1px solid #3d362b;border-radius:2px;padding:0 4px;font-size:11px}
 #hint{color:#6f6656;font-size:11px}
+#share{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:60;display:none;
+  width:min(560px,92vw);background:#191510;border:1px solid #4a4030;border-radius:4px;
+  padding:14px 16px;box-shadow:0 18px 60px rgba(0,0,0,.6)}
+#share.on{display:block}
+#share h4{margin:0 0 6px;color:#e0ba78;font-weight:600;font-size:13px}
+#shareMsg{color:#9d917a;font-size:12px;margin-bottom:8px}
+#shareURL{width:100%;background:#0f0c09;color:#cbbd9c;border:1px solid #3b342a;border-radius:2px;
+  font:11px/1.4 ui-monospace,Menlo,monospace;padding:7px;resize:vertical;margin-bottom:9px;
+  word-break:break-all}
 /* Seventeen buttons for a page whose job is drawing lines. The five everyday
    ones stay out; the rest live behind the ellipsis, kept rather than deleted
    because each one was the right answer to some moment. */
@@ -155,6 +164,13 @@ html,body{overscroll-behavior:none}
   <button id="bAddMissing">add the ones I lack</button>
   <button id="bKeepMine">keep mine</button>
   <button id="bTakeLive" class="danger" title="replaces every road in this browser with the published set">use the live version</button></div>
+
+<div id="share">
+  <h4>Your work as a link</h4>
+  <div id="shareMsg"></div>
+  <textarea id="shareURL" readonly rows="4"></textarea>
+  <div><button id="shareCopy">Copy</button> <button id="shareClose">Close</button></div>
+</div>
 
 <div id="note"><h4>Note</h4>
   <div id="noteXY">–</div>
@@ -752,11 +768,12 @@ $('modeN').onclick=()=>setMode('notes');
 // The live site is static, so there is no endpoint to POST to. A prefilled GitHub
 // issue is the way out that needs no credential in the browser: the payload rides
 // in the URL, you press submit, and it is readable from the repo afterwards.
-function roadsDiff(){
-  const base = REVIEW ? fetch('assets/data/roads_review_import.json',{cache:'no-store'})
-                          .then(r=>r.json()).then(o=>o.paths||[])
-                      : Promise.resolve((window.ROADS&&window.ROADS.paths)||[]);
-  return base.then(bp=>{
+// Safari only allows a clipboard write in the same task as the click that asked
+// for it. roadsDiff returns a promise, so "Send my work" was always writing one
+// tick too late and being denied -- then reporting it to a 30px status bar and
+// the console, neither of which is visible on a phone. The diff itself needs no
+// network outside review mode, so it can simply be synchronous.
+function diffAgainst(bp){
     const B=new Map(bp.map(p=>[p.id,JSON.stringify(p.pts)]));
     const mine=paths.filter(p=>p.pts.length>1);
     const edited=[],added=[];
@@ -778,7 +795,12 @@ function roadsDiff(){
       if(JSON.stringify(m.pts)!==JSON.stringify(a.pts)) edited.push({id:m.id,localId:a.id,pts:a.pts});
     }
     return {edited:edited,added:added,deleted:deleted};
-  });
+}
+function roadsDiffSync(){ return diffAgainst((window.ROADS&&window.ROADS.paths)||[]); }
+function roadsDiff(){
+  return REVIEW ? fetch('assets/data/roads_review_import.json',{cache:'no-store'})
+                    .then(r=>r.json()).then(o=>diffAgainst(o.paths||[]))
+                : Promise.resolve(roadsDiffSync());
 }
 const REPO='hulelan/painting';
 $('bPublish').onclick=()=>{
@@ -948,17 +970,35 @@ function b64e(str){ return btoa(unescape(encodeURIComponent(str)))
 function b64d(str){ str=str.replace(/-/g,'+').replace(/_/g,'/');
   return decodeURIComponent(escape(atob(str))); }
 $('bLink').onclick=()=>{
-  roadsDiff().then(rd=>{
-    const payload={v:1,roads:rd,notes:notes};
-    const url=location.origin+location.pathname+location.search+'#w='+b64e(JSON.stringify(payload));
-    const n=rd.edited.length+rd.added.length;
-    if(url.length>60000){ $('sSave').textContent='too much to carry in a link — use Publish'; return; }
-    navigator.clipboard.writeText(url).then(
-      ()=>{ $('sSave').textContent='link copied ('+n+' road change'+(n===1?'':'s')+', '+
-              notes.length+' note'+(notes.length===1?'':'s')+') — open it on the other device'; },
-      ()=>{ $('sSave').textContent='clipboard blocked; link is in the console'; console.log(url); });
-  }).catch(e=>{ $('sSave').textContent='link failed: '+e.message; });
+  const rd=roadsDiffSync();
+  const n=rd.edited.length+rd.added.length;
+  if(!n && !notes.length){
+    $('shareMsg').textContent='Nothing to send — every road here matches the published set.';
+    $('shareURL').value=''; $('share').classList.add('on'); return;
+  }
+  const url=location.origin+location.pathname+'#w='+b64e(JSON.stringify({v:1,roads:rd,notes:notes}));
+  // try the clipboard first, in the gesture, then show the link either way so
+  // the answer to "did it work?" is on screen and not in a log
+  let copied=false;
+  try{ navigator.clipboard.writeText(url).then(()=>{
+        $('shareMsg').textContent=$('shareMsg').textContent.replace('Select and copy','Copied — and'); },()=>{}); copied=true;
+  }catch(e){}
+  $('shareURL').value=url;
+  $('shareMsg').textContent=(copied?'Copied. ':'Select and copy ')+
+    n+' road change'+(n===1?'':'s')+', '+notes.length+' note'+(notes.length===1?'':'s')+
+    ' · '+Math.round(url.length/1024)+'KB'+
+    (url.length>60000?' — too long for some apps; use ⋯ → Copy my edits instead':'');
+  $('share').classList.add('on');
+  $('shareURL').focus(); $('shareURL').select();
 };
+$('shareCopy').onclick=()=>{
+  $('shareURL').select();
+  let ok=false; try{ ok=document.execCommand('copy'); }catch(e){}
+  if(!ok) try{ navigator.clipboard.writeText($('shareURL').value); ok=true; }catch(e){}
+  $('shareMsg').textContent = ok? 'Copied — paste it to Claude, or open it on the other device.'
+                                : 'Copy failed — press and hold the box to copy by hand.';
+};
+$('shareClose').onclick=()=>$('share').classList.remove('on');
 // Arriving with a link: never merge silently, and never lose what is already here.
 (function(){
   const m=/[#&]w=([A-Za-z0-9\-_]+)/.exec(location.hash); if(!m) return;
