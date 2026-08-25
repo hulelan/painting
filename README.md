@@ -54,10 +54,10 @@ or Sync if you have annotated anything.
 
 ## Two gaps, stated plainly
 
-- **Annotations have no way onto the site.** The viewer loads `things.js` — the
-  object catalogue — but nothing loads notes. An annotation written in Objects
-  mode can reach a commit, and stops there. Rendering it needs a `notes.js` and
-  a panel in the viewer; neither exists yet.
+- ~~Annotations have no way onto the site.~~ **Fixed.** `assets/data/notes.js`
+  now holds them and the viewer has a fourth overlay, *Noticed* / 所見, which
+  draws each note as the box it was drawn as, with its remark above it. The
+  route is: Objects mode → Send my work → merged into `notes.js` by hand.
 - **There is no live sync.** A Cloudflare worker was written for it and then
   removed unused (commit `ad5679b`, if it is ever wanted). Cross-device means
   the device link, or a named trace committed by hand.
