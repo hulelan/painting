@@ -153,6 +153,12 @@ body.icons .persp .ico{width:30px;height:22px}
 body.topbar.icons .stop .lb{margin-top:3px}
 body.topbar.icons .ico{width:22px;height:22px}
 #marks{position:absolute;inset:0;z-index:7;pointer-events:none;display:none}
+/* a road outside the unrolled stretch: still there, just not the subject */
+#roads path.dim{opacity:.13;transition:opacity .5s ease}
+#roads path{transition:opacity .5s ease}
+#zhint{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:9;
+  font-size:12px;letter-spacing:2px;color:#a2947a;pointer-events:none;
+  text-shadow:0 1px 6px #000}
 /* a noted thing: a box round it, the remark set just above */
 .nt{position:absolute;border:1px solid rgba(233,209,150,.62);pointer-events:auto;
   box-shadow:0 0 14px rgba(217,180,90,.16), inset 0 0 18px rgba(217,180,90,.07);
@@ -321,8 +327,7 @@ body.topbar #loc{top:60px;bottom:auto}
   <div class="sect">
     <h2 id="hPersp">Perspectives</h2>
     <div class="persp" data-t="loc"><span class="box"></span><span class="lb"></span></div>
-    <div class="persp" data-t="marks"><span class="box"></span><span class="lb"></span></div>
-  <div class="persp" data-t="roads"><span class="box"></span><span class="lb"></span></div>
+    <div class="persp" data-t="roads"><span class="box"></span><span class="lb"></span></div>
   <div class="persp" data-t="notes"><span class="box"></span><span class="lb"></span></div>
   </div>
 </div>
@@ -340,7 +345,6 @@ body.topbar #loc{top:60px;bottom:auto}
 <script src="assets/data/episodes.js"></script>
 <script src="assets/data/details.js"></script>
 <script src="assets/data/roads.js" onerror="void 0"></script>
-<script src="assets/data/things.js" onerror="void 0"></script>
 <script src="assets/data/notes.js" onerror="void 0"></script>
 <script>
 (function(){
@@ -394,9 +398,15 @@ const t=k=>I18N[lang][k];
 
 let mode='pane', showLoc=false, showMarks=false, showRoads=false, showNotes=false, customUsed=false;
 const ROADS=(window.ROADS&&window.ROADS.paths)||[];
-const THINGS=(window.THINGS&&window.THINGS.items)||[];
+// things.js -- 207 objects catalogued by a model -- is no longer loaded. Two
+// independent annotation passes agreed with it on barely half the contested
+// items, because a bare coordinate does not identify a subject at 5-30px. The
+// file is still in the repo and in history; it is simply not something to show
+// a visitor as if it were known. What is shown is what a person looked at and
+// wrote down.
+const THINGS=[];
 const NOTES=(window.NOTES&&window.NOTES.items)||[];
-const ITEMS = THINGS.length? THINGS : DET;      // catalogue if we have it, else raw detections
+const ITEMS = THINGS;   // empty: the raw detections were the census, and it did not hold up
 const TYPE={
   en:{building:'Building',pavilion:'Pavilion',temple:'Temple',pagoda:'Pagoda',bridge:'Bridge',
       boat:'Boat',figure:'Figure',watermill:'Watermill',jetty:'Jetty',fence:'Enclosure',
@@ -443,16 +453,34 @@ function roadRuns(pts){
   });
   return runs;
 }
+// Each road remembers where it lies along the scroll, so travel can wake it.
+// A handscroll is read by unrolling, and a road that lights as you reach it
+// belongs to that motion; showing all fifteen at once is a map, not a reading.
+const roadEls=[];
 ROADS.forEach(p=>{
+  const xs=p.pts.map(q=>q[0]);
+  const band={x0:Math.min.apply(null,xs), x1:Math.max.apply(null,xs), els:[]};
   roadRuns(p.pts).forEach(run=>{
     ['case','line'].forEach(cls=>{
       const el=document.createElementNS('http://www.w3.org/2000/svg','path');
       el.setAttribute('d',run.d);
       el.setAttribute('class',cls+(run.gap?' gap':''));
       roadsEl.appendChild(el);
+      band.els.push(el);
     });
   });
+  roadEls.push(band);
 });
+// ?roads=all keeps the old behaviour: every road drawn at once.
+const ROADS_ALL=/[?&]roads=all/.test(location.search);
+function litRoads(){
+  if(ROADS_ALL){ roadEls.forEach(b=>b.els.forEach(e=>e.classList.remove('dim'))); return; }
+  const left=x0, right=x0+visW(), pad=visW()*0.10;
+  roadEls.forEach(b=>{
+    const on = b.x1>left-pad && b.x0<right+pad;
+    b.els.forEach(e=>e.classList.toggle('dim',!on));
+  });
+}
 const nativeZ=()=>Math.max(1.4, Math.min(3.2, 1/scale));
 const MINZ=1.25;                                  // lower reasonable bound
 const visW=()=>apW/(scale*Z), visH=()=>apH/(scale*Z);
@@ -527,6 +555,7 @@ function render(){
     rail.style.transform=tf;
     roadsEl.style.transform=tf;
     roadsEl.style.display=(showRoads&&ROADS.length)?'block':'none';
+    if(showRoads) litRoads();
     const fade=(mode==='wide')?0:(Z<=1.03?1:Math.max(0,1-(Z-1)/0.5));
     rollL.style.opacity=fade; rollR.style.opacity=fade;
     rollL.style.pointerEvents=fade>.4?'auto':'none';
@@ -585,8 +614,20 @@ const noteEls=NOTES.map(d=>{
   el.addEventListener('pointerdown',ev=>ev.stopPropagation());
   marksEl.appendChild(el); return el;
 });
+// A note is about something small -- a waterfall 250px wide on a 41,783px scroll.
+// At full view its box is four pixels across and its label is noise, so notes
+// arrive with the zoom that makes them legible: nothing below 1.3x, full weight
+// by 2x. ?notes=all turns the gating off.
+const NOTES_ALL=/[?&]notes=all/.test(location.search);
+function noteWeight(){
+  if(NOTES_ALL) return 1;
+  return Math.max(0, Math.min(1, (Z-1.25)/0.75));
+}
 function renderNotes(sE){
   if(!showNotes||mode==='fold'){ noteEls.forEach(e=>e.style.display='none'); return; }
+  const w=noteWeight();
+  if(w<=0){ noteEls.forEach(e=>e.style.display='none'); hintZoom(true); return; }
+  hintZoom(false);
   for(let i=0;i<NOTES.length;i++){
     const d=NOTES[i], el=noteEls[i];
     const w=Math.max(6,(d.w||40)*sE), h=Math.max(6,(d.h||40)*sE);
@@ -595,7 +636,18 @@ function renderNotes(sE){
     el.style.display='block';
     el.style.left=sx+'px'; el.style.top=sy+'px';
     el.style.width=w+'px'; el.style.height=h+'px';
+    el.style.opacity=noteWeight();
   }
+}
+// If notes are asked for but the view is too wide to show them, say why once
+// rather than leaving the toggle looking broken.
+let zhintEl=null;
+function hintZoom(on){
+  if(on && !zhintEl){
+    zhintEl=document.createElement('div'); zhintEl.id='zhint';
+    zhintEl.textContent = lang==='en' ? 'zoom in to read what people noticed' : '放大即見所書';
+    win.appendChild(zhintEl);
+  } else if(!on && zhintEl){ zhintEl.remove(); zhintEl=null; }
 }
 function renderKept(sE){
   if(!kept){ keptEl.style.display='none'; return; }
@@ -762,15 +814,31 @@ win.addEventListener('pointerup',winUp);
 win.addEventListener('pointercancel',winUp);
 
 // --- wheel travels; pinch changes zoom ------------------------------------
+// Zoom has to hold a point still. Screen = (src - x0) * scale * Z, so keeping the
+// source point under (px,py) fixed means moving the origin by the difference of
+// the two reciprocals. Without this the top-left corner is what stays put, which
+// is why zooming walked the view to the top no matter where you were looking.
+function zoomAbout(nextZ, px, py){
+  const before=scale*Z;
+  Z=Math.max(1, Math.min(nativeZ(), nextZ));
+  const after=scale*Z;
+  if(after!==before){
+    x0 += px/before - px/after;
+    y0 += py/before - py/after;
+  }
+  clamp();
+}
+const winPt=e=>{ const r=win.getBoundingClientRect();
+  return [e.clientX-r.left, e.clientY-r.top]; };
 addEventListener('wheel',e=>{
   if(mode==='fold') return;
   if(e.ctrlKey){
     e.preventDefault();
-    const before=Z;
-    Z=Math.max(1, Math.min(nativeZ(), Z*(1-e.deltaY*0.01)));
+    const before=Z, [px,py]=winPt(e);
+    zoomAbout(Z*(1-e.deltaY*0.01), px, py);
     if(Z<=1.02&&before>1.02){ setMode('pane'); return; }
     if(Z>1.02){ customUsed=true; mode='custom'; lastCustom={Z:Z,x0:x0,y0:y0,kept:kept}; buildTrack(); }
-    clamp(); render(); return;
+    render(); return;
   }
   const d=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;
   target=null; x0+=d/(scale*Z)*1.1; vel=0; clamp(); render();
@@ -790,12 +858,15 @@ addEventListener('pointermove',e=>{
   if(pts.size===2){
     const [a,b]=[...pts.values()];
     const d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+    // the midpoint between the fingers is the thing being pinched: hold it still
+    const r=win.getBoundingClientRect();
+    const px=(a.clientX+b.clientX)/2-r.left, py=(a.clientY+b.clientY)/2-r.top;
     if(pinch0===null){ pinch0={d:d,Z:Z}; return; }
     const before=Z;
-    Z=Math.max(1,Math.min(nativeZ(), pinch0.Z*(d/pinch0.d)));
+    zoomAbout(pinch0.Z*(d/pinch0.d), px, py);
     if(Z<=1.02&&before>1.02) setMode('pane');
     else if(Z>1.02){ customUsed=true; mode='custom'; lastCustom={Z:Z,x0:x0,y0:y0,kept:kept}; buildTrack(); }
-    clamp(); render();
+    render();
   }
 },true);
 function dropPt(e){ pts.delete(e.pointerId); if(pts.size<2) pinch0=null; }
@@ -882,8 +953,6 @@ function applyLang(){
   iconise(np.querySelector('.lb'),'notes',t('notes'));
   np.classList.toggle('off', NOTES.length===0);
   np.title = NOTES.length? '' : 'nothing noted yet — use trace.html';
-  const mp=document.querySelector('.persp[data-t="marks"]');
-  mp.title = showMarks? '' : t('hidden');
   document.title = lang==='en'?'A Thousand Li of Rivers and Mountains':'千里江山圖';
   buildTrack(); if(mode==='fold') layoutFold();
 }
