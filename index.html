@@ -154,6 +154,12 @@ body.topbar.icons .stop .lb{margin-top:3px}
 body.topbar.icons .ico{width:22px;height:22px}
 #marks{position:absolute;inset:0;z-index:7;pointer-events:none;display:none}
 /* roads draw themselves as you arrive — see drawIn() */
+#notready{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:60;
+  background:rgba(24,20,14,.92);border:1px solid #4a4030;border-radius:3px;
+  padding:9px 14px;font-size:12px;letter-spacing:1px;color:#d8c9a4;
+  transition:opacity .6s ease;max-width:88vw;text-align:center}
+#notready span{color:#8d8270;font-size:11px}
+#notready.go{opacity:0;pointer-events:none}
 #zhint{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:9;
   font-size:12px;letter-spacing:2px;color:#a2947a;pointer-events:none;
   text-shadow:0 1px 6px #000}
@@ -339,11 +345,28 @@ body.topbar #loc{top:60px;bottom:auto}
 </div>
 
 <div id="rollTag"></div>
-<script src="assets/scroll/manifest.js"></script>
-<script src="assets/data/episodes.js"></script>
-<script src="assets/data/details.js"></script>
-<script src="assets/data/roads.js" onerror="void 0"></script>
-<script src="assets/data/notes.js" onerror="void 0"></script>
+<script src="assets/data/paintings.js"></script>
+<script>
+/* Which scroll. ?p=<slug> picks one from the register; the annotation files
+   are per-painting, so they are written in here rather than fixed in the page.
+   document.write is the honest tool for this: these scripts must be in place
+   before the viewer below runs, and the alternative is rewriting the whole
+   viewer as async for the sake of one lookup. */
+(function(){
+  var R=window.PAINTINGS, m=/[?&]p=([a-z0-9_-]+)/i.exec(location.search);
+  var slug=(m&&m[1])||R.default;
+  var it=R.items.filter(function(x){return x.slug===slug;})[0];
+  if(!it || !it.dir){                       // known but not digitised, or unknown
+    window.NOT_READY = it || {slug:slug};
+    it=R.items.filter(function(x){return x.slug===R.default;})[0];
+  }
+  window.PAINTING=it;
+  document.write('<scr'+'ipt src="'+it.dir+'/manifest.js"></scr'+'ipt>');
+  (it.data||[]).forEach(function(d){
+    document.write('<scr'+'ipt src="assets/data/'+d+'.js" onerror="void 0"></scr'+'ipt>');
+  });
+})();
+</script>
 <script>
 (function(){
 const S=window.SCROLL, EP=(window.EPISODES&&window.EPISODES.episodes)||[],
@@ -369,13 +392,15 @@ const I18N={
       wide:'Wide', loc:'Locator', marks:'Things', roads:'Roads', notes:'Noticed', lang:'中', back:'Return to Cabinet',
       uiZh:'中文', uiEn:'English', uiIco:'pictograms — no words',
       hidden:'hidden — click the painting to find them', found:'you found',
-      title:'A Thousand Li of Rivers and Mountains · Wang Ximeng · Northern Song',
+      title:(window.PAINTING? PAINTING.en+' · '+PAINTING.artist.en+' · '+PAINTING.dynasty.en
+                             : 'A Thousand Li of Rivers and Mountains · Wang Ximeng · Northern Song'),
       seg:(i,n)=> i===0?'1 · opening' : i===n-1? n+' · end' : String(i+1)},
   zh:{zoom:'縮放', persp:'視角', whole:'全卷', pane:'展卷', detail:'細看',
       wide:'通幅', loc:'卷影', marks:'物', roads:'道路', notes:'所見', lang:'EN', back:'返回畫匣',
       uiZh:'中文', uiEn:'English', uiIco:'圖示 —— 不用文字',
       hidden:'已隱藏 —— 點畫面自己找', found:'你找到了',
-      title:'千里江山圖　王希孟　北宋',
+      title:(window.PAINTING? PAINTING.zh+'　'+PAINTING.artist.zh+'　'+PAINTING.dynasty.zh
+                             : '千里江山圖　王希孟　北宋'),
       seg:(i,n)=> i===0?'一（起首）' : i===n-1? String(n)+'（卷末）' : String(i+1)}
 };
 // The toggle has three stops, not two: 中 → EN → pictograms → 中.
@@ -419,7 +444,7 @@ let core=0, thick=0, TX=0, TY=0, kept=null, lastCustom=null;
 const cum=[0]; S.tiles.forEach(tt=>cum.push(cum[cum.length-1]+tt.w));
 const imgs=S.tiles.map((tt,i)=>{
   const im=document.createElement('img');
-  im.src='assets/scroll/tiles/'+tt.f; im.alt=''; im.decoding='async';
+  im.src=(PAINTING.tiles||'assets/scroll/tiles/')+tt.f; im.alt=''; im.decoding='async';
   im.loading = i>=S.tiles.length-5 ? 'eager':'lazy';
   rail.appendChild(im); return im;
 });
@@ -980,7 +1005,8 @@ function applyLang(){
   iconise(np.querySelector('.lb'),'notes',t('notes'));
   np.classList.toggle('off', NOTES.length===0);
   np.title = NOTES.length? '' : 'nothing noted yet — use trace.html';
-  document.title = lang==='en'?'A Thousand Li of Rivers and Mountains':'千里江山圖';
+  document.title = window.PAINTING ? (lang==='en'?PAINTING.en:PAINTING.zh)
+                  : (lang==='en'?'A Thousand Li of Rivers and Mountains':'千里江山圖');
   buildTrack(); if(mode==='fold') layoutFold();
 }
 $('lang').addEventListener('click',()=>{
@@ -995,6 +1021,15 @@ addEventListener('keydown',e=>{
 });
 addEventListener('resize',measure);
 
+if(window.NOT_READY){
+  const b=document.createElement('div'); b.id='notready';
+  const it=window.NOT_READY;
+  b.innerHTML = it.zh ? ('<b>'+it.zh+'</b> '+(it.en||'')+' — 尚無掃描本，暫以千里江山圖代之'
+                        +'<br><span>no scan of this one yet; showing the Wang Ximeng scroll instead</span>')
+                      : ('unknown painting “'+it.slug+'” — showing the default');
+  document.body.appendChild(b);
+  setTimeout(()=>b.classList.add('go'), 9000);
+}
 measure(); applyLang();
 x0=Math.max(0,CR-visW());
 const bleed=$('bleed'), lastImg=imgs[imgs.length-1];
