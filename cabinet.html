@@ -27,7 +27,13 @@ body[class*="bg-"] .cell{background:var(--th-bg2)}
 body[class*="bg-"] .cell.open:hover{background:var(--th-bg)}
 body[class*="bg-"] .cell .name{color:var(--th-ink)}
 body[class*="bg-"] .cell .meta{color:var(--th-muted)}
-body[class*="bg-"] .cell.empty .name{color:var(--th-line)}
+body[class*="bg-"] .cell.shut{cursor:default;opacity:.62}
+.cell.shut .name{color:#8d8270}
+.cell.shut .meta{color:#6b6152}
+.cell.shut .await{margin-top:6px;font-size:10px;letter-spacing:2px;color:#6b5f4a}
+.scroll.shut{cursor:default;opacity:.5}
+.scroll.shut .slip{color:#9a8f78}
+.cell.empty .name{color:var(--th-line)}
 body[class*="bg-"] .bar::after{background:rgba(255,255,255,.5)}
 body[class*="bg-"] .bar i{background:rgba(255,255,255,.55)}
 body.bg-paper{ --th-bg:#efe9dc; --th-bg2:#f6f1e7; --th-ink:#4a463c; --th-muted:#8a8375;
@@ -145,24 +151,41 @@ body.bg-dawn{ --th-bg:#fdf6ef; --th-bg2:#f7f0f3; --th-ink:#6b6069; --th-muted:#9
 <div id="skin"><span data-s="geo"></span><i></i><span data-s="pic"></span></div>
 <a id="classic" href="classic.html"></a>
 
+<script src="assets/data/paintings.js"></script>
 <script>
 (function(){
 const I18N={
-  en:{h1:'The Case', sub:'Six compartments. Two filled.', lang:'中',
-      geo:'Geometric', pic:'Pictorial', classic:'classic view',
-      short:['A Thousand Li','Shi Yuan'],
-      items:[{n:'A Thousand Li of Rivers and Mountains', m:'Wang Ximeng · Northern Song · handscroll'},
-             {n:'Shi Yuan — Classical Chinese Poetry',   m:'2,966 poems and prose works'}]},
-  zh:{h1:'畫　匣', sub:'六格　二實', lang:'EN',
-      geo:'幾何', pic:'寫實', classic:'舊版',
-      short:['千里江山圖','詩　淵'],
-      items:[{n:'千里江山圖', m:'王希孟　北宋　絹本設色'},
-             {n:'詩　淵',    m:'古詩古文 二九六六篇'}]}
+  en:{h1:'The Case', lang:'中', geo:'Geometric', pic:'Pictorial', classic:'classic view',
+      await:'no scan yet',
+      sub:n=>n.all+' compartments. '+n.open+' filled.'},
+  zh:{h1:'畫　匣', lang:'EN', geo:'幾何', pic:'寫實', classic:'舊版',
+      await:'尚無掃描本',
+      sub:n=>N(n.all)+'格　'+N(n.open)+'實'}
 };
-const HREF=[('./'+location.search),'https://classicalchinesepoetry.com/'];
-const GEO_C=['#5c7a72','#9c8558'];                          // silk: celadon, gold-tan
-const PIC_C=[['#5d7186','#3b5063'],['#8a6a52','#5e4335']];  // the earlier blue / russet
-const SLOTS=6;
+// The case is built from the register now, not from a pair of hard-coded
+// entries. A scroll with no scan is still shown -- shut, and labelled as such.
+// Nine compartments: eight paintings and the poetry site.
+const NUM=['〇','一','二','三','四','五','六','七','八','九','十'];
+const N=x=>NUM[x]||String(x);
+const REG=(window.PAINTINGS&&window.PAINTINGS.items)||[];
+const SITE={zh:'詩　淵', en:'Shi Yuan', meta:{zh:'古詩古文 二九六六篇', en:'2,966 poems and prose works'},
+            href:'https://classicalchinesepoetry.com/', ready:true, site:true};
+function entries(lang){
+  const out=REG.map(it=>({
+    zh:it.zh, en:it.en,
+    meta:{ zh:it.artist.zh+'　'+it.dynasty.zh+(it.museum?'　'+it.museum.zh:''),
+           en:it.artist.en+' · '+it.dynasty.en+(it.museum?' · '+it.museum.en:'') },
+    href:'./?p='+it.slug+(location.search.replace(/^\?/,'')?'&'+location.search.replace(/^\?/,''):''),
+    ready:!!it.dir }));
+  out.push(SITE);
+  return out;
+}
+// celadon, gold-tan, and the rest of the silk range; shut scrolls take none
+const GEO_C=['#5c7a72','#9c8558','#7a6a86','#8a6a52','#5d7186','#6f7a55','#8b6470','#5f7a7c','#9c8558'];
+const PIC_C=[['#5d7186','#3b5063'],['#8a6a52','#5e4335'],['#6f7a55','#4a5238'],['#7a6a86','#52465e'],
+             ['#5c7a72','#3d554e'],['#8b6470','#5e434c'],['#5f7a7c','#3f5456'],['#9c8558','#6b5a39'],
+             ['#8a6a52','#5e4335']];
+const SHUT=['#4a4536','#332f26'];
 let lang=localStorage.getItem('ccp_lang')||'zh';
 let skin=localStorage.getItem('ccp_skin')||'geo';
 
@@ -170,20 +193,24 @@ const grid=document.getElementById('grid'), shelf=document.getElementById('shelf
 
 function buildGeo(d){
   grid.innerHTML='';
-  for(let i=0;i<SLOTS;i++){
-    const cell=document.createElement('div'), it=d.items[i];
-    if(it){
+  entries(lang).forEach((it,i)=>{
+    const cell=document.createElement('div');
+    const name=(lang==='en'?it.en:it.zh), meta=(lang==='en'?it.meta.en:it.meta.zh);
+    if(it.ready){
       cell.className='cell open';
-      cell.innerHTML='<div class="bar" style="--c:'+GEO_C[i]+'">'+
+      cell.innerHTML='<div class="bar" style="--c:'+GEO_C[i%GEO_C.length]+'">'+
         '<i style="left:27%"></i><i style="left:71%"></i></div>'+
-        '<div class="name">'+it.n+'</div><div class="meta">'+it.m+'</div>';
-      cell.addEventListener('click',()=>{ location.href=HREF[i]; });
+        '<div class="name">'+name+'</div><div class="meta">'+meta+'</div>';
+      cell.addEventListener('click',()=>{ location.href=it.href; });
     } else {
-      cell.className='cell empty';
-      cell.innerHTML='<div class="slotline"></div><div class="name">—</div>';
+      // shut, not empty: the painting is known, the scan is not here
+      cell.className='cell shut';
+      cell.innerHTML='<div class="slotline"></div>'+
+        '<div class="name">'+name+'</div><div class="meta">'+meta+'</div>'+
+        '<div class="await">'+d.await+'</div>';
     }
     grid.appendChild(cell);
-  }
+  });
 }
 
 function buildPic(d){
@@ -194,15 +221,18 @@ function buildPic(d){
   ghost.style.cssText='width:'+(W*0.92)+'px;height:'+(D*0.86)+'px;--c1:#4a4536;--c2:#332f26';
   ghost.innerHTML='<div class="body"></div><div class="end"></div>';
   shelf.appendChild(ghost);
-  d.items.forEach((it,i)=>{
+  entries(lang).forEach((it,i)=>{
     const s=document.createElement('div');
-    s.className='scroll';
-    s.style.cssText='width:'+W+'px;height:'+D+'px;--c1:'+PIC_C[i][0]+';--c2:'+PIC_C[i][1];
+    const c=it.ready?PIC_C[i%PIC_C.length]:SHUT;
+    s.className='scroll'+(it.ready?'':' shut');
+    s.style.cssText='width:'+W+'px;height:'+D+'px;--c1:'+c[0]+';--c2:'+c[1];
+    const short=(lang==='en'?it.en:it.zh);
     s.innerHTML='<div class="body"></div>'+
       '<div class="tie" style="left:27%"></div><div class="tie" style="left:71%"></div>'+
       '<div class="end"></div>'+
-      '<div class="slip" style="font-size:'+Math.max(12,Math.min(15,D*0.27))+'px">'+d.short[i]+'</div>';
-    s.addEventListener('click',()=>{ location.href=HREF[i]; });
+      '<div class="slip" style="font-size:'+Math.max(11,Math.min(14,D*0.24))+'px">'+short+'</div>';
+    if(it.ready) s.addEventListener('click',()=>{ location.href=it.href; });
+    else s.title=d.await;
     shelf.appendChild(s);
   });
 }
@@ -211,7 +241,8 @@ function build(){
   const d=I18N[lang];
   document.documentElement.lang = lang==='en'?'en':'zh-Hans';
   document.getElementById('h1').textContent=d.h1;
-  document.getElementById('sub').textContent=d.sub;
+  const es=entries(lang);
+  document.getElementById('sub').textContent=d.sub({all:es.length, open:es.filter(e=>e.ready).length});
   document.getElementById('lang').textContent=d.lang;
   document.getElementById('classic').textContent=d.classic;
   document.title=d.h1;
