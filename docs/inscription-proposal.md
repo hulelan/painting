@@ -79,6 +79,34 @@ option A gets even that with a typed name.
 
 Steps 1 and 2 are worth doing whether or not 3 ever happens.
 
+## Where you've landed: accounts and a public square
+
+Later steer, recorded before it gets lost:
+
+> people can have accounts and they can have their own way. There might be a
+> public version of the painting and people can comment on it... There is a
+> private version so it might be something like accounts in a public square.
+
+That is a different shape from the tiers above, and a clearer one. Not three
+grades of visibility on one artefact — **two artefacts**:
+
+- **your painting** — a copy that is yours, that you write on freely, that
+  nobody else sees and nobody moderates;
+- **the public square** — one shared scroll, where what you post is mounted for
+  everyone, and where the rules of a shared place apply.
+
+Publishing is then a deliberate crossing from one to the other, not a visibility
+flag. That is easier to explain to a visitor and easier to reason about in code:
+private is a document, public is a place.
+
+It does need accounts, because "your painting" has to be yours on a second
+device and after clearing the browser. Option B (sign in with someone else's
+identity) becomes the reasonable one — the objection I raised, that GitHub
+selects for programmers, is answered by using something ordinary instead.
+
+**Not building this yet.** Recorded so the next session starts here rather than
+from the tier model.
+
 ## The decision I can't make
 
 **Does a stranger's writing appear on your painting, and who decides?**

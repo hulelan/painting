@@ -153,9 +153,7 @@ body.icons .persp .ico{width:30px;height:22px}
 body.topbar.icons .stop .lb{margin-top:3px}
 body.topbar.icons .ico{width:22px;height:22px}
 #marks{position:absolute;inset:0;z-index:7;pointer-events:none;display:none}
-/* a road outside the unrolled stretch: still there, just not the subject */
-#roads path.dim{opacity:.13;transition:opacity .5s ease}
-#roads path{transition:opacity .5s ease}
+/* roads draw themselves as you arrive — see drawIn() */
 #zhint{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:9;
   font-size:12px;letter-spacing:2px;color:#a2947a;pointer-events:none;
   text-shadow:0 1px 6px #000}
@@ -469,16 +467,45 @@ ROADS.forEach(p=>{
       band.els.push(el);
     });
   });
+  band.on=false;
   roadEls.push(band);
 });
-// ?roads=all keeps the old behaviour: every road drawn at once.
+// Dimming the far-off roads was invisible: the window shows about 5% of the
+// scroll, so a road that is "off" is off the screen entirely, and fading
+// something nobody can see is not an effect. What can be seen is a road
+// arriving -- so it draws itself, head to tail, as you unroll onto it.
+// The dotted runs are excluded: their dash pattern is what marks them as
+// inferred, and a draw-in would have to overwrite it.
 const ROADS_ALL=/[?&]roads=all/.test(location.search);
+function drawIn(b){
+  b.els.forEach(e=>{
+    if(e.classList.contains('gap')) return;
+    if(e._len==null){
+      try{ e._len=e.getTotalLength(); }catch(err){ e._len=0; }
+      if(!e._len) return;
+      e.style.strokeDasharray=e._len;
+    }
+    e.style.transition='none';
+    e.style.strokeDashoffset=e._len;
+    void e.getBoundingClientRect();          // flush, so the transition has a start
+    e.style.transition='stroke-dashoffset 1.15s cubic-bezier(.22,.61,.36,1)';
+    e.style.strokeDashoffset=0;
+  });
+}
+function resetDraw(b){
+  b.els.forEach(e=>{ if(e._len){ e.style.transition='none'; e.style.strokeDashoffset=e._len; } });
+}
 function litRoads(){
-  if(ROADS_ALL){ roadEls.forEach(b=>b.els.forEach(e=>e.classList.remove('dim'))); return; }
-  const left=x0, right=x0+visW(), pad=visW()*0.10;
+  if(ROADS_ALL){
+    roadEls.forEach(b=>b.els.forEach(e=>{ e.style.strokeDasharray=''; e.style.strokeDashoffset=''; }));
+    return;
+  }
+  const left=x0, right=x0+visW(), pad=visW()*0.06;
   roadEls.forEach(b=>{
     const on = b.x1>left-pad && b.x0<right+pad;
-    b.els.forEach(e=>e.classList.toggle('dim',!on));
+    if(on===b.on) return;                     // only act on the crossing
+    if(on) drawIn(b); else resetDraw(b);
+    b.on=on;
   });
 }
 const nativeZ=()=>Math.max(1.4, Math.min(3.2, 1/scale));
