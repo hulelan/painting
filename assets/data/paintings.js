@@ -38,19 +38,27 @@ window.PAINTINGS = {
       inches:[99.875, 10.75], form:'handscroll' },
 
     { slug:'chunyou', zh:'春遊賦詩圖', en:'Composing Poetry on a Spring Outing',
-      artist:{zh:'馬遠', en:'Ma Yuan'}, dates:'active 1189–1225', dynasty:{zh:'南宋', en:'Southern Song'},
+      artist:{zh:'（傳）馬遠', en:'Attributed to Ma Yuan'}, dates:'active 1189–1225',
+      dynasty:{zh:'南宋', en:'Southern Song'},
       museum:{zh:'納爾遜-阿特金斯藝術博物館', en:'The Nelson-Atkins Museum of Art'},
-      inches:[118.75, 11.625], form:'handscroll' },
+      acc:'63-19', inches:[118.75, 11.625], form:'handscroll' },
 
-    { slug:'cuiwei', zh:'千里江山圖（江參）', en:'Verdant Mountains',
+    /* 林巒積翠圖, not 千里江山圖. The museum's own Chinese title is 宋 江參 林巒積翠,
+       and the collision is worse than it first looks: 千里江山圖 names Wang Ximeng's
+       scroll in Beijing AND a different Jiang Shen scroll in Taipei. Calling this one
+       by that title would conflate three paintings. */
+    { slug:'linluan', zh:'林巒積翠圖', en:'Verdant Mountains',
       artist:{zh:'江參', en:'Jiang Shen'}, dates:'c.1090–1138', dynasty:{zh:'南宋', en:'Song'},
       museum:{zh:'納爾遜-阿特金斯藝術博物館', en:'The Nelson-Atkins Museum of Art'},
-      inches:[343.75, 13.25], form:'handscroll',
-      note:'Not Wang Ximeng — a different scroll that shares the Chinese title.' },
+      acc:'53-49', inches:[343.75, 13.25], form:'handscroll' },
 
+    /* The museum files this as Jin 金, not Song -- the dynasty that held the north
+       while the Song court ruled from Hangzhou. It is in a Song show; it is not a
+       Song painting. */
     { slug:'xinglv', zh:'江山行旅圖', en:'Traveling Among Streams and Mountains',
-      artist:{zh:'太古遺民', en:'Taigu Yimin'}, dates:'active early 1200s', dynasty:{zh:'南宋', en:'Southern Song'},
+      artist:{zh:'太古遺民', en:'Taigu Yimin'}, dates:'active early 1200s',
+      dynasty:{zh:'金', en:'Jin'},
       museum:{zh:'納爾遜-阿特金斯藝術博物館', en:'The Nelson-Atkins Museum of Art'},
-      inches:[164.5, 15.125], form:'handscroll' }
+      acc:'F74-35', inches:[164.5, 15.125], form:'handscroll' }
   ]
 };
