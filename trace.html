@@ -132,6 +132,7 @@ html,body{overscroll-behavior:none}
   <span class="sep"></span>
   <button id="bLink" class="prim" title="Copies a link holding your roads and notes. Paste it to Claude, or open it on another device.">Send my work</button>
   <button id="bCatch" title="Adds any published road this browser lacks. Nothing of yours is changed.">Get official roads</button>
+  <button id="bSave" title="Saves your roads and notes as one file you can keep, back up, or load on another machine.">Save file</button>
   <button id="tog">Paths ≡</button>
   <button id="bMore" title="the rarely-needed routes">⋯</button>
   <span class="more">
@@ -1020,6 +1021,28 @@ $('shareClose').onclick=()=>$('share').classList.remove('on');
     bar.remove(); history.replaceState(null,'',location.pathname+location.search);
   };
 })();
+// ---------- one file you own ----------
+// The link and the issue both hand work to me. This hands it to you: a plain
+// file, yours to keep, that this page will still read later. It carries the
+// scroll's dimensions so a file can say which painting it belongs to -- an
+// annotation is a pair of coordinates, and coordinates mean nothing without
+// the image they were taken on.
+const FILE_V=1;
+function myFile(){
+  return {v:FILE_V, of:'千里江山图', srcW:L, srcH:PH,
+          savedAt:new Date().toISOString(),
+          roads:paths.filter(p=>p.pts.length>1).map(p=>({id:p.id,pts:p.pts})),
+          notes:notes};
+}
+$('bSave').onclick=()=>{
+  const o=myFile();
+  const name='qianli-annotations-'+o.savedAt.slice(0,10)+'.json';
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(o,null,1)],{type:'application/json'}));
+  a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  $('sSave').textContent='saved '+name+' — '+o.roads.length+' roads, '+o.notes.length+' notes';
+};
 $('bImport').onclick=()=>$('fImport').click();
 $('fImport').onchange=e=>{
   const f=e.target.files[0]; if(!f) return;
@@ -1029,10 +1052,30 @@ $('fImport').onchange=e=>{
       const txt=rd.result;
       const j=txt.indexOf('{'), k=txt.lastIndexOf('}');
       const o=JSON.parse(txt.slice(j,k+1));
-      paths=(o.paths||[]).map(p=>({id:p.id,pts:p.pts}));
-      nextId=nextUserId();
-      cur=null; save(); drawAll();
-    }catch(err){ alert('could not read that file: '+err.message); }
+      // Refuse a file traced on a different image rather than silently placing
+      // its coordinates on this one -- that would look like work and be nonsense.
+      if(o.srcW && Math.abs(o.srcW-L)>2){
+        $('sSave').textContent='that file was traced on a '+o.srcW+'px image; this scroll is '+L+'px — not loading it';
+        e.target.value=''; return;
+      }
+      const inRoads=(o.roads||o.paths||[]).filter(p=>p.pts&&p.pts.length>1);
+      const inNotes=o.notes||[];
+      // Merge, never replace. A file is a copy of some moment, and the browser
+      // may hold work made since; taking one over the other silently is how
+      // people lose things.
+      let added=0, updated=0;
+      inRoads.forEach(p=>{
+        const i=paths.findIndex(q=>q.id===p.id);
+        if(i<0){ paths.push({id:p.id,pts:p.pts}); added++; }
+        else if(JSON.stringify(paths[i].pts)!==JSON.stringify(p.pts)){ paths[i]={id:p.id,pts:p.pts}; updated++; }
+      });
+      let nAdd=0;
+      inNotes.forEach(n=>{ if(!notes.some(q=>q.id===n.id)){ notes.push(n); nAdd++; } });
+      nextId=nextUserId(); cur=null; save(); saveNotes(); drawAll();
+      $('sSave').textContent='loaded — '+added+' roads added, '+updated+' updated, '+
+        nAdd+' notes added; nothing of yours was removed';
+    }catch(err){ $('sSave').textContent='could not read that file: '+err.message; }
+    e.target.value='';
   };
   rd.readAsText(f);
 };
