@@ -28,6 +28,8 @@ body[class*="bg-"] .cell.open:hover{background:var(--th-bg)}
 body[class*="bg-"] .cell .name{color:var(--th-ink)}
 body[class*="bg-"] .cell .meta{color:var(--th-muted)}
 body[class*="bg-"] .cell.shut{cursor:default;opacity:.62}
+.cell.shut.away{cursor:pointer}
+.cell.shut.away:hover{opacity:.85;background:#141109}
 .cell.shut .name{color:#8d8270}
 .cell.shut .meta{color:#6b6152}
 .cell.shut .await{margin-top:6px;font-size:10px;letter-spacing:2px;color:#6b5f4a}
@@ -156,10 +158,10 @@ body.bg-dawn{ --th-bg:#fdf6ef; --th-bg2:#f7f0f3; --th-ink:#6b6069; --th-muted:#9
 (function(){
 const I18N={
   en:{h1:'The Case', lang:'中', geo:'Geometric', pic:'Pictorial', classic:'classic view',
-      await:'no scan yet',
+      await:'no scan yet', elsewhere:'no free scan — see it at Chicago ↗',
       sub:n=>n.all+' compartments. '+n.open+' filled.'},
   zh:{h1:'畫　匣', lang:'EN', geo:'幾何', pic:'寫實', classic:'舊版',
-      await:'尚無掃描本',
+      await:'尚無掃描本', elsewhere:'無自由授權掃描本　芝加哥大學可觀 ↗',
       sub:n=>N(n.all)+'格　'+N(n.open)+'實'}
 };
 // The case is built from the register now, not from a pair of hard-coded
@@ -175,7 +177,9 @@ function entries(lang){
     zh:it.zh, en:it.en,
     meta:{ zh:it.artist.zh+'　'+it.dynasty.zh+(it.museum?'　'+it.museum.zh:''),
            en:it.artist.en+' · '+it.dynasty.en+(it.museum?' · '+it.museum.en:'') },
-    href:'./?p='+it.slug+(location.search.replace(/^\?/,'')?'&'+location.search.replace(/^\?/,''):''),
+    href: it.dir ? './?p='+it.slug+(location.search.replace(/^\?/,'')?'&'+location.search.replace(/^\?/,''):'')
+                 : (it.viewer||it.record||''),
+    away: !it.dir && !!(it.viewer||it.record),
     ready:!!it.dir }));
   out.push(SITE);
   return out;
@@ -203,11 +207,13 @@ function buildGeo(d){
         '<div class="name">'+name+'</div><div class="meta">'+meta+'</div>';
       cell.addEventListener('click',()=>{ location.href=it.href; });
     } else {
-      // shut, not empty: the painting is known, the scan is not here
-      cell.className='cell shut';
+      // shut, not empty: the painting is known, the scan is not ours to host.
+      // It still goes somewhere -- the museum's record, or Chicago's viewer.
+      cell.className='cell shut'+(it.away?' away':'');
       cell.innerHTML='<div class="slotline"></div>'+
         '<div class="name">'+name+'</div><div class="meta">'+meta+'</div>'+
-        '<div class="await">'+d.await+'</div>';
+        '<div class="await">'+(it.away?d.elsewhere:d.await)+'</div>';
+      if(it.away) cell.addEventListener('click',()=>window.open(it.href,'_blank','noopener'));
     }
     grid.appendChild(cell);
   });

@@ -1,0 +1,1 @@
+window.SCROLL = {"w": 16250, "h": 1601, "tileW": 2048, "axis": "h", "tiles": [{"f": "tile-00.jpg", "w": 2048}, {"f": "tile-01.jpg", "w": 2048}, {"f": "tile-02.jpg", "w": 2048}, {"f": "tile-03.jpg", "w": 2048}, {"f": "tile-04.jpg", "w": 2048}, {"f": "tile-05.jpg", "w": 2048}, {"f": "tile-06.jpg", "w": 2048}, {"f": "tile-07.jpg", "w": 1914}]};
