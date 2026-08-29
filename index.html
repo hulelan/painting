@@ -163,6 +163,10 @@ body.writing #marquee{border-color:rgba(233,209,150,.9)}
   width:min(420px,90vw);display:none;background:rgba(20,17,12,.96);
   border:1px solid #4a4030;border-radius:4px;padding:12px}
 #editor.on{display:block}
+#editor .where{font-size:11px;letter-spacing:.5px;margin-bottom:8px;padding-bottom:6px;
+  border-bottom:1px solid rgba(90,80,60,.25)}
+#editor .where.private{color:#7f9a88}
+#editor .where.shared{color:#c2ae7f}
 #editor input,#editor textarea{width:100%;background:#0f0c09;color:#e4d8b8;
   border:1px solid #3b342a;border-radius:2px;padding:7px 8px;margin-bottom:7px;
   font:inherit;font-size:13px;resize:vertical}
@@ -447,6 +451,7 @@ body.topbar #loc{top:60px;bottom:auto}
 </div>
 
 <div id="editor">
+  <div class="where"></div>
   <input class="et" maxlength="90" placeholder="what is it">
   <textarea class="eb" rows="3" maxlength="1200" placeholder="what you noticed"></textarea>
   <div class="row"><button class="ok"></button><button class="del"></button><button class="no"></button></div>
@@ -1217,6 +1222,19 @@ function setWriting(on){
 function editNote(n){
   editing=n;
   const box=$('editor');
+  // Anyone can write here, and most people writing will assume it goes
+  // somewhere. Say plainly which of the two it is, before they type.
+  const w=box.querySelector('.where');
+  if(ROOM&&ROOM.api){
+    w.textContent = lang==='en'
+      ? 'everyone in this room will see this' + (roomName? ' · signed '+roomName : '')
+      : '此室諸人皆可見' + (roomName? '　署名 '+roomName : '');
+    w.className='where shared';
+  } else {
+    w.textContent = lang==='en' ? 'kept in this browser only — nobody else can see it'
+                                : '僅存於此瀏覽器　他人不見';
+    w.className='where private';
+  }
   box.querySelector('.et').value=n.title||'';
   box.querySelector('.eb').value=n.text||'';
   box.classList.add('on');
