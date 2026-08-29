@@ -9,7 +9,10 @@
 <style>
 :root{ --room:#0a0908; --warm:#d9b45a; --line:rgba(217,180,90,.20); }
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;background:var(--room);color:#c9bda4;overflow:hidden;
+/* The case held two compartments when it was centred and locked against
+   scrolling; it holds nine now, which is taller than a phone. So it scrolls,
+   and the centring only applies when there is room to centre in. */
+html,body{min-height:100%;margin:0;background:var(--room);color:#c9bda4;overflow-x:hidden;overflow-y:auto;
   font-family:var(--type);-webkit-font-smoothing:antialiased;
   -webkit-user-select:none;user-select:none}
 
@@ -79,7 +82,10 @@ body.bg-dawn{ --th-bg:#fdf6ef; --th-bg2:#f7f0f3; --th-ink:#6b6069; --th-muted:#9
   --th-accent:#e0a08c; --th-line:rgba(120,105,105,.16) }
 
 /* ======================= GEOMETRIC ======================= */
-#geo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(86vw,900px)}
+#geo{width:min(86vw,900px);margin:0 auto;padding:48px 0 96px}
+/* centre it only when it actually fits, or the top of the case goes off-screen */
+@media(min-height:900px){ #geo{padding-top:calc(50vh - 340px)} }
+@media(max-width:640px){ #geo{width:92vw;padding:34px 0 88px} }
 #geo h1{margin:0 0 5px;font-size:12px;font-weight:500;letter-spacing:6px;color:#7d735f;
   text-transform:uppercase}
 #geo .sub{margin:0 0 26px;font-size:12px;letter-spacing:3px;color:#544c3e}
@@ -102,7 +108,7 @@ body.bg-dawn{ --th-bg:#fdf6ef; --th-bg2:#f7f0f3; --th-ink:#6b6069; --th-muted:#9
 .cell.empty .name{color:#33302a}
 
 /* ======================= PICTORIAL ======================= */
-#table{position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+#table{position:fixed;left:50%;bottom:0;transform:translateX(-50%);pointer-events:none;
   width:min(120vw,1500px);height:46vh;pointer-events:none;
   background:linear-gradient(180deg, rgba(150,112,66,.28), rgba(60,42,24,.15) 34%, rgba(10,8,6,0) 78%);
   box-shadow:inset 0 1px 0 rgba(236,200,140,.16)}
