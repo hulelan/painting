@@ -702,6 +702,14 @@ function measure(){
     const maxW=vw-(narrow?14:250);
     if(apW>maxW) apW=Math.max(160,maxW);
   }
+  // The panel is a fixed column on the right, and the desk is centred in the
+  // whole viewport -- so reserving width for the panel put half that reserve on
+  // the left, where nothing needed it, and the painting ran under the buttons by
+  // the other half. Centre the desk in what is left instead of in everything.
+  {
+    const reserve = (narrow || mode==='wide') ? 0 : 200;   // panel column + gutter
+    desk.style.left = 'calc(50% - ' + Math.round(reserve/2) + 'px)';
+  }
   // horizontal: fit the height and let the scroll run off to the left.
   // vertical: fit the width and let it run off the bottom.
   scale = VERT ? apW/L : apH/PH;
