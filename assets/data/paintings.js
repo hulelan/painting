@@ -17,8 +17,21 @@
      (the Red Cliff at 52,797px, twice Commons), but carries a blanket
      copyright notice and no licence. Those are linked, never copied.
 
-   So: three scrolls have no freely licensed scan and are listed with a link
-   to where they can actually be seen. That is the honest state of it. */
+   Three scrolls have no freely licensed scan anywhere: 春遊賦詩圖, 林巒積翠圖
+   and 江山行旅圖. For those, and only those, the images here come from the
+   museum's own exhibition page, which serves the full originals -- 26,346px,
+   29,396px and 25,195px -- as WordPress uploads. They are the museum's
+   photographs and the museum grants no licence; they are used here because
+   the alternative was to show nothing of three paintings currently hanging in
+   a public gallery. Under Bridgeman v. Corel a faithful photograph of a flat
+   public-domain work attracts no new US copyright, which is the same doctrine
+   the Commons files rest on -- but the museum has not said so, and that is a
+   difference worth stating rather than blurring.
+
+   Where a free file exists it is preferred even when the museum's is bigger:
+   the Xia Gui is 22,492px on the museum's page against 16,250px on Commons,
+   and Commons is what is served here. The rule is to use the museum's file
+   only where there is no alternative at all. */
 /* Register. One entry per painting; the viewer reads ?p=<slug>
    and loads that entry's manifest and annotation files. A painting with no
    `dir` is known but not yet digitised -- the cabinet lists it and says so,
@@ -79,6 +92,9 @@ window.PAINTINGS = {
       dynasty:{zh:'南宋', en:'Southern Song'},
       museum:{zh:'納爾遜-阿特金斯藝術博物館', en:'The Nelson-Atkins Museum of Art'},
       acc:'63-19', inches:[118.75, 11.625], form:'handscroll',
+      dir:'assets/paintings/chunyou', tiles:'assets/paintings/chunyou/tiles/', w:26346, h:2500,
+      source:'The Nelson-Atkins Museum of Art', licence:'no licence granted — see the note above',
+      file:'https://nelson-atkins.org/art/exhibitions/legendary-landscapes-sublime-visions-from-chinas-song-dynasty/',
       viewer:'https://scrolls.uchicago.edu/view-scroll/174', record:'https://art.nelson-atkins.org/objects/20646', },
 
     /* 林巒積翠圖, not 千里江山圖. The museum's own Chinese title is 宋 江參 林巒積翠,
@@ -89,6 +105,9 @@ window.PAINTINGS = {
       artist:{zh:'江參', en:'Jiang Shen'}, dates:'c.1090–1138', dynasty:{zh:'南宋', en:'Song'},
       museum:{zh:'納爾遜-阿特金斯藝術博物館', en:'The Nelson-Atkins Museum of Art'},
       acc:'53-49', inches:[343.75, 13.25], form:'handscroll',
+      dir:'assets/paintings/linluan', tiles:'assets/paintings/linluan/tiles/', w:29396, h:3756,
+      source:'The Nelson-Atkins Museum of Art', licence:'no licence granted — see the note above',
+      file:'https://nelson-atkins.org/art/exhibitions/legendary-landscapes-sublime-visions-from-chinas-song-dynasty/',
       viewer:'https://scrolls.uchicago.edu/view-scroll/172', record:'https://art.nelson-atkins.org/objects/17247', },
 
     /* The museum files this as Jin 金, not Song -- the dynasty that held the north
@@ -99,6 +118,9 @@ window.PAINTINGS = {
       dynasty:{zh:'金', en:'Jin'},
       museum:{zh:'納爾遜-阿特金斯藝術博物館', en:'The Nelson-Atkins Museum of Art'},
       acc:'F74-35', inches:[164.5, 15.125], form:'handscroll',
+      dir:'assets/paintings/xinglv', tiles:'assets/paintings/xinglv/tiles/', w:25195, h:2400,
+      source:'The Nelson-Atkins Museum of Art', licence:'no licence granted — see the note above',
+      file:'https://nelson-atkins.org/art/exhibitions/legendary-landscapes-sublime-visions-from-chinas-song-dynasty/',
       viewer:'https://scrolls.uchicago.edu/view-scroll/176', record:'https://art.nelson-atkins.org/objects/25447', }
   ]
 };
