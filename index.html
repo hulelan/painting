@@ -154,6 +154,37 @@ body.topbar.icons .stop .lb{margin-top:3px}
 body.topbar.icons .ico{width:22px;height:22px}
 #marks{position:absolute;inset:0;z-index:7;pointer-events:none;display:none}
 /* roads draw themselves as you arrive — see drawIn() */
+/* writing on the painting: the cursor says the drag will frame, not zoom */
+body.writing #window{cursor:crosshair}
+body.writing #marquee{border-color:rgba(233,209,150,.9)}
+.nt.mine{border-style:dashed;border-color:rgba(150,205,180,.72);cursor:pointer}
+.nt.mine .lbl{color:#bfe6d2}
+#editor{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:70;
+  width:min(420px,90vw);display:none;background:rgba(20,17,12,.96);
+  border:1px solid #4a4030;border-radius:4px;padding:12px}
+#editor.on{display:block}
+#editor input,#editor textarea{width:100%;background:#0f0c09;color:#e4d8b8;
+  border:1px solid #3b342a;border-radius:2px;padding:7px 8px;margin-bottom:7px;
+  font:inherit;font-size:13px;resize:vertical}
+#editor .row{display:flex;gap:8px;justify-content:flex-end}
+#editor button{background:#241f18;color:#cbbd9c;border:1px solid #3b342a;
+  border-radius:2px;padding:5px 12px;font-size:12px;cursor:pointer}
+#editor button.ok{background:#4a3f1e;border-color:#7a6530;color:#f3e6c2}
+#editor button.del:hover{background:#4a221c;border-color:#7d3a2e;color:#f3d0c6}
+/* the colophons, read in the order the scroll unrolls */
+#script{position:fixed;right:22px;top:96px;bottom:26px;width:min(320px,42vw);z-index:60;
+  display:none;overflow-y:auto;background:rgba(18,15,11,.95);border:1px solid #3a3327;
+  border-radius:3px;padding:8px}
+#script.on{display:block}
+#script .row{padding:9px 10px;border-bottom:1px solid rgba(90,80,60,.18);cursor:pointer}
+#script .row:hover{background:rgba(217,180,90,.07)}
+#script .at{font-size:10px;color:#6f6552;letter-spacing:1px;margin-right:8px}
+#script .tt{font-size:13px;color:#d9caa4}
+#script .row.mine .tt{color:#bfe6d2}
+#script .bd{margin-top:4px;font-size:12px;line-height:1.5;color:#8d8270;text-wrap:pretty}
+#script .empty{padding:14px;font-size:12px;color:#6f6552;text-align:center}
+#scriptCount{margin-left:6px;font-size:10px;color:#6f6552}
+body.icons #scriptCount{display:none}
 /* a hanging scroll: no roll ends, no unrolling stops, no horizontal locator.
    Everything else -- zoom, notes, the panel, the language toggle -- stands. */
 body.vert #rollL, body.vert #rollR, body.vert #sheen{display:none !important}
@@ -374,6 +405,8 @@ body.topbar #loc{top:60px;bottom:auto}
     <div class="persp" data-t="loc"><span class="box"></span><span class="lb"></span></div>
     <div class="persp" data-t="roads"><span class="box"></span><span class="lb"></span></div>
   <div class="persp" data-t="notes"><span class="box"></span><span class="lb"></span></div>
+  <div class="persp" data-t="write"><span class="box"></span><span class="lb"></span></div>
+  <div class="persp" data-t="read"><span class="box"></span><span class="lb"></span><span id="scriptCount"></span></div>
   </div>
 </div>
 
@@ -385,6 +418,12 @@ body.topbar #loc{top:60px;bottom:auto}
   <div id="title"></div>
 </div>
 
+<div id="editor">
+  <input class="et" maxlength="90" placeholder="what is it">
+  <textarea class="eb" rows="3" maxlength="1200" placeholder="what you noticed"></textarea>
+  <div class="row"><button class="ok"></button><button class="del"></button><button class="no"></button></div>
+</div>
+<div id="script"></div>
 <div id="rollTag"></div>
 <script src="assets/data/paintings.js"></script>
 <script>
@@ -440,14 +479,16 @@ const desk=$('desk'), win=$('window'), rail=$('rail'), rollL=$('rollL'), rollR=$
 
 const I18N={
   en:{zoom:'Zoom', persp:'Perspectives', whole:'Whole', pane:'Pane', detail:'Detail',
-      wide:'Wide', loc:'Locator', marks:'Things', roads:'Roads', notes:'Noticed', lang:'中', back:'Return to Cabinet',
+      wide:'Wide', loc:'Locator', marks:'Things', roads:'Roads', notes:'Noticed', write:'Write', read:'Colophons', lang:'中',
+      save:'save', del:'delete', cancel:'cancel', back:'Return to Cabinet',
       uiZh:'中文', uiEn:'English', uiIco:'pictograms — no words',
       hidden:'hidden — click the painting to find them', found:'you found',
       title:(window.PAINTING? PAINTING.en+' · '+PAINTING.artist.en+' · '+PAINTING.dynasty.en
                              : 'A Thousand Li of Rivers and Mountains · Wang Ximeng · Northern Song'),
       seg:(i,n)=> i===0?'1 · opening' : i===n-1? n+' · end' : String(i+1)},
   zh:{zoom:'縮放', persp:'視角', whole:'全卷', pane:'展卷', detail:'細看',
-      wide:'通幅', loc:'卷影', marks:'物', roads:'道路', notes:'所見', lang:'EN', back:'返回畫匣',
+      wide:'通幅', loc:'卷影', marks:'物', roads:'道路', notes:'所見', write:'題', read:'題識', lang:'EN',
+      save:'存', del:'刪', cancel:'罷', back:'返回畫匣',
       uiZh:'中文', uiEn:'English', uiIco:'圖示 —— 不用文字',
       hidden:'已隱藏 —— 點畫面自己找', found:'你找到了',
       title:(window.PAINTING? PAINTING.zh+'　'+PAINTING.artist.zh+'　'+PAINTING.dynasty.zh
@@ -479,7 +520,20 @@ const ROADS=(window.ROADS&&window.ROADS.paths)||[];
 // a visitor as if it were known. What is shown is what a person looked at and
 // wrote down.
 const THINGS=[];
-const NOTES=(window.NOTES&&window.NOTES.items)||[];
+const PUB_NOTES=(window.NOTES&&window.NOTES.items)||[];
+// Your own notes live in this browser under the key the tracer uses, so a note
+// written here is the same object the tracer would have written -- one store,
+// two ways in. `mine` marks them apart on screen: mounted colophons in one
+// hand, yours in another, the way an unmounted sheet sits beside the scroll.
+const SLUG=(window.PAINTING&&PAINTING.slug)||'qianli';
+const NKEY = SLUG==='qianli' ? 'ccp_notes_v1' : 'ccp_notes_'+SLUG;
+let MYNOTES=[];
+try{ const o=JSON.parse(localStorage.getItem(NKEY)||'null'); if(o&&o.notes) MYNOTES=o.notes; }catch(e){}
+function saveMine(){
+  try{ localStorage.setItem(NKEY,JSON.stringify({srcW:L,srcH:PH,notes:MYNOTES})); }catch(e){}
+}
+const allNotes=()=>PUB_NOTES.concat(MYNOTES.map(n=>Object.assign({mine:true},n)));
+let NOTES=allNotes();
 const ITEMS = THINGS;   // empty: the raw detections were the census, and it did not hold up
 const TYPE={
   en:{building:'Building',pavilion:'Pavilion',temple:'Temple',pagoda:'Pagoda',bridge:'Bridge',
@@ -715,14 +769,26 @@ function renderMarks(sE){
 // A note has extent -- it was drawn as a box round something -- so it is drawn
 // as a box, not as the dot used for catalogue items. The remark rides with it
 // instead of waiting behind a click: there are four of them, not two hundred.
-const noteEls=NOTES.map(d=>{
-  const el=document.createElement('div'); el.className='nt';
-  el.innerHTML='<span class="lbl"></span>';
-  el.querySelector('.lbl').textContent=d.title||'';
-  if(d.text) el.title=d.text;
-  el.addEventListener('pointerdown',ev=>ev.stopPropagation());
-  marksEl.appendChild(el); return el;
-});
+let noteEls=[];
+function buildNotes(){
+  noteEls.forEach(e=>e.remove());
+  NOTES=allNotes();
+  noteEls=NOTES.map(d=>{
+    const el=document.createElement('div'); el.className='nt'+(d.mine?' mine':'');
+    el.innerHTML='<span class="lbl"></span>';
+    el.querySelector('.lbl').textContent=d.title||'';
+    if(d.text) el.title=d.text;
+    el.addEventListener('pointerdown',ev=>ev.stopPropagation());
+    el.addEventListener('click',ev=>{ ev.stopPropagation(); if(d.mine) editNote(d); });
+    marksEl.appendChild(el); return el;
+  });
+  // writing the first note has to enable the toggle that shows notes, or the
+  // note is saved and invisible
+  const np=document.querySelector('.persp[data-t="notes"]');
+  if(np){ np.classList.toggle('off', NOTES.length===0); if(NOTES.length) np.title=''; }
+  buildScript();
+}
+buildNotes();
 // A note is about something small -- a waterfall 250px wide on a 41,783px scroll.
 // At full view its box is four pixels across and its label is noise, so notes
 // arrive with the zoom that makes them legible: nothing below 1.3x, full weight
@@ -898,6 +964,13 @@ function winUp(){
   const w=parseFloat(marqEl.style.width)||0, h=parseFloat(marqEl.style.height)||0;
   const lf=parseFloat(marqEl.style.left)||0, tp=parseFloat(marqEl.style.top)||0;
   marqEl.style.display='none'; marq=null;
+  if(writing){
+    if(w>10&&h>10){
+      const sE0=scale*Z;
+      newNoteFromBox(x0+lf/sE0, y0+tp/sE0, w/sE0, h/sE0);
+    }
+    return;
+  }
   if(w<26||h<26){
     if(!showMarks && ITEMS.length && w<6 && h<6){      // a tap, not a scrub: go hunting
       const sE0=scale*Z, cx=(lf-TX)/sE0, cy=(tp-TY)/sE0;
@@ -1004,6 +1077,8 @@ document.querySelectorAll('.persp').forEach(el=>{
     if(k==='marks'){ showMarks=!showMarks; el.classList.toggle('on',showMarks); }
     if(k==='roads'){ if(!ROADS.length) return; showRoads=!showRoads; el.classList.toggle('on',showRoads); }
     if(k==='notes'){ if(!NOTES.length) return; showNotes=!showNotes; el.classList.toggle('on',showNotes); }
+    if(k==='write'){ setWriting(!writing); return; }
+    if(k==='read'){ $('script').classList.toggle('on'); buildScript(); return; }
     render();
   });
 });
@@ -1025,6 +1100,9 @@ const ICO={
         '<circle cx="11" cy="17" r="2.2"/><circle cx="19.5" cy="15" r="2.2"/>',
   roads:'<path d="M2 17 L6 12 L10 14 L14 8 L18 10 L22 6" stroke-width="2"/>',
   // a note is a box drawn round something, so the icon is a box with a corner turned
+  // a brush laid across the page, and a page of writing
+  write:'<path d="M4 20 L13 11"/><path d="M12 10 L17 5 L20 8 L15 13 Z"/><circle class="f" cx="4.6" cy="19.4" r="1.5"/>',
+  read:'<rect x="4" y="3" width="16" height="18"/><path d="M8 8 H16"/><path d="M8 12 H16"/><path d="M8 16 H13"/>',
   notes:'<rect x="3" y="4" width="18" height="14"/><path d="M7 21 L11 17"/><circle class="f" cx="17" cy="11" r="1.6"/>'
 };
 function ico(k){
@@ -1037,6 +1115,68 @@ function iconise(el,key,word){
   if(ICONS_ON&&ICO[key]){ el.innerHTML=ico(key); el.setAttribute('aria-label',word); el.title=word; }
   else el.textContent=word;
 }
+// ---- writing on the painting ---------------------------------------------
+// A colophon is placed: it sits beside what it answers. So writing is framing.
+// In write mode a drag draws a box instead of choosing a zoom, and lets go into
+// an editor. Everything else -- pan, pinch, the panel -- is untouched, because
+// the mode is a flag the drag handler reads, not a separate interface.
+let writing=false, editing=null;
+function setWriting(on){
+  writing=on;
+  document.body.classList.toggle('writing',on);
+  const el=document.querySelector('.persp[data-t="write"]');
+  if(el) el.classList.toggle('on',on);
+  if(on && !showNotes){ showNotes=true;
+    const n=document.querySelector('.persp[data-t="notes"]'); if(n) n.classList.add('on');
+  }
+  render();
+}
+function editNote(n){
+  editing=n;
+  const box=$('editor');
+  box.querySelector('.et').value=n.title||'';
+  box.querySelector('.eb').value=n.text||'';
+  box.classList.add('on');
+  box.querySelector('.et').focus();
+}
+function closeEditor(){ $('editor').classList.remove('on'); editing=null; }
+function newNoteFromBox(x,y,w,h){
+  const id=MYNOTES.reduce((m,n)=>Math.max(m,n.id||0),0)+1;
+  const n={id:id, x:Math.round(x+w/2), y:Math.round(y+h/2),
+           w:Math.round(w), h:Math.round(h), type:'note', title:'', text:''};
+  MYNOTES.push(n); saveMine(); buildNotes(); render(); editNote(n);
+}
+
+// ---- reading the colophons in order --------------------------------------
+// Notes are found by zooming, which makes them discoveries and not a text. A
+// handscroll's inscriptions are read in the order the scroll unrolls, so this
+// lists them that way: right to left, which for these coordinates is by x.
+function buildScript(){
+  const host=$('script'); if(!host) return;
+  const rows=NOTES.slice().sort((a,b)=> (VERT? a.y-b.y : b.x-a.x));
+  host.innerHTML = rows.length ? '' :
+    '<div class="empty">'+(lang==='en'?'nothing written yet':'尚無題識')+'</div>';
+  rows.forEach(n=>{
+    const at = VERT ? Math.round(100*n.y/PH) : Math.round(100*(CR-n.x)/CR);
+    const d=document.createElement('div');
+    d.className='row'+(n.mine?' mine':'');
+    d.innerHTML='<span class="at">'+at+'%</span>'+
+      '<span class="tt">'+(n.title||(lang==='en'?'(untitled)':'（無題）'))+'</span>'+
+      (n.text?'<div class="bd">'+n.text+'</div>':'');
+    d.addEventListener('click',()=>{ gotoNote(n); });
+    host.appendChild(d);
+  });
+  const c=$('scriptCount');
+  if(c) c.textContent = rows.length ? rows.length+(lang==='en'?' notes':' 則') : '';
+}
+function gotoNote(n){
+  const want = Math.min(nativeZ(), Math.max(1.6, (VERT?apW:apH)/((n.w||300)*scale*2.2)));
+  Z=Math.max(MINZ,Math.min(nativeZ(),want));
+  x0=n.x-visW()/2; y0=n.y-visH()/2;
+  customUsed=true; mode='custom'; clamp(); buildTrack(); render();
+  $('script').classList.remove('on');
+}
+
 // --- language --------------------------------------------------------------
 function applyLang(){
   ICONS_ON = ui==='ico';
@@ -1069,6 +1209,15 @@ function applyLang(){
   iconise(rp.querySelector('.lb'),'roads',t('roads'));
   rp.classList.toggle('off', ROADS.length===0);
   rp.title = ROADS.length? '' : 'no roads traced yet — use trace.html';
+  const wp=document.querySelector('.persp[data-t="write"]');
+  iconise(wp.querySelector('.lb'),'write',t('write'));
+  const rp2=document.querySelector('.persp[data-t="read"]');
+  iconise(rp2.querySelector('.lb'),'read',t('read'));
+  const ed=$('editor');
+  ed.querySelector('.ok').textContent=t('save');
+  ed.querySelector('.del').textContent=t('del');
+  ed.querySelector('.no').textContent=t('cancel');
+  buildScript();
   const np=document.querySelector('.persp[data-t="notes"]');
   iconise(np.querySelector('.lb'),'notes',t('notes'));
   np.classList.toggle('off', NOTES.length===0);
@@ -1083,7 +1232,26 @@ $('lang').addEventListener('click',()=>{
   localStorage.setItem('ccp_ui',ui);
   applyLang();
 });
+(function(){
+  const ed=$('editor');
+  ed.querySelector('.ok').onclick=()=>{
+    if(!editing) return;
+    editing.title=ed.querySelector('.et').value.trim();
+    editing.text =ed.querySelector('.eb').value.trim();
+    saveMine(); buildNotes(); render(); closeEditor();
+  };
+  ed.querySelector('.del').onclick=()=>{
+    if(!editing) return;
+    MYNOTES=MYNOTES.filter(n=>n!==editing);
+    saveMine(); buildNotes(); render(); closeEditor();
+  };
+  ed.querySelector('.no').onclick=closeEditor;
+  $('script').addEventListener('pointerdown',e=>e.stopPropagation());
+  ed.addEventListener('pointerdown',e=>e.stopPropagation());
+})();
 addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ if($('editor').classList.contains('on')) closeEditor();
+                        else if(writing) setWriting(false); }
   if(e.key==='1') setMode('fold'); else if(e.key==='2') setMode('wide');
   else if(e.key==='3') setMode('pane'); else if(e.key==='4'&&customUsed) setMode('custom');
 });
