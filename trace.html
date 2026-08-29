@@ -114,7 +114,7 @@ html,body{overscroll-behavior:none}
 <body>
 
 <div id="top">
-  <strong style="color:#e0ba78;font-weight:600">Road tracer</strong>
+  <strong style="color:#e0ba78;font-weight:600" id="which">Road tracer</strong>
   <span class="sep"></span>
   <button id="modeR" class="on">Roads</button>
   <button id="modeN">Objects</button>
@@ -202,7 +202,21 @@ html,body{overscroll-behavior:none}
   <span id="sSnap"></span>
 </div>
 
-<script src="assets/scroll/manifest.js"></script>
+<script src="assets/data/paintings.js"></script>
+<script>
+/* Which scroll is being traced. Same lookup the viewer does, so ?p=<slug>
+   means the same thing in both places. */
+(function(){
+  var R=window.PAINTINGS, m=/[?&]p=([a-z0-9_-]+)/i.exec(location.search);
+  var slug=(m&&m[1])||R.default;
+  var it=R.items.filter(function(x){return x.slug===slug;})[0];
+  if(!it||!it.dir) it=R.items.filter(function(x){return x.slug===R.default;})[0];
+  window.PAINTING=it;
+  document.write('<scr'+'ipt src="'+it.dir+'/manifest.js"></scr'+'ipt>');
+  if((it.data||[]).indexOf('roads')>=0)
+    document.write('<scr'+'ipt src="assets/data/roads.js" onerror="void 0"></scr'+'ipt>');
+})();
+</script>
 <script src="assets/data/roads.js" onerror="void 0"></script>
 <script>
 (function(){
@@ -219,7 +233,13 @@ let nextId = 1;
 // ?review opens a scratch copy — your own trace lives under a different key and
 // is never written to, so anything done in review mode is throwaway.
 const REVIEW = /(^|[?&])review(=|&|$)/.test(location.search);
-const LSKEY = REVIEW ? 'ccp_roads_review' : 'ccp_roads_v1';
+// Storage is per painting. It has to be: a note is a pair of coordinates, and
+// the same pair means a waterfall on one scroll and open sky on another. The
+// first scroll keeps the original key names so work already in a browser is
+// found where it was left.
+const SLUG = (window.PAINTING&&PAINTING.slug) || 'qianli';
+const K = n => SLUG==='qianli' ? ('ccp_'+n+'_v1') : ('ccp_'+n+'_'+SLUG);
+const LSKEY = REVIEW ? 'ccp_roads_review' : K('roads');
 const SEENKEY = 'ccp_roads_review_seen';   // proposal ids this browser has been shown
 const PROPOSED = id => id>=900;      // ids 900+ are proposals awaiting approval
 // A new road must never be given an id in the proposal range. It used to take
@@ -264,7 +284,7 @@ let curNote=null, dragNote=null;
 // bare coordinate named three different things, because at this scale a point
 // sits inside several objects at once. Two clicks fix that: opposite corners.
 let boxA=null, boxPrev=null;
-const NKEY='ccp_notes_v1';
+const NKEY=K('notes');
 function loadNotes(){
   try{ const o=JSON.parse(localStorage.getItem(NKEY)); if(o&&o.notes) notes=o.notes; }catch(e){}
 }
@@ -660,6 +680,7 @@ function undoPt(){
 $('bNew').onclick=newPath; $('bFinish').onclick=finish; $('bUndo').onclick=undoPt;
 $('bFit').onclick=fit;
 $('tog').onclick=()=>document.getElementById('paths').classList.toggle('open');
+if(window.PAINTING) $('which').textContent=PAINTING.zh;
 $('bMore').onclick=()=>{ const t=$('top'); t.classList.toggle('showmore');
   $('bMore').classList.toggle('on',t.classList.contains('showmore')); };
 $('bIn').onclick=()=>zoomAt(innerWidth/2,innerHeight/2,1.3);
@@ -1029,7 +1050,7 @@ $('shareClose').onclick=()=>$('share').classList.remove('on');
 // the image they were taken on.
 const FILE_V=1;
 function myFile(){
-  return {v:FILE_V, of:'千里江山图', srcW:L, srcH:PH,
+  return {v:FILE_V, of:(window.PAINTING?PAINTING.zh:'千里江山图'), slug:SLUG, srcW:L, srcH:PH,
           savedAt:new Date().toISOString(),
           roads:paths.filter(p=>p.pts.length>1).map(p=>({id:p.id,pts:p.pts})),
           notes:notes};
@@ -1054,8 +1075,9 @@ $('fImport').onchange=e=>{
       const o=JSON.parse(txt.slice(j,k+1));
       // Refuse a file traced on a different image rather than silently placing
       // its coordinates on this one -- that would look like work and be nonsense.
-      if(o.srcW && Math.abs(o.srcW-L)>2){
-        $('sSave').textContent='that file was traced on a '+o.srcW+'px image; this scroll is '+L+'px — not loading it';
+      if((o.slug && o.slug!==SLUG) || (o.srcW && Math.abs(o.srcW-L)>2)){
+        $('sSave').textContent='that file belongs to '+(o.of||('a '+o.srcW+'px image'))+
+          ', not to '+(window.PAINTING?PAINTING.zh:'this scroll')+' — not loading it';
         e.target.value=''; return;
       }
       const inRoads=(o.roads||o.paths||[]).filter(p=>p.pts&&p.pts.length>1);

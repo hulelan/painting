@@ -406,6 +406,10 @@ body.topbar #loc{top:60px;bottom:auto}
   (it.data||[]).forEach(function(d){
     document.write('<scr'+'ipt src="assets/data/'+d+'.js" onerror="void 0"></scr'+'ipt>');
   });
+  // every other scroll's notes live in their own file; a 404 is the normal
+  // case for a painting nobody has written on yet, hence the silent onerror
+  if(slug!==R.default)
+    document.write('<scr'+'ipt src="assets/data/notes-'+slug+'.js" onerror="void 0"></scr'+'ipt>');
 })();
 </script>
 <script>

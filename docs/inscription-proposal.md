@@ -1,117 +1,120 @@
-# 題跋 — letting people write on the painting
+# 題跋 — writing on the paintings
 
-*A proposal, not a build. The last section is the one decision I can't make for you.*
+*Where the plan stands, rewritten now that the site holds eight scrolls rather
+than one. The earlier version is in git history.*
 
-## The precedent is the point
+## The frame
 
-The framing isn't social media, and it isn't comments. It's **題跋** (tíbá) —
-colophons. On the actual 千里江山图 there are inscriptions by 蔡京 and by 溥光,
-added decades apart, and the Qianlong emperor wrote on it too. **The scroll as it
-exists today is the painting plus its responses**, mounted on the same silk. A
-later viewer reads both. Nobody calls that a comment section.
+Not comments, and not social media: **題跋**. On 千里江山圖 itself there are
+inscriptions by 蔡京 and 溥光, added decades apart, and Qianlong wrote on it too.
+**The scroll as it exists today is the painting plus its responses**, mounted on
+the same silk, and a later viewer reads both.
 
-Two things follow that a comment box would get wrong:
+Two consequences a comment box would get wrong:
 
-- **A colophon is placed.** It sits at a particular point on the roll — usually
-  after the painting, sometimes in the margin beside what it responds to. Your
-  notes already have this: a box round a thing, not a reply to a thread.
-- **A colophon is signed and dated, and it is permanent.** It is not a reaction.
-  This argues for making it slightly *harder* to write than a comment, not easier.
+- **A colophon is placed.** It sits at a point on the roll, beside what it
+  answers. The notes here already work that way — a box round a thing.
+- **A colophon is signed, dated, and permanent.** Not a reaction. That argues
+  for making it slightly *harder* to write than a comment, not easier.
 
-The three tiers you named map onto this cleanly:
+## Two artefacts, not three visibilities
 
-| tier | 題跋 equivalent | where it lives |
-|---|---|---|
-| private snippet | a note in your own hand, unmounted | this browser only |
-| private comment | a draft colophon, written but not mounted | your file, or your account |
-| public | mounted on the scroll for later viewers | the server, after review |
-
-## What already works
-
-- **Placement, drawing, writing** — `trace.html` Objects mode.
-- **Persistence for one person** — `Save file` writes a JSON you keep; `Import…`
-  merges it back, and refuses a file traced on a different image.
-- **Publication** — a commit to `notes.js`, which the viewer renders as *Noticed*.
-
-So tier 1 and tier 2 exist today, and tier 3 exists with me as the mount.
-
-## What's missing, and what it costs
-
-Everything hard is in tier 3, and none of it is the writing.
-
-**A static site cannot accept a write.** GitHub Pages serves files. Any public
-tier needs one endpoint that accepts a POST. That is the whole architectural
-question; the rest follows from it.
-
-Three ways, honestly costed:
-
-**A. No accounts. A worker, a queue, and you.**
-A Cloudflare Worker (~60 lines) accepts a colophon, stores it in KV as *pending*,
-and the viewer reads only *approved*. You approve from a page only you can open.
-Identity is whatever name the writer types.
-*Cost:* a free Cloudflare account, one deploy, and your attention per submission.
-*Risk:* an open write endpoint gets junk eventually. Rate limit, size cap, and
-the fact that nothing is visible until you approve it, contain that.
-*This is the one I'd build.*
-
-**B. Accounts, via someone else's.** Sign in with GitHub. Identity solved, spam
-mostly solved, no password storage. But it asks a visitor to have a GitHub
-account to write on a painting, which selects for programmers — the wrong crowd
-for this.
-
-**C. Accounts you run.** Email, passwords, resets, sessions, a database, and a
-duty of care over other people's data. For a site about a scroll, no.
-
-**On "some way for it to persist":** persistence and accounts are separable, and
-that's the useful insight. A file you save is persistence without identity. An
-account is identity, which you only need when *other people* must see your name
-attached to something. Tier 1 and 2 need no account at all. Only tier 3 does, and
-option A gets even that with a typed name.
-
-## What I'd build, in order
-
-1. **Colophon mode in the viewer** — write where you're looking, without going to
-   `trace.html`. Saves to this browser. *No backend.*
-2. **A signed export** — extend the save file to hold colophons. *No backend.*
-3. **The worker** — submit → pending → you approve → public. One deploy.
-4. **A reading view** — colophons in scroll order, so the responses can be read
-   as a sequence, the way you'd unroll to the end and read what people wrote.
-
-Steps 1 and 2 are worth doing whether or not 3 ever happens.
-
-## Where you've landed: accounts and a public square
-
-Later steer, recorded before it gets lost:
+The steer that settled this:
 
 > people can have accounts and they can have their own way. There might be a
-> public version of the painting and people can comment on it... There is a
-> private version so it might be something like accounts in a public square.
+> public version of the painting and people can comment on it… There is a
+> private version.
 
-That is a different shape from the tiers above, and a clearer one. Not three
-grades of visibility on one artefact — **two artefacts**:
+So:
 
-- **your painting** — a copy that is yours, that you write on freely, that
-  nobody else sees and nobody moderates;
-- **the public square** — one shared scroll, where what you post is mounted for
-  everyone, and where the rules of a shared place apply.
+- **your painting** — a copy that is yours, written on freely, seen by nobody,
+  moderated by nobody;
+- **the public square** — one shared scroll where what you post is mounted for
+  everyone, under the rules of a shared place.
 
-Publishing is then a deliberate crossing from one to the other, not a visibility
-flag. That is easier to explain to a visitor and easier to reason about in code:
-private is a document, public is a place.
+Publishing is a deliberate crossing between them, not a visibility flag.
+**Private is a document. Public is a place.** That is easier to explain and
+easier to build than three grades of one thing.
 
-It does need accounts, because "your painting" has to be yours on a second
-device and after clearing the browser. Option B (sign in with someone else's
-identity) becomes the reasonable one — the objection I raised, that GitHub
-selects for programmers, is answered by using something ordinary instead.
+## What changed: there are eight paintings now
 
-**Not building this yet.** Recorded so the next session starts here rather than
-from the tier model.
+This is the part the earlier plan did not account for, and it moves the first
+step. Annotation now has three axes, not two: *whose*, *how public*, and
+**which painting**.
 
-## The decision I can't make
+A note is a pair of coordinates. The same pair is a waterfall on one scroll and
+empty sky on another. Until today the tracer was hard-wired to 千里江山圖 and
+kept everything under one key, so the seven new scrolls could not be annotated
+at all — and pointing the tracer at one would have written its notes into the
+first scroll's box.
+
+**Fixed today** (this is prerequisite, not the discourse feature):
+
+- `trace.html?p=<slug>` traces any scroll in the register, and says which one.
+- Storage is per painting: `ccp_roads_<slug>`, `ccp_notes_<slug>`. 千里江山圖
+  keeps the original key names, so work already in a browser is where it was.
+- The save file records its `slug`; loading refuses a file from another
+  painting by name rather than by pixel width.
+- The viewer reads `notes-<slug>.js`, so publishing one scroll's notes cannot
+  put them on another.
+
+## Where each tier stands
+
+| tier | 題跋 equivalent | mechanism | state |
+|---|---|---|---|
+| private snippet | a note in your own hand | localStorage, per painting | **works** |
+| private, kept | an unmounted colophon | `Save file` → JSON you own | **works** |
+| public | mounted on the scroll | a commit to `notes-<slug>.js` | **works, with me as the mount** |
+
+Personal annotation is therefore *done*, across all eight scrolls. What does not
+exist is anyone but you being able to write.
+
+## The one architectural fact
+
+**A static site cannot accept a write.** GitHub Pages serves files. Every public
+tier needs exactly one endpoint that accepts a POST; everything else follows
+from that, and nothing else about the design is hard.
+
+Three ways, costed honestly:
+
+**A. No accounts.** A worker (~60 lines) takes a colophon, stores it *pending*,
+and the viewer reads only *approved*. Identity is a typed name.
+*Cost:* a free Cloudflare account, one deploy, your attention per submission.
+*Risk:* an open write endpoint eventually attracts junk; rate limit, size cap,
+and approval-before-visible contain it.
+
+**B. Accounts through someone else's.** Sign in with Google or Apple. Identity
+and spam mostly solved, no passwords stored. Needed for "your painting" to
+still be yours on a second device and after clearing the browser.
+*Cost:* an OAuth app, a session store, and a real privacy question — you would
+be holding other people's identities.
+
+**C. Accounts you run.** Email, passwords, resets, a database, a duty of care.
+For a site about scrolls, no.
+
+**Persistence and identity are separable, and that is the useful part.** A file
+is persistence without identity. An account is identity, which you need only
+when other people must see a name attached. Tiers 1 and 2 need no account and
+already work. Only the public square does.
+
+## The order I would build it
+
+1. **Colophon mode in the viewer** — write where you are looking, without
+   crossing to `trace.html`. Saves to this browser, per painting. *No backend.*
+2. **A reading view** — everyone's notes on a scroll in scroll order, read as a
+   sequence the way you would unroll to the end and read what was written.
+   *No backend; works on your own notes today.*
+3. **The endpoint** — submit → pending → approved → public. Option A.
+4. **Accounts** — only if "your painting on any device" turns out to matter more
+   than "one shared scroll". Option B, and not before.
+
+Steps 1 and 2 are worth doing whether or not 3 ever happens, and 2 is the one
+that would most change how the site reads.
+
+## The decision that is not mine
 
 **Does a stranger's writing appear on your painting, and who decides?**
 
-Everything above assumes: you approve, publicly-visible writing carries a name,
-and nothing is anonymous once mounted. If instead you want it open and
-unmoderated, that's a different system — and a different set of things to worry
-about, most of them not technical.
+Everything above assumes: you approve, public writing carries a name, nothing
+anonymous gets mounted. Open and unmoderated is a different system, and most of
+what it needs is not technical.

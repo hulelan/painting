@@ -50,7 +50,7 @@ window.PAINTINGS = {
       artist:{zh:'王希孟', en:'Wang Ximeng'}, dates:'1096–1119', dynasty:{zh:'北宋', en:'Northern Song'},
       museum:{zh:'故宮博物院', en:'The Palace Museum, Beijing'},
       dir:'assets/scroll', tiles:'assets/scroll/tiles/',
-      data:['episodes','details','roads','notes'],
+      data:['episodes','details','roads','notes'],   // notes.js is this scroll's; others get notes-<slug>.js
       w:41783, h:1673 },
 
     /* The Nelson-Atkins show, Legendary Landscapes: Sublime Visions from
