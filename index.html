@@ -561,7 +561,7 @@ const PUB_NOTES=(window.NOTES&&window.NOTES.items)||[];
 // hand, yours in another, the way an unmounted sheet sits beside the scroll.
 const SLUG=(window.PAINTING&&PAINTING.slug)||'qianli';
 const NKEY = SLUG==='qianli' ? 'ccp_notes_v1' : 'ccp_notes_'+SLUG;
-let MYNOTES=[];
+let MYNOTES=[], ROOMNOTES=[], ROOMLOG=[];
 try{ const o=JSON.parse(localStorage.getItem(NKEY)||'null'); if(o&&o.notes) MYNOTES=o.notes; }catch(e){}
 function saveMine(){
   try{ localStorage.setItem(NKEY,JSON.stringify({srcW:L,srcH:PH,notes:MYNOTES})); }catch(e){}
@@ -1172,7 +1172,7 @@ const ROOM=(function(){
   let api=''; try{ api=localStorage.getItem('ccp_api')||''; }catch(e){}
   return api ? {id:r[1], api:api} : {id:r[1], api:''};
 })();
-let ROOMNOTES=[], ROOMLOG=[], roomSeq=-1, roomName='';
+let roomSeq=-1, roomName='';
 try{ roomName=localStorage.getItem('ccp_name')||''; }catch(e){}
 function askName(){
   const n=(window.prompt(lang==='en'?'Sign your notes as:':'題識署名：', roomName||'')||'').trim().slice(0,40);
