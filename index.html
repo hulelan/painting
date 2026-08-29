@@ -185,6 +185,33 @@ body.writing #marquee{border-color:rgba(233,209,150,.9)}
 #script .empty{padding:14px;font-size:12px;color:#6f6552;text-align:center}
 #scriptCount{margin-left:6px;font-size:10px;color:#6f6552}
 body.icons #scriptCount{display:none}
+#log{position:fixed;right:22px;top:96px;bottom:26px;width:min(340px,46vw);z-index:60;
+  display:none;overflow-y:auto;background:rgba(18,15,11,.95);border:1px solid #3a3327;
+  border-radius:3px;padding:8px}
+#log.on{display:block}
+#log .lhead{font-size:12px;letter-spacing:2px;color:#c2ae7f;padding:6px 8px 8px}
+#log .who{font-size:11px;color:#8d8270;padding:0 8px 10px;border-bottom:1px solid rgba(90,80,60,.2)}
+#log .lrow{display:flex;gap:7px;align-items:baseline;flex-wrap:wrap;
+  padding:7px 8px;border-bottom:1px solid rgba(90,80,60,.12);font-size:12px}
+#log .lt{color:#635a49;font-size:10px;min-width:82px}
+#log .lb2{color:#bfe6d2}
+#log .lv{color:#8d8270}
+#log .lw{color:#6f6552;font-size:11px}
+#log .lq{color:#d9caa4}
+#log .empty{padding:14px;font-size:12px;color:#6f6552;text-align:center}
+#log .act{display:flex;gap:8px;padding:10px 8px 4px}
+#log .act button{flex:1;background:#241f18;color:#cbbd9c;border:1px solid #3b342a;
+  border-radius:2px;padding:6px 8px;font-size:11px;cursor:pointer}
+#log .act button:hover{background:#2e2820;color:#f0e6cd}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:80;
+  background:rgba(20,17,12,.95);border:1px solid #4a4030;border-radius:3px;
+  padding:8px 14px;font-size:12px;color:#d8c9a4;opacity:0;transition:opacity .3s;
+  pointer-events:none;max-width:86vw;text-align:center}
+#toast.on{opacity:1}
+.nt.room{border-color:rgba(190,170,235,.66)}
+.nt.room .lbl{color:#cfc2ee}
+#script .row.room .tt{color:#cfc2ee}
+#script .by{font-size:10px;color:#8d8270;margin-left:7px}
 /* a hanging scroll: no roll ends, no unrolling stops, no horizontal locator.
    Everything else -- zoom, notes, the panel, the language toggle -- stands. */
 body.vert #rollL, body.vert #rollR, body.vert #sheen{display:none !important}
@@ -407,6 +434,7 @@ body.topbar #loc{top:60px;bottom:auto}
   <div class="persp" data-t="notes"><span class="box"></span><span class="lb"></span></div>
   <div class="persp" data-t="write"><span class="box"></span><span class="lb"></span></div>
   <div class="persp" data-t="read"><span class="box"></span><span class="lb"></span><span id="scriptCount"></span></div>
+  <div class="persp" data-t="log"><span class="box"></span><span class="lb"></span></div>
   </div>
 </div>
 
@@ -424,6 +452,7 @@ body.topbar #loc{top:60px;bottom:auto}
   <div class="row"><button class="ok"></button><button class="del"></button><button class="no"></button></div>
 </div>
 <div id="script"></div>
+<div id="log"></div>
 <div id="rollTag"></div>
 <script src="assets/data/paintings.js"></script>
 <script>
@@ -479,7 +508,7 @@ const desk=$('desk'), win=$('window'), rail=$('rail'), rollL=$('rollL'), rollR=$
 
 const I18N={
   en:{zoom:'Zoom', persp:'Perspectives', whole:'Whole', pane:'Pane', detail:'Detail',
-      wide:'Wide', loc:'Locator', marks:'Things', roads:'Roads', notes:'Noticed', write:'Write', read:'Colophons', lang:'中',
+      wide:'Wide', loc:'Locator', marks:'Things', roads:'Roads', notes:'Noticed', write:'Write', read:'Colophons', log:'Room', lang:'中',
       save:'save', del:'delete', cancel:'cancel', back:'Return to Cabinet',
       uiZh:'中文', uiEn:'English', uiIco:'pictograms — no words',
       hidden:'hidden — click the painting to find them', found:'you found',
@@ -487,7 +516,7 @@ const I18N={
                              : 'A Thousand Li of Rivers and Mountains · Wang Ximeng · Northern Song'),
       seg:(i,n)=> i===0?'1 · opening' : i===n-1? n+' · end' : String(i+1)},
   zh:{zoom:'縮放', persp:'視角', whole:'全卷', pane:'展卷', detail:'細看',
-      wide:'通幅', loc:'卷影', marks:'物', roads:'道路', notes:'所見', write:'題', read:'題識', lang:'EN',
+      wide:'通幅', loc:'卷影', marks:'物', roads:'道路', notes:'所見', write:'題', read:'題識', log:'共室', lang:'EN',
       save:'存', del:'刪', cancel:'罷', back:'返回畫匣',
       uiZh:'中文', uiEn:'English', uiIco:'圖示 —— 不用文字',
       hidden:'已隱藏 —— 點畫面自己找', found:'你找到了',
@@ -532,7 +561,10 @@ try{ const o=JSON.parse(localStorage.getItem(NKEY)||'null'); if(o&&o.notes) MYNO
 function saveMine(){
   try{ localStorage.setItem(NKEY,JSON.stringify({srcW:L,srcH:PH,notes:MYNOTES})); }catch(e){}
 }
-const allNotes=()=>PUB_NOTES.concat(MYNOTES.map(n=>Object.assign({mine:true},n)));
+// three hands on one scroll: mounted, the room's, and yours
+const allNotes=()=>PUB_NOTES
+  .concat(ROOMNOTES.filter(n=>(n.slug||'qianli')===SLUG).map(n=>Object.assign({room:true},n)))
+  .concat(MYNOTES.map(n=>Object.assign({mine:true},n)));
 let NOTES=allNotes();
 const ITEMS = THINGS;   // empty: the raw detections were the census, and it did not hold up
 const TYPE={
@@ -1079,6 +1111,7 @@ document.querySelectorAll('.persp').forEach(el=>{
     if(k==='notes'){ if(!NOTES.length) return; showNotes=!showNotes; el.classList.toggle('on',showNotes); }
     if(k==='write'){ setWriting(!writing); return; }
     if(k==='read'){ $('script').classList.toggle('on'); buildScript(); return; }
+    if(k==='log'){ $('log').classList.toggle('on'); buildLog(); return; }
     render();
   });
 });
@@ -1102,6 +1135,10 @@ const ICO={
   // a note is a box drawn round something, so the icon is a box with a corner turned
   // a brush laid across the page, and a page of writing
   write:'<path d="M4 20 L13 11"/><path d="M12 10 L17 5 L20 8 L15 13 Z"/><circle class="f" cx="4.6" cy="19.4" r="1.5"/>',
+  // several hands round one table
+  log:'<circle cx="12" cy="12" r="3"/><circle class="f" cx="5" cy="6" r="1.7"/>'+
+      '<circle class="f" cx="19" cy="6" r="1.7"/><circle class="f" cx="5" cy="18" r="1.7"/>'+
+      '<circle class="f" cx="19" cy="18" r="1.7"/>',
   read:'<rect x="4" y="3" width="16" height="18"/><path d="M8 8 H16"/><path d="M8 12 H16"/><path d="M8 16 H13"/>',
   notes:'<rect x="3" y="4" width="18" height="14"/><path d="M7 21 L11 17"/><circle class="f" cx="17" cy="11" r="1.6"/>'
 };
@@ -1115,6 +1152,52 @@ function iconise(el,key,word){
   if(ICONS_ON&&ICO[key]){ el.innerHTML=ico(key); el.setAttribute('aria-label',word); el.title=word; }
   else el.textContent=word;
 }
+// ---- the room -------------------------------------------------------------
+// A shared notebook across every painting, not one per scroll: the trip is the
+// unit. Joining is holding the link. #room=<id> is the credential and stays in
+// the fragment, which browsers never send to a server -- so it is not in any
+// log, referrer or analytics trail. There is no account and no password; that
+// is the right trade for a group of friends and the wrong one for the public.
+const ROOM=(function(){
+  const h=location.hash;
+  const r=/[#&]room=([A-Za-z0-9_-]{8,64})/.exec(h);
+  const a=/[#&]api=([^&]+)/.exec(h);
+  if(a){ try{ localStorage.setItem('ccp_api', decodeURIComponent(a[1]).replace(/\/+$/,'')); }catch(e){} }
+  if(!r) return null;
+  let api=''; try{ api=localStorage.getItem('ccp_api')||''; }catch(e){}
+  return api ? {id:r[1], api:api} : {id:r[1], api:''};
+})();
+let ROOMNOTES=[], ROOMLOG=[], roomSeq=-1, roomName='';
+try{ roomName=localStorage.getItem('ccp_name')||''; }catch(e){}
+function askName(){
+  const n=(window.prompt(lang==='en'?'Sign your notes as:':'題識署名：', roomName||'')||'').trim().slice(0,40);
+  if(n){ roomName=n; try{ localStorage.setItem('ccp_name',n); }catch(e){} }
+  return roomName;
+}
+function roomFetch(){
+  if(!ROOM||!ROOM.api) return Promise.resolve();
+  return fetch(ROOM.api+'/r/'+ROOM.id,{cache:'no-store'})
+    .then(r=>r.ok?r.json():Promise.reject(new Error('HTTP '+r.status)))
+    .then(o=>{ ROOMNOTES=o.notes||[]; ROOMLOG=o.log||[]; roomSeq=o.seq;
+               buildNotes(); render(); });
+}
+function roomPost(op,payload){
+  if(!ROOM||!ROOM.api) return Promise.resolve();
+  if(!roomName && !askName()) return Promise.resolve();
+  return fetch(ROOM.api+'/r/'+ROOM.id,{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(Object.assign({by:roomName,op:op},payload))})
+    .then(r=>r.ok?r.json():r.json().then(e=>Promise.reject(new Error(e.error||r.status))))
+    .then(()=>roomFetch())
+    .catch(e=>{ toast((lang==='en'?'could not send: ':'未能送出：')+e.message); });
+}
+function toast(msg){
+  let t=$('toast');
+  if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t); }
+  t.textContent=msg; t.classList.add('on');
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),4000);
+}
+
 // ---- writing on the painting ---------------------------------------------
 // A colophon is placed: it sits beside what it answers. So writing is framing.
 // In write mode a drag draws a box instead of choosing a zoom, and lets go into
@@ -1159,15 +1242,116 @@ function buildScript(){
   rows.forEach(n=>{
     const at = VERT ? Math.round(100*n.y/PH) : Math.round(100*(CR-n.x)/CR);
     const d=document.createElement('div');
-    d.className='row'+(n.mine?' mine':'');
-    d.innerHTML='<span class="at">'+at+'%</span>'+
-      '<span class="tt">'+(n.title||(lang==='en'?'(untitled)':'（無題）'))+'</span>'+
-      (n.text?'<div class="bd">'+n.text+'</div>':'');
+    d.className='row'+(n.mine?' mine':'')+(n.room?' room':'');
+    const a=document.createElement('span'); a.className='at'; a.textContent=at+'%';
+    const tt=document.createElement('span'); tt.className='tt';
+    tt.textContent=n.title||(lang==='en'?'(untitled)':'（無題）');
+    d.appendChild(a); d.appendChild(tt);
+    if(n.by){ const b=document.createElement('span'); b.className='by'; b.textContent=n.by; d.appendChild(b); }
+    if(n.text){ const bd=document.createElement('div'); bd.className='bd'; bd.textContent=n.text; d.appendChild(bd); }
     d.addEventListener('click',()=>{ gotoNote(n); });
     host.appendChild(d);
   });
   const c=$('scriptCount');
   if(c) c.textContent = rows.length ? rows.length+(lang==='en'?' notes':' 則') : '';
+}
+// ---- who wrote what, and when --------------------------------------------
+// The log is the room's history, not a surveillance feature: it records that a
+// note was written, edited or removed, by the name its writer typed. It is what
+// makes a shared notebook legible when six people use it over a week.
+function buildLog(){
+  const host=$('log'); if(!host) return;
+  host.innerHTML='';
+  const head=document.createElement('div'); head.className='lhead';
+  head.textContent = ROOM ? (lang==='en'?'Room · everyone':'共室　諸人') : (lang==='en'?'not in a room':'未入共室');
+  host.appendChild(head);
+  if(!ROOM){
+    const d=document.createElement('div'); d.className='empty';
+    d.textContent = lang==='en' ? 'open a room link to write together'
+                                : '開共室之鏈，同題一卷';
+    host.appendChild(d);
+    const act=document.createElement('div'); act.className='act';
+    const b=document.createElement('button');
+    b.textContent = lang==='en' ? 'start a room' : '新建共室';
+    b.onclick=()=>{
+      // 128 bits from the CSPRNG. The id IS the credential, so it must be
+      // unguessable and must be made here -- a server that hands out ids has
+      // a list of them.
+      const a=new Uint8Array(16); crypto.getRandomValues(a);
+      const id=btoa(String.fromCharCode.apply(null,a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+      let api=''; try{ api=localStorage.getItem('ccp_api')||''; }catch(e){}
+      if(!api){
+        api=(window.prompt(lang==='en'?'Worker URL (see tools/room-worker.js):':'共室端點（見 tools/room-worker.js）：','')||'').trim().replace(/\/+$/,'');
+        if(!api) return;
+        try{ localStorage.setItem('ccp_api',api); }catch(e){}
+      }
+      location.hash='room='+id+'&api='+encodeURIComponent(api);
+      location.reload();
+    };
+    act.appendChild(b);
+    const e2=document.createElement('button');
+    e2.textContent = lang==='en' ? 'save my notes' : '存我所題';
+    e2.onclick=exportRoom; act.appendChild(e2);
+    host.appendChild(act);
+    return;
+  }
+  const names={};
+  ROOMNOTES.forEach(n=>{ names[n.by||'anon']=(names[n.by||'anon']||0)+1; });
+  const who=document.createElement('div'); who.className='who';
+  who.textContent=Object.keys(names).map(k=>k+' '+names[k]).join('　·　');
+  host.appendChild(who);
+  const act=document.createElement('div'); act.className='act';
+  const mk2=(label,fn)=>{ const b=document.createElement('button'); b.textContent=label; b.onclick=fn; return b; };
+  act.appendChild(mk2(lang==='en'?'copy invite':'複製邀鏈', ()=>{
+    const u=location.origin+location.pathname+location.search+
+      '#room='+ROOM.id+(ROOM.api?'&api='+encodeURIComponent(ROOM.api):'');
+    navigator.clipboard.writeText(u).then(
+      ()=>toast(lang==='en'?'invite copied — anyone with it can write':'已複製　持鏈者皆可題'),
+      ()=>toast(u));
+  }));
+  act.appendChild(mk2(lang==='en'?'my name':'署名', ()=>{ askName(); buildLog(); }));
+  act.appendChild(mk2(lang==='en'?'save all':'存全部', exportRoom));
+  host.appendChild(act);
+  const rows=ROOMLOG.slice().reverse().slice(0,120);
+  if(!rows.length){
+    const d=document.createElement('div'); d.className='empty';
+    d.textContent=lang==='en'?'nothing written yet':'尚無題識'; host.appendChild(d); return;
+  }
+  const VERB={add:{en:'wrote',zh:'題'},edit:{en:'edited',zh:'改'},del:{en:'removed',zh:'刪'}};
+  const NAME={};
+  ((window.PAINTINGS&&PAINTINGS.items)||[]).forEach(it=>{ NAME[it.slug]={zh:it.zh,en:it.en}; });
+  rows.forEach(e=>{
+    const d=document.createElement('div'); d.className='lrow';
+    const t=document.createElement('span'); t.className='lt';
+    t.textContent=new Date(e.at).toLocaleString(lang==='en'?'en-US':'zh-Hans',
+      {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const b=document.createElement('span'); b.className='lb2'; b.textContent=e.by||'anon';
+    const v=document.createElement('span'); v.className='lv';
+    v.textContent=(VERB[e.op]||VERB.add)[lang==='en'?'en':'zh'];
+    const w=document.createElement('span'); w.className='lw';
+    const nm=NAME[e.slug]||{}; w.textContent=(lang==='en'?(nm.en||e.slug):(nm.zh||e.slug));
+    const q=document.createElement('span'); q.className='lq'; q.textContent=e.title||'';
+    [t,b,v,w,q].forEach(x=>d.appendChild(x));
+    host.appendChild(d);
+  });
+}
+// ---- take the whole room away with you -----------------------------------
+// Every note on every painting, in one file. A room lives on someone else's
+// computer; this is how it stops being the only copy.
+function exportRoom(){
+  const out={v:1, of:'classicalchinesepainting.com', room:ROOM?ROOM.id:null,
+             savedAt:new Date().toISOString(),
+             paintings:{}, mine:{slug:SLUG, notes:MYNOTES}, log:ROOMLOG};
+  ROOMNOTES.forEach(n=>{
+    const k=n.slug||'qianli';
+    (out.paintings[k]=out.paintings[k]||[]).push(n);
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(out,null,1)],{type:'application/json'}));
+  a.download='annotations-'+out.savedAt.slice(0,10)+'.json'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  const n=ROOMNOTES.length+MYNOTES.length;
+  toast((lang==='en'?'saved ':'已存　')+n+(lang==='en'?' notes across all paintings':' 則'));
 }
 function gotoNote(n){
   const want = Math.min(nativeZ(), Math.max(1.6, (VERT?apW:apH)/((n.w||300)*scale*2.2)));
@@ -1213,6 +1397,9 @@ function applyLang(){
   iconise(wp.querySelector('.lb'),'write',t('write'));
   const rp2=document.querySelector('.persp[data-t="read"]');
   iconise(rp2.querySelector('.lb'),'read',t('read'));
+  const lp=document.querySelector('.persp[data-t="log"]');
+  iconise(lp.querySelector('.lb'),'log',t('log'));
+  lp.classList.toggle('off', !ROOM);
   const ed=$('editor');
   ed.querySelector('.ok').textContent=t('save');
   ed.querySelector('.del').textContent=t('del');
@@ -1266,6 +1453,14 @@ if(window.NOT_READY){
                       : ('unknown painting “'+it.slug+'” — showing the default');
   document.body.appendChild(b);
   setTimeout(()=>b.classList.add('go'), 9000);
+}
+if(ROOM&&ROOM.api){
+  roomFetch().then(()=>{ buildLog(); });
+  // A room is other people writing while you read. Polling is the honest
+  // simple answer at this size -- six people, a few notes an hour. Only while
+  // the tab is in front, so a forgotten tab is not a standing request.
+  setInterval(()=>{ if(!document.hidden) roomFetch().then(()=>{
+    if($('log').classList.contains('on')) buildLog(); }); }, 15000);
 }
 measure(); applyLang();
 x0 = VERT ? 0 : Math.max(0,CR-visW());
