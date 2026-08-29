@@ -16,8 +16,13 @@ html,body{min-height:100%;margin:0;background:var(--room);color:#c9bda4;overflow
   font-family:var(--type);-webkit-font-smoothing:antialiased;
   -webkit-user-select:none;user-select:none}
 
-#room{position:fixed;inset:0;
-  background:radial-gradient(70% 56% at 30% 2%, rgba(224,186,120,.11), transparent 64%), var(--room)}
+/* #room was position:fixed, which took the whole case out of flow: body
+   measured 0px tall, so the document never grew and nothing scrolled no matter
+   what overflow said. It is a background, so the background is what stays
+   fixed -- the box itself now sits in the flow and carries its content. */
+#room{position:relative;min-height:100%;
+  background:radial-gradient(70% 56% at 30% 2%, rgba(224,186,120,.11), transparent 64%), var(--room);
+  background-attachment:fixed, fixed}   /* after the shorthand, or it resets it */
 
 /* ---- grounds, switched with ?bg=paper|silk|blush|dawn.
    Kept in step with index.html so the cabinet and the viewer never disagree
