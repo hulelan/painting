@@ -33,8 +33,6 @@ body[class*="bg-"] .cell.shut{cursor:default;opacity:.62}
 .cell.shut .name{color:#8d8270}
 .cell.shut .meta{color:#6b6152}
 .cell.shut .await{margin-top:6px;font-size:10px;letter-spacing:2px;color:#6b5f4a}
-.scroll.shut{cursor:default;opacity:.5}
-.scroll.shut .slip{color:#9a8f78}
 .cell.empty .name{color:var(--th-line)}
 body[class*="bg-"] .bar::after{background:rgba(255,255,255,.5)}
 body[class*="bg-"] .bar i{background:rgba(255,255,255,.55)}
@@ -71,65 +69,16 @@ body.bg-dawn{ --th-bg:#fdf6ef; --th-bg2:#f7f0f3; --th-ink:#6b6069; --th-muted:#9
 .cell.empty .name{color:#33302a}
 
 /* ======================= PICTORIAL ======================= */
-#pic{position:absolute;inset:0;display:none}
 #table{position:absolute;left:50%;bottom:0;transform:translateX(-50%);
   width:min(120vw,1500px);height:46vh;pointer-events:none;
   background:linear-gradient(180deg, rgba(150,112,66,.28), rgba(60,42,24,.15) 34%, rgba(10,8,6,0) 78%);
   box-shadow:inset 0 1px 0 rgba(236,200,140,.16)}
-#woodbox{position:absolute;right:11%;top:36%;width:250px;height:96px;pointer-events:none;
-  background:linear-gradient(180deg,#7a5c38,#4a3722 42%,#2a1f14);border-radius:3px;
-  box-shadow:0 22px 44px rgba(0,0,0,.75), inset 0 2px 0 rgba(255,224,170,.14);
-  transform:rotate(-1.4deg);opacity:.6}
-#woodbox::before{content:"";position:absolute;left:7px;right:7px;top:7px;height:26px;border-radius:2px;
-  background:linear-gradient(180deg,#241a10,#120c07);box-shadow:inset 0 3px 8px rgba(0,0,0,.85)}
-#shelf{position:absolute;left:50%;top:54%;transform:translate(-50%,-50%);
-  display:flex;flex-direction:column;align-items:center;gap:16px}
-.scroll{position:relative;cursor:pointer;transition:transform .4s cubic-bezier(.2,.7,.3,1)}
-.scroll .body{position:absolute;inset:0;border-radius:44px/50%;
-  background:
-    radial-gradient(circle at 12% 30%, rgba(255,244,214,.16) 0 3px, transparent 4px),
-    radial-gradient(circle at 38% 66%, rgba(255,244,214,.13) 0 3px, transparent 4px),
-    radial-gradient(circle at 64% 26%, rgba(255,244,214,.14) 0 3px, transparent 4px),
-    radial-gradient(circle at 86% 62%, rgba(255,244,214,.12) 0 3px, transparent 4px),
-    repeating-linear-gradient(38deg, rgba(255,240,206,.055) 0 3px, transparent 3px 9px),
-    repeating-linear-gradient(-38deg, rgba(0,0,0,.09) 0 3px, transparent 3px 10px),
-    linear-gradient(180deg, rgba(255,236,200,.34) 0%, var(--c1) 24%, var(--c2) 58%,
-                    rgba(0,0,0,.55) 88%, rgba(0,0,0,.72) 100%);
-  background-size:26px 26px,26px 26px,26px 26px,26px 26px,auto,auto,auto;
-  box-shadow:0 20px 34px rgba(0,0,0,.72), inset 0 -6px 18px rgba(0,0,0,.45),
-             inset 0 5px 12px rgba(255,232,190,.14)}
-.scroll .end{position:absolute;top:2%;height:96%;right:-2px;width:26px;border-radius:50%;z-index:2;
-  background:
-    repeating-radial-gradient(circle at 46% 50%, rgba(238,228,204,.95) 0 2px, rgba(206,192,162,.92) 2px 4px),
-    radial-gradient(circle at 42% 46%, #efe6cf, #b9a888 78%);
-  box-shadow:inset -3px 0 8px rgba(0,0,0,.45), 0 6px 14px rgba(0,0,0,.5)}
-.scroll .tie{position:absolute;top:-3%;height:106%;width:11px;z-index:3;border-radius:3px;
-  background:linear-gradient(90deg, rgba(0,0,0,.35), rgba(226,214,184,.92) 38%, rgba(176,162,128,.9) 72%, rgba(0,0,0,.3));
-  box-shadow:0 3px 8px rgba(0,0,0,.55)}
-.scroll .slip{position:absolute;left:12%;top:50%;transform:translateY(-50%);z-index:4;
-  padding:5px 12px;border-radius:1px;
-  background:linear-gradient(180deg,rgba(240,231,209,.95),rgba(214,202,175,.88));
-  color:#2a2119;letter-spacing:4px;white-space:nowrap;
-  box-shadow:0 3px 9px rgba(0,0,0,.55);
-  transition:color .4s ease, box-shadow .4s ease, background .4s ease}
-.scroll:hover{transform:translateY(-6px)}
-.scroll:hover .slip{color:#0a0705;
-  background:linear-gradient(180deg,rgba(248,242,225,.99),rgba(228,218,192,.94));
-  box-shadow:0 5px 20px rgba(0,0,0,.7), 0 0 24px rgba(224,186,120,.26)}
-.scroll.ghost{opacity:.28;filter:brightness(.5) blur(.4px);pointer-events:none}
 
 /* ======================= chrome ======================= */
 #lang{position:fixed;right:18px;top:16px;z-index:9;font-size:12px;letter-spacing:3px;
   color:#6b6151;cursor:pointer;border:1px solid var(--line);padding:5px 10px;
   transition:color .3s, border-color .3s}
 #lang:hover{color:#efe3c6;border-color:rgba(217,180,90,.5)}
-#skin{position:fixed;left:18px;bottom:16px;z-index:9;font-size:12px;letter-spacing:2px;
-  display:flex;align-items:center;gap:10px;color:#4d4638}
-#skin span{cursor:pointer;transition:color .3s, border-color .3s;
-  border-bottom:1px solid transparent;padding-bottom:2px}
-#skin span:hover{color:#cbbd9c}
-#skin span.on{color:#f0e6cd;border-bottom-color:rgba(217,180,90,.6)}
-#skin i{width:1px;height:11px;background:rgba(217,180,90,.22);display:inline-block}
 #classic{position:fixed;right:18px;bottom:16px;z-index:9;font-size:11px;letter-spacing:2px;
   color:#443e33;text-decoration:none;transition:color .3s}
 #classic:hover{color:#a2957a}
@@ -142,15 +91,9 @@ body.bg-dawn{ --th-bg:#fdf6ef; --th-bg2:#f7f0f3; --th-ink:#6b6069; --th-muted:#9
     <p class="sub" id="sub"></p>
     <div id="grid"></div>
   </div>
-  <div id="pic">
-    <div id="table"></div>
-    <div id="woodbox"></div>
-    <div id="shelf"></div>
-  </div>
 </div>
 
 <div id="lang">中</div>
-<div id="skin"><span data-s="geo"></span><i></i><span data-s="pic"></span></div>
 <a id="classic" href="classic.html"></a>
 
 <script src="assets/data/paintings.js"></script>
@@ -191,9 +134,7 @@ const PIC_C=[['#5d7186','#3b5063'],['#8a6a52','#5e4335'],['#6f7a55','#4a5238'],[
              ['#8a6a52','#5e4335']];
 const SHUT=['#4a4536','#332f26'];
 let lang=localStorage.getItem('ccp_lang')||'zh';
-let skin=localStorage.getItem('ccp_skin')||'geo';
-
-const grid=document.getElementById('grid'), shelf=document.getElementById('shelf');
+const grid=document.getElementById('grid');
 
 function buildGeo(d){
   grid.innerHTML='';
@@ -219,30 +160,6 @@ function buildGeo(d){
   });
 }
 
-function buildPic(d){
-  const W=Math.min(innerWidth*0.46,520), D=Math.max(52,W/6.4);
-  shelf.innerHTML='';
-  const ghost=document.createElement('div');
-  ghost.className='scroll ghost';
-  ghost.style.cssText='width:'+(W*0.92)+'px;height:'+(D*0.86)+'px;--c1:#4a4536;--c2:#332f26';
-  ghost.innerHTML='<div class="body"></div><div class="end"></div>';
-  shelf.appendChild(ghost);
-  entries(lang).forEach((it,i)=>{
-    const s=document.createElement('div');
-    const c=it.ready?PIC_C[i%PIC_C.length]:SHUT;
-    s.className='scroll'+(it.ready?'':' shut');
-    s.style.cssText='width:'+W+'px;height:'+D+'px;--c1:'+c[0]+';--c2:'+c[1];
-    const short=(lang==='en'?it.en:it.zh);
-    s.innerHTML='<div class="body"></div>'+
-      '<div class="tie" style="left:27%"></div><div class="tie" style="left:71%"></div>'+
-      '<div class="end"></div>'+
-      '<div class="slip" style="font-size:'+Math.max(11,Math.min(14,D*0.24))+'px">'+short+'</div>';
-    if(it.ready) s.addEventListener('click',()=>{ location.href=it.href; });
-    else s.title=d.await;
-    shelf.appendChild(s);
-  });
-}
-
 function build(){
   const d=I18N[lang];
   document.documentElement.lang = lang==='en'?'en':'zh-Hans';
@@ -252,21 +169,12 @@ function build(){
   document.getElementById('lang').textContent=d.lang;
   document.getElementById('classic').textContent=d.classic;
   document.title=d.h1;
-  document.querySelector('#skin [data-s="geo"]').textContent=d.geo;
-  document.querySelector('#skin [data-s="pic"]').textContent=d.pic;
-  document.querySelectorAll('#skin span').forEach(s=>s.classList.toggle('on',s.dataset.s===skin));
-  document.getElementById('geo').style.display = skin==='geo'?'block':'none';
-  document.getElementById('pic').style.display = skin==='pic'?'block':'none';
-  if(skin==='geo') buildGeo(d); else buildPic(d);
+  buildGeo(d);
 }
 
 document.getElementById('lang').addEventListener('click',()=>{
   lang = lang==='en'?'zh':'en'; localStorage.setItem('ccp_lang',lang); build();
 });
-document.querySelectorAll('#skin span').forEach(s=>{
-  s.addEventListener('click',()=>{ skin=s.dataset.s; localStorage.setItem('ccp_skin',skin); build(); });
-});
-addEventListener('resize',()=>{ if(skin==='pic') build(); });
 build();
 })();
 </script>

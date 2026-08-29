@@ -28,10 +28,17 @@
    the Commons files rest on -- but the museum has not said so, and that is a
    difference worth stating rather than blurring.
 
-   Where a free file exists it is preferred even when the museum's is bigger:
-   the Xia Gui is 22,492px on the museum's page against 16,250px on Commons,
-   and Commons is what is served here. The rule is to use the museum's file
-   only where there is no alternative at all. */
+   The rule is now simply: take the best image there is. The museum's file wins
+   for the Xia Gui (22,492 against Commons' 16,250 -- twice the area) and for
+   the three with no free scan at all. Commons wins in two cases, on the merits
+   rather than on licence:
+
+     後赤壁賦圖  Commons has the whole 22,175px scroll; the museum's page has
+                only a 4,001px section of it.
+     晴巒蕭寺圖  the two are the same Google scan; Commons' is 2010x4001 against
+                the museum's 2009x4000, one pixel larger.
+
+   漁父圖 is not on the exhibition page at all, so Commons is the only source. */
 /* Register. One entry per painting; the viewer reads ?p=<slug>
    and loads that entry's manifest and annotation files. A painting with no
    `dir` is known but not yet digitised -- the cabinet lists it and says so,
@@ -82,9 +89,9 @@ window.PAINTINGS = {
       artist:{zh:'夏珪', en:'Xia Gui'}, dates:'active 1180–1224', dynasty:{zh:'南宋', en:'Southern Song'},
       museum:{zh:'納爾遜-阿特金斯藝術博物館', en:'The Nelson-Atkins Museum of Art'},
       inches:[99.875, 10.75], form:'handscroll',
-      dir:'assets/paintings/shierjing', tiles:'assets/paintings/shierjing/tiles/', w:16250, h:1601,
-      source:'Wikimedia Commons · Google Art Project', licence:'PD-Art (PD-old-100-1923)',
-      file:'https://commons.wikimedia.org/wiki/File:Xia_Gui_-_Twelve_Views_of_Landscape_(Shan-shui_shih-erh-ching)_-_Google_Art_Project.jpg',
+      dir:'assets/paintings/shierjing', tiles:'assets/paintings/shierjing/tiles/', w:22492, h:2400,
+      source:'The Nelson-Atkins Museum of Art', licence:'no licence granted — see the note above',
+      file:'https://nelson-atkins.org/art/exhibitions/legendary-landscapes-sublime-visions-from-chinas-song-dynasty/',
       record:'https://art.nelson-atkins.org/objects/29474', acc:'32-159/2', },
 
     { slug:'chunyou', zh:'春遊賦詩圖', en:'Composing Poetry on a Spring Outing',
