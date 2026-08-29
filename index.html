@@ -459,6 +459,16 @@ body.topbar #loc{top:60px;bottom:auto}
 <div id="script"></div>
 <div id="log"></div>
 <div id="rollTag"></div>
+<!-- The register has to be read before we know which manifest to fetch, which
+     puts a round trip between the HTML arriving and the first tile being asked
+     for -- the preload scanner cannot see a script that document.write injects.
+     These hints let it fetch them anyway, in parallel, so the write finds them
+     already in cache. Listed for the default scroll, which is most arrivals; a
+     ?p= visit simply does not use two of them. -->
+<link rel="preload" as="script" href="assets/data/paintings.js">
+<link rel="preload" as="script" href="assets/scroll/manifest.js">
+<link rel="preload" as="script" href="assets/data/roads.js">
+<link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
 <script src="assets/data/paintings.js"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
