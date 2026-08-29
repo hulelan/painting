@@ -22,7 +22,40 @@ html,body{height:100%;margin:0;background:var(--room);color:#c9bda4;overflow:hid
 body[class*="bg-"]{ --line:var(--th-line); --warm:var(--th-accent); color:var(--th-ink) }
 body[class*="bg-"] #room{background:linear-gradient(180deg,var(--th-bg),var(--th-bg2))}
 body[class*="bg-"] #geo h1{color:var(--th-muted)}
-body[class*="bg-"] #geo .sub{color:var(--th-muted)}
+body[class*="bg-"] /* ---- English sets differently from Chinese ------------------------------
+   A Chinese title is 5 characters in a fixed square grid; its English
+   equivalent is "Illustration to the Second Prose Poem on the Red Cliff" --
+   eight times the length, in glyphs of varying width. Layouts measured
+   against the Chinese therefore break under the English, and the damage
+   shows up as bad rag: one long line, then a word alone underneath.
+
+   Three things, all cheap:
+
+   1. letter-spacing goes. 2-3px is right for 方块字, which need the air; on
+      Latin it pulls words into loose letters. This is the single biggest
+      cause of the wrapping looking wrong.
+   2. text-wrap: balance on short text -- titles, labels, captions. It evens
+      the line lengths instead of filling greedily and leaving a stub. The
+      browser applies it up to six lines (Chromium) or ten (Firefox), which
+      is exactly the range these elements live in.
+   3. text-wrap: pretty on running text, which prevents the last line being
+      a single orphaned word.
+
+   Measure stays out of it: the classic 45-75 characters is for paragraphs,
+   and none of this is a paragraph. */
+:lang(en) #title, :lang(en) .cell .name, :lang(en) .cell .meta,
+:lang(en) .cell .await, :lang(en) #geo .sub, :lang(en) #notready,
+:lang(en) #zhint, :lang(en) .lb, :lang(en) .nt .lbl{
+  letter-spacing:.2px; text-wrap:balance;
+}
+:lang(en) #credit{ letter-spacing:0; text-wrap:pretty }
+/* the corner title is the worst case: longest string, narrowest column */
+:lang(en) #title{ max-width:min(46vw,380px); line-height:1.45 }
+/* and the cells were sized for five characters, not fifty */
+:lang(en) .cell{ min-height:118px }
+:lang(en) .cell .name{ font-size:14.5px; line-height:1.35 }
+:lang(en) .cell .meta{ line-height:1.4 }
+#geo .sub{color:var(--th-muted)}
 body[class*="bg-"] .cell{background:var(--th-bg2)}
 body[class*="bg-"] .cell.open:hover{background:var(--th-bg)}
 body[class*="bg-"] .cell .name{color:var(--th-ink)}

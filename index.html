@@ -159,6 +159,39 @@ body.topbar.icons .ico{width:22px;height:22px}
 body.vert #rollL, body.vert #rollR, body.vert #sheen{display:none !important}
 body.vert .sect.zoomsect, body.vert .persp[data-t="loc"]{display:none}
 body.vert #rail img{display:block}
+/* ---- English sets differently from Chinese ------------------------------
+   A Chinese title is 5 characters in a fixed square grid; its English
+   equivalent is "Illustration to the Second Prose Poem on the Red Cliff" --
+   eight times the length, in glyphs of varying width. Layouts measured
+   against the Chinese therefore break under the English, and the damage
+   shows up as bad rag: one long line, then a word alone underneath.
+
+   Three things, all cheap:
+
+   1. letter-spacing goes. 2-3px is right for 方块字, which need the air; on
+      Latin it pulls words into loose letters. This is the single biggest
+      cause of the wrapping looking wrong.
+   2. text-wrap: balance on short text -- titles, labels, captions. It evens
+      the line lengths instead of filling greedily and leaving a stub. The
+      browser applies it up to six lines (Chromium) or ten (Firefox), which
+      is exactly the range these elements live in.
+   3. text-wrap: pretty on running text, which prevents the last line being
+      a single orphaned word.
+
+   Measure stays out of it: the classic 45-75 characters is for paragraphs,
+   and none of this is a paragraph. */
+:lang(en) #title, :lang(en) .cell .name, :lang(en) .cell .meta,
+:lang(en) .cell .await, :lang(en) #geo .sub, :lang(en) #notready,
+:lang(en) #zhint, :lang(en) .lb, :lang(en) .nt .lbl{
+  letter-spacing:.2px; text-wrap:balance;
+}
+:lang(en) #credit{ letter-spacing:0; text-wrap:pretty }
+/* the corner title is the worst case: longest string, narrowest column */
+:lang(en) #title{ max-width:min(46vw,380px); line-height:1.45 }
+/* and the cells were sized for five characters, not fifty */
+:lang(en) .cell{ min-height:118px }
+:lang(en) .cell .name{ font-size:14.5px; line-height:1.35 }
+:lang(en) .cell .meta{ line-height:1.4 }
 #credit{font-size:10px;letter-spacing:1px;color:#5f5748;text-align:right;margin-top:2px}
 #credit a{color:#6b6151;text-decoration:none;border-bottom:1px solid rgba(107,97,81,.4)}
 #credit a:hover{color:#c9b98f}
