@@ -21,7 +21,12 @@ html,body{height:100%;margin:0;background:var(--room);overflow:hidden;
   background:radial-gradient(132% 100% at 50% 50%, transparent 46%, rgba(0,0,0,.7) 100%)}
 
 /* ---------------- the scroll ---------------- */
-#desk{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2}
+/* The eight scrolls range from 25:1 to 1:2, so a centred window put its top
+   edge somewhere different on every painting and the chrome appeared to drift
+   as you moved between them. Anchored to the top, the title and the panel sit
+   in the same place on all of them, and the empty desk falls below -- which is
+   where the empty part of a table is anyway. measure() sets the offset. */
+#desk{position:absolute;left:50%;transform:translateX(-50%);z-index:2}
 #window{position:absolute;overflow:hidden;background:#0e0c0a;cursor:crosshair;
   box-shadow:0 30px 80px rgba(0,0,0,.75), 0 0 0 1px rgba(217,180,90,.10)}
 #window.panning{cursor:grabbing}
@@ -709,6 +714,9 @@ function measure(){
   {
     const reserve = (narrow || mode==='wide') ? 0 : 200;   // panel column + gutter
     desk.style.left = 'calc(50% - ' + Math.round(reserve/2) + 'px)';
+    // clear of the corner title on a wide screen, clear of the top bar on a
+    // narrow one, and the same on every painting
+    desk.style.top = (narrow ? 60 : (mode==='wide' ? 62 : 78)) + 'px';
   }
   // horizontal: fit the height and let the scroll run off to the left.
   // vertical: fit the width and let it run off the bottom.
