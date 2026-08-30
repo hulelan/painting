@@ -259,9 +259,6 @@ body.vert #rail img{display:block}
 :lang(en) .cell{ min-height:118px }
 :lang(en) .cell .name{ font-size:14.5px; line-height:1.35 }
 :lang(en) .cell .meta{ line-height:1.4 }
-#credit{font-size:10px;letter-spacing:1px;color:#5f5748;text-align:right;margin-top:2px}
-#credit a{color:#6b6151;text-decoration:none;border-bottom:1px solid rgba(107,97,81,.4)}
-#credit a:hover{color:#c9b98f}
 #notready{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:60;
   background:rgba(24,20,14,.92);border:1px solid #4a4030;border-radius:3px;
   padding:9px 14px;font-size:12px;letter-spacing:1px;color:#d8c9a4;
@@ -475,12 +472,12 @@ body.topbar #loc{top:60px;bottom:auto}
      its data files are still ten minutes stale -- which is how the Whole view
      kept painting the wrong scroll after the fix had shipped. The build stamp
      makes each deploy a new URL. tools/stamp_build.py rewrites it. -->
-<script>window.BUILD='5efbba2';</script>
-<link rel="preload" as="script" href="assets/data/paintings.js?b=5efbba2">
-<link rel="preload" as="script" href="assets/scroll/manifest.js?b=5efbba2">
-<link rel="preload" as="script" href="assets/data/roads.js?b=5efbba2">
+<script>window.BUILD='0c479f8';</script>
+<link rel="preload" as="script" href="assets/data/paintings.js?b=0c479f8">
+<link rel="preload" as="script" href="assets/scroll/manifest.js?b=0c479f8">
+<link rel="preload" as="script" href="assets/data/roads.js?b=0c479f8">
 <link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
-<script src="assets/data/paintings.js?b=5efbba2"></script>
+<script src="assets/data/paintings.js?b=0c479f8"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
    are per-painting, so they are written in here rather than fixed in the page.
@@ -1432,14 +1429,13 @@ function applyLang(){
   $('back').title=t('back'); $('back').setAttribute('aria-label',t('back'));
   // pictograms are wordless, so the one caption left keeps the scroll's own name
   $('title').textContent = ICONS_ON ? I18N.zh.title : t('title');
-  // whose photograph this is. A scan taken from Commons is credited on the
-  // page showing it, not only in a file nobody opens.
+  // Whose photograph this is stays recorded -- in the register, in the README,
+  // and on the title itself -- but it is no longer set beside the painting.
+  // PD-Art carries no attribution requirement, and a licence string over a
+  // Song landscape was the most legalistic thing on the screen.
   if(window.PAINTING && PAINTING.source){
-    let c=$('credit');
-    if(!c){ c=document.createElement('div'); c.id='credit'; $('corner').appendChild(c); }
-    c.innerHTML = PAINTING.file
-      ? '<a href="'+PAINTING.file+'" target="_blank" rel="noopener">'+PAINTING.source+'</a> · '+PAINTING.licence
-      : PAINTING.source;
+    $('title').title = PAINTING.source + (PAINTING.licence? ' · '+PAINTING.licence : '');
+    const c=$('credit'); if(c) c.remove();
   }
   iconise(document.querySelector('.persp[data-t="loc"] .lb'),'loc',t('loc'));
   iconise(document.querySelector('.persp[data-t="marks"] .lb'),'marks',t('marks'));
