@@ -319,6 +319,7 @@ body.vert #rail img{display:block}
 /* ---------------- fold ---------------- */
 #fold{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;
   display:none;flex-direction:column;align-items:center}
+/* the strip is per painting -- layoutFold() sets it; this is only the fallback */
 #fold .row{background-image:url('assets/fold/strip.jpg');background-repeat:no-repeat;
   border:1px solid rgba(176,141,87,.26);box-shadow:0 6px 20px rgba(0,0,0,.5);
   cursor:pointer;position:relative}
@@ -759,6 +760,9 @@ function layoutFold(){
     const a=CR-(i+1)*seg;
     const d=document.createElement('div');
     d.className='row';
+    // Whole view was painting every scroll from the Wang Ximeng strip, because
+    // the strip was a fixed URL in the stylesheet. Each painting has its own.
+    if(window.PAINTING&&PAINTING.strip) d.style.backgroundImage="url('"+PAINTING.strip+"')";
     d.style.width=rowW+'px'; d.style.height=rowH+'px';
     const bgW=(L/seg)*rowW;
     d.style.backgroundSize=bgW+'px '+(bgW*PH/L)+'px';

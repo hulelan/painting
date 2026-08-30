@@ -56,6 +56,15 @@ while pos < span:
     pos += n
     i += 1
 
+# The Whole view paints its four bands from one long downscaled strip. Without
+# it that view falls back to whatever the stylesheet names, which is how every
+# painting once showed the Wang Ximeng scroll.
+strip_h = 300
+strip = im.resize((max(1, round(W * strip_h / H)), strip_h), Image.LANCZOS)
+sp = os.path.join(ROOT, "assets", "paintings", a.slug, "strip.jpg")
+strip.save(sp, "JPEG", quality=82, optimize=True, progressive=True)
+print("strip %dx%d  %.0f KB" % (strip.size[0], strip_h, os.path.getsize(sp) / 1000))
+
 man = {"w": W, "h": H, "tileW": a.tile, "axis": a.axis, "tiles": tiles}
 if a.content_right:
     man["contentRight"] = a.content_right
@@ -65,4 +74,4 @@ open(mp, "w").write("window.SCROLL = " + json.dumps(man) + ";\n")
 total = sum(os.path.getsize(os.path.join(out, t["f"])) for t in tiles)
 print("%d tiles, %.1f MB -> %s" % (len(tiles), total / 1e6, out))
 print("now add to assets/data/paintings.js:")
-print("  dir:'assets/paintings/%s', tiles:'assets/paintings/%s/tiles/'," % (a.slug, a.slug))
+print("  dir:'assets/paintings/%s', tiles:'assets/paintings/%s/tiles/', strip:'assets/paintings/%s/strip.jpg'," % (a.slug, a.slug, a.slug))
