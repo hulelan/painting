@@ -1,0 +1,38 @@
+{
+  "feature": "handscroll-viewer",
+  "recipe": "features/handscroll-viewer.md",
+  "base_url": "http://127.0.0.1:4173",
+  "port": 4173,
+  "bind": "127.0.0.1",
+  "BUILD": "749ccf2",
+  "painting": "qianli",
+  "open": {
+    "mode": "pane",
+    "openAtRight": true,
+    "tx": -16955.5,
+    "tileHttpFiles": ["tile-16.jpg", "tile-17.jpg", "tile-18.jpg", "tile-19.jpg", "tile-20.jpg"],
+    "note": "last five strips are loading=eager; tile-00.jpg not requested"
+  },
+  "unroll": {
+    "command": "control unroll --dx 700 --until-tile 15 --max-steps 16",
+    "ok": true,
+    "steps": 3,
+    "txAfter": -13858.6,
+    "newTileHttp": ["tile-15.jpg"],
+    "note": "dragging #rollR to the right; tile-15.jpg is loading=lazy"
+  },
+  "afterUnroll": {
+    "mode": "pane",
+    "tx": -13765.4,
+    "tileHttpFiles": ["tile-14.jpg", "tile-15.jpg", "tile-16.jpg", "tile-17.jpg", "tile-18.jpg", "tile-19.jpg", "tile-20.jpg"]
+  },
+  "files": [
+    "open-at-right.png",
+    "open-at-right.aria.yml",
+    "open-at-right.state.json",
+    "after-unroll.png",
+    "after-unroll.aria.yml",
+    "after-unroll.state.json",
+    "PROOF.json"
+  ]
+}

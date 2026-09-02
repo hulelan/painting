@@ -93,7 +93,7 @@ $SKILL/bin/control capture open-at-right
 $SKILL/bin/control state
 ```
 
-`control` refuses absolute `http(s)` URLs and any origin other than the run file.
+`control` refuses absolute `http(s)` URLs and any origin other than the run file. Each invocation `process.exit`s after printing JSON: Playwright's CDP WebSocket otherwise holds the Node event loop, and `browser.close()` would kill the Chrome `bin/launch` started.
 
 ### Viewer chrome (`index.html`)
 

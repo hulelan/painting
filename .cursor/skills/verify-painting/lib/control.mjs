@@ -633,7 +633,11 @@ async function main() {
     die(`control: unknown command ${cmd}\n${HELP}`);
 }
 
-main().catch((err) => {
+main().then(() => {
+  // connectOverCDP holds the event loop via the WebSocket. Exit without
+  // browser.close(), which would kill the Chrome that bin/launch started.
+  process.exit(process.exitCode || 0);
+}).catch((err) => {
   console.error("control:", err && err.stack ? err.stack : err);
   process.exit(1);
 });

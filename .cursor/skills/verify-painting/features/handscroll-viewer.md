@@ -34,7 +34,7 @@ Preconditions: `bin/launch --evidence seed` succeeded; `bin/doctor` exited 0; `n
 
 - **Record the post-unroll state**
   - Command: `.cursor/skills/verify-painting/bin/control capture after-unroll`
-  - Observable: `after-unroll.state.json` has more `tileHttpFiles` than `open-at-right.state.json`; `openAtRight` is now false (view has left the right-hand arrival); `#track .stop[data-k="pane"]` still `on` (`mode` remains `"pane"`).
+  - Observable: `after-unroll.state.json` `tileHttpFiles` is a **superset** of `open-at-right` and includes `tile-15.jpg` (this checkout: also `tile-14.jpg` once the roll glide continues). `tx` is greater than at arrival (e.g. -16955 → about -13800 at 1400×900). `mode` remains `"pane"`. `openAtRight` may still be true: tile-15 starts at source x=30720, still the right-hand third of 41783px, and `tile-00` is still not loaded. The lazy-load proof is the new tile HTTP entries, not the arrival heuristic flipping.
 
 - **Optional check that silk-drag is not unroll**
   - Do **not** `control drag '#window'` at this zoom. That path is zoom-stops / Detail.
