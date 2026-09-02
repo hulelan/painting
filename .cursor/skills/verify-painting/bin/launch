@@ -93,20 +93,34 @@ def main() -> None:
         raise SystemExit(f"launch: port {port} already has listeners {sorted(owners)}; pick another")
 
     server_log.write_text("", encoding="utf-8")
-    with server_log.open("ab") as sl:
+    env = os.environ.copy()
+    env["PYTHONUNBUFFERED"] = "1"
+    with server_log.open("ab", buffering=0) as sl:
         server = subprocess.Popen(
-            [sys.executable, "-m", "http.server", str(port), "--bind", bind],
+            [sys.executable, "-u", "-m", "http.server", str(port), "--bind", bind],
             cwd=str(common.REPO_ROOT),
             stdout=sl,
             stderr=subprocess.STDOUT,
             start_new_session=True,
+            env=env,
         )
+
+    def rollback() -> None:
+        for proc in (chrome, server):
+            if proc is not None and proc.poll() is None:
+                try:
+                    os.killpg(proc.pid, 15)
+                except Exception:
+                    try:
+                        proc.terminate()
+                    except Exception:
+                        pass
 
     chrome = None
     try:
-        wait_log_line(server_log, f"Serving HTTP on {bind} port {port}")
         wait_http(f"http://{bind}:{port}/")
         wait_http(f"http://{bind}:{port}/assets/scroll/manifest.js")
+        wait_log_line(server_log, f"Serving HTTP on {bind} port {port}")
 
         chrome_args = [
             common.chrome_bin(),
@@ -178,17 +192,8 @@ def main() -> None:
         print(f"launch: runfile {path}")
         print(f"launch: log     Serving HTTP on {bind} port {port}")
         sys.stdout.write(common.json.dumps(data, indent=2, sort_keys=True) + "\n")
-    except Exception:
-        # Do not leave a half-started instance.
-        for proc in (chrome, server):
-            if proc is not None and proc.poll() is None:
-                try:
-                    os.killpg(proc.pid, 15)
-                except Exception:
-                    try:
-                        proc.terminate()
-                    except Exception:
-                        pass
+    except BaseException:
+        rollback()
         raise
 
 
