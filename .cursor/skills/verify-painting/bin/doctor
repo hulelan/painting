@@ -1,0 +1,226 @@
+#!/usr/bin/env python3
+"""Read-only: is this instance worth driving?
+
+Fail closed. Answers only from the run file this skill wrote, the PIDs in it,
+and HTTP against that run's 127.0.0.1 URL. Never treats production or a
+stray python http.server as ours.
+
+Usage:
+  .cursor/skills/verify-painting/bin/doctor
+  VERIFY_PAINTING_RUN_FILE=/path/to/run.json .cursor/skills/verify-painting/bin/doctor
+
+Exit 0 = pass (JSON report on stdout). Exit 1 = not worth driving.
+"""
+from __future__ import annotations
+
+import json
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+import common  # noqa: E402
+
+
+def check() -> dict:
+    common.repo_looks_right()
+    run = common.load_run()
+    report = {"ok": True, "checks": [], "run_file": run.get("_run_file")}
+
+    def ok(name: str, detail: str) -> None:
+        report["checks"].append({"name": name, "pass": True, "detail": detail})
+
+    def fail(name: str, detail: str) -> None:
+        report["ok"] = False
+        report["checks"].append({"name": name, "pass": False, "detail": detail})
+        raise common.DoctorFail(_format(report))
+
+    required = [
+        "run_id",
+        "base_url",
+        "port",
+        "server_pid",
+        "chrome_pid",
+        "cdp_url",
+        "cdp_port",
+        "user_data_dir",
+        "repo_root",
+        "bind",
+    ]
+    missing = [k for k in required if k not in run]
+    if missing:
+        fail("run_file", f"run file missing keys {missing}")
+
+    common.refuse_production_url(run["base_url"])
+    if run.get("bind") != "127.0.0.1":
+        fail("bind", f"bind is {run.get('bind')!r}, expected 127.0.0.1")
+    if str(run["repo_root"]) != str(common.REPO_ROOT):
+        fail(
+            "repo_root",
+            f"run repo_root {run['repo_root']} != skill repo {common.REPO_ROOT}",
+        )
+    ok("run_file", f"read {run['_run_file']} run_id={run['run_id']}")
+
+    spid = int(run["server_pid"])
+    cpid = int(run["chrome_pid"])
+    port = int(run["port"])
+    cdp_port = int(run["cdp_port"])
+    profile = Path(run["user_data_dir"])
+
+    if not common.pid_alive(spid):
+        fail("server_pid", f"server_pid {spid} is not running")
+    scmd = common.proc_cmdline(spid)
+    if "http.server" not in scmd or str(port) not in scmd or "127.0.0.1" not in scmd:
+        fail(
+            "server_cmd",
+            f"pid {spid} cmdline is not our http.server: {scmd!r}",
+        )
+    ok("server_pid", f"pid {spid} alive: {scmd}")
+
+    owners = common.listening_pids(port)
+    if not owners:
+        fail("port_owner", f"nothing listens on {port} (cannot prove ownership)")
+    if spid not in owners:
+        fail(
+            "port_owner",
+            f"port {port} owned by {sorted(owners)}, not server_pid {spid}. "
+            "Refusing a shared/unknown instance.",
+        )
+    extra = owners - {spid}
+    if extra:
+        fail(
+            "port_owner",
+            f"port {port} has extra listeners {sorted(extra)}; refuse shared instance",
+        )
+    ok("port_owner", f"port {port} is exclusively pid {spid}")
+
+    if not common.pid_alive(cpid):
+        fail("chrome_pid", f"chrome_pid {cpid} is not running")
+    ccmd = common.proc_cmdline(cpid)
+    if str(profile) not in ccmd:
+        fail(
+            "chrome_profile",
+            f"pid {cpid} cmdline does not contain our user-data-dir {profile}: {ccmd!r}",
+        )
+    if str(cdp_port) not in ccmd:
+        fail("chrome_cdp", f"pid {cpid} cmdline does not contain CDP port {cdp_port}: {ccmd!r}")
+    expected_profile = (common.RUN_DIR / run["run_id"] / "chrome-profile").resolve()
+    if profile.resolve() != expected_profile:
+        fail(
+            "chrome_profile",
+            f"user_data_dir {profile} is not this run's profile {expected_profile}",
+        )
+    if not profile.is_dir():
+        fail("chrome_profile", f"user_data_dir {profile} does not exist")
+    ok("chrome_profile", f"pid {cpid} uses {profile}")
+
+    cdp_owners = common.listening_pids(cdp_port)
+    if cpid not in cdp_owners:
+        fail(
+            "cdp_owner",
+            f"CDP port {cdp_port} owned by {sorted(cdp_owners)}, not chrome_pid {cpid}",
+        )
+    ok("cdp_owner", f"CDP {cdp_port} is pid {cpid}")
+
+    # Tabs must not include production.
+    try:
+        code, body = common.http_get(run["cdp_url"].rstrip("/") + "/json/list")
+    except common.DoctorFail as e:
+        fail("cdp", str(e))
+    if code != 200:
+        fail("cdp", f"GET {run['cdp_url']}/json/list -> {code}")
+    tabs = body.decode("utf-8", "replace")
+    if "classicalchinesepainting.com" in tabs.lower():
+        fail("cdp_tabs", "Chrome has a production tab; refuse")
+    ok("cdp_tabs", "no production tabs")
+
+    base = run["base_url"].rstrip("/")
+    common.refuse_production_url(base + "/")
+
+    code, html = common.http_get(base + "/")
+    if code != 200:
+        fail("get_root", f"GET {base}/ -> {code}")
+    ok("get_root", f"GET {base}/ -> 200 ({len(html)} bytes)")
+
+    code, man = common.http_get(base + "/assets/scroll/manifest.js")
+    if code != 200:
+        fail("get_manifest", f"GET manifest.js -> {code}")
+    ok("get_manifest", "GET /assets/scroll/manifest.js -> 200")
+
+    code, tile = common.http_get(base + "/assets/scroll/tiles/tile-20.jpg")
+    if code != 200:
+        fail("get_tile", f"GET tile-20.jpg -> {code}")
+    if len(tile) < 10_000:
+        fail("get_tile", f"tile-20.jpg is only {len(tile)} bytes; expected a JPEG strip")
+    if tile[:2] != b"\xff\xd8":
+        fail("get_tile", "tile-20.jpg does not start with JPEG SOI")
+    ok("get_tile", f"GET /assets/scroll/tiles/tile-20.jpg -> 200 ({len(tile)} bytes JPEG)")
+
+    checkout_build = common.checkout_build()
+    m = re.search(rb"window\.BUILD='([^']*)'", html)
+    if not m:
+        fail("build", "served / has no window.BUILD stamp")
+    served_build = m.group(1).decode("ascii")
+    if served_build != checkout_build:
+        fail(
+            "build",
+            f"served BUILD {served_build!r} != checkout index.html {checkout_build!r}",
+        )
+    ok("build", f"window.BUILD={served_build} matches checkout index.html")
+
+    scroll = common.parse_manifest(man.decode("utf-8", "replace"))
+    tiles = scroll.get("tiles") or []
+    if not isinstance(tiles, list) or len(tiles) != 21:
+        fail(
+            "tiles_count",
+            f"manifest tiles={len(tiles) if isinstance(tiles, list) else type(tiles)}; "
+            "expected 21 full-height JPEGs (never one huge image)",
+        )
+    names = [t.get("f") for t in tiles]
+    if names != [f"tile-{i:02d}.jpg" for i in range(21)]:
+        fail("tiles_names", f"unexpected tile filenames: {names}")
+    widths = [t.get("w") for t in tiles]
+    if any(not isinstance(w, int) or w >= 40000 for w in widths):
+        fail(
+            "tiles_huge",
+            f"a tile is huge or malformed {widths}; refuse flattened single-image serving",
+        )
+    if sum(widths) != scroll.get("w"):
+        fail("tiles_sum", f"tile widths sum {sum(widths)} != SCROLL.w {scroll.get('w')}")
+    disk = sorted(p.name for p in (common.REPO_ROOT / "assets" / "scroll" / "tiles").glob("tile-*.jpg"))
+    if disk != names:
+        fail("tiles_disk", f"disk tiles {disk} != manifest {names}")
+    ok(
+        "tiles_21",
+        f"21 strips {names[0]}..{names[-1]} widths={widths[0]}..{widths[-1]} "
+        f"sum={sum(widths)} SCROLL.w={scroll.get('w')} contentRight={scroll.get('contentRight')}",
+    )
+
+    report["base_url"] = base
+    report["BUILD"] = served_build
+    report["tile_count"] = 21
+    report["contentRight"] = scroll.get("contentRight")
+    return report
+
+
+def _format(report: dict) -> str:
+    lines = ["doctor: FAIL" if not report.get("ok") else "doctor: PASS"]
+    for c in report.get("checks", []):
+        mark = "PASS" if c["pass"] else "FAIL"
+        lines.append(f"  [{mark}] {c['name']}: {c['detail']}")
+    return "\n".join(lines)
+
+
+def main() -> None:
+    try:
+        report = check()
+    except common.DoctorFail as e:
+        print(str(e), file=sys.stderr)
+        raise SystemExit(1)
+    print(_format(report))
+    print(json.dumps(report, indent=2, sort_keys=True))
+    raise SystemExit(0 if report["ok"] else 1)
+
+
+if __name__ == "__main__":
+    main()

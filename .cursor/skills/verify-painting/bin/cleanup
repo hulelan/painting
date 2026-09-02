@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+"""Tear down the server and Chrome profile THIS run created.
+
+Kills only the PIDs recorded in the run file. Never pkill by process name.
+Does not delete evidence/ (including evidence/seed/).
+
+Usage:
+  .cursor/skills/verify-painting/bin/cleanup
+  .cursor/skills/verify-painting/bin/cleanup --run-id 20260902-...
+"""
+from __future__ import annotations
+
+import argparse
+import os
+import signal
+import sys
+import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+import common  # noqa: E402
+
+import shutil
+
+
+def kill_pid(pid: int, what: str) -> str:
+    if pid <= 0:
+        return f"{what}: no pid"
+    if not common.pid_alive(pid):
+        return f"{what}: pid {pid} already gone"
+    cmd = common.proc_cmdline(pid)
+    # Session leaders from launch(start_new_session=True).
+    try:
+        os.killpg(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except ProcessLookupError:
+            return f"{what}: pid {pid} already gone"
+    except PermissionError as e:
+        return f"{what}: cannot signal pid {pid}: {e}"
+    deadline = time.time() + 5
+    while time.time() < deadline and common.pid_alive(pid):
+        time.sleep(0.05)
+    if common.pid_alive(pid):
+        try:
+            os.killpg(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        except PermissionError:
+            os.kill(pid, signal.SIGKILL)
+        time.sleep(0.1)
+    if common.pid_alive(pid):
+        return f"{what}: pid {pid} STILL ALIVE after SIGKILL ({cmd!r})"
+    return f"{what}: killed pid {pid} ({cmd!r})"
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description="Stop the instance this skill started; keep evidence")
+    ap.add_argument("--run-id", default=None)
+    args = ap.parse_args()
+    try:
+        run = common.load_run(args.run_id, required=True)
+    except common.DoctorFail as e:
+        print(str(e), file=sys.stderr)
+        raise SystemExit(1)
+
+    notes = []
+    # Chrome first so it is not using the profile when we delete it.
+    notes.append(kill_pid(int(run.get("chrome_pid") or 0), "chrome"))
+    notes.append(kill_pid(int(run.get("server_pid") or 0), "server"))
+
+    profile = Path(run.get("user_data_dir") or "")
+    expected = (common.RUN_DIR / run["run_id"] / "chrome-profile").resolve()
+    if profile and profile.resolve() == expected and profile.exists():
+        shutil.rmtree(profile, ignore_errors=True)
+        notes.append(f"profile: removed {profile}")
+    elif profile:
+        notes.append(f"profile: left in place (not our path): {profile}")
+
+    # Drop current.json only if it points at this run.
+    current = common.RUN_DIR / "current.json"
+    if current.is_file():
+        try:
+            cur = common.json.loads(current.read_text(encoding="utf-8"))
+        except Exception:
+            cur = {}
+        if cur.get("run_id") == run.get("run_id"):
+            current.unlink()
+            notes.append("runfile: removed .run/current.json")
+
+    evidence = Path(run.get("evidence_dir") or "")
+    if evidence.is_dir():
+        notes.append(f"evidence: KEPT {evidence}")
+    else:
+        notes.append(f"evidence: path recorded but missing: {evidence}")
+
+    seed = common.EVIDENCE_ROOT / "seed"
+    if seed.is_dir():
+        notes.append(f"evidence: seed still at {seed}")
+
+    print("cleanup: done")
+    for n in notes:
+        print("  " + n)
+
+
+if __name__ == "__main__":
+    main()

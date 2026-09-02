@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Drive the local viewer via Playwright (CDP to the Chrome that bin/launch started).
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+if [[ ! -d "$ROOT/node_modules/playwright" ]]; then
+  echo "control: Playwright is not installed in the skill directory (do not add a site-level package.json)." >&2
+  echo "  npm install --prefix \"$ROOT\"" >&2
+  exit 2
+fi
+NODE="${VERIFY_PAINTING_NODE:-$(command -v node)}"
+exec "$NODE" "$ROOT/lib/control.mjs" "$@"

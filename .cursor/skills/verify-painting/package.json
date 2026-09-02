@@ -1,0 +1,9 @@
+{
+  "name": "verify-painting-harness",
+  "private": true,
+  "type": "module",
+  "description": "Verification-only Playwright helper for the static painting site. Not part of the served app.",
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}
