@@ -1,0 +1,368 @@
+{
+  "BUILD": "749ccf2",
+  "href": "http://127.0.0.1:4173/",
+  "path": "/",
+  "title": "千里江山圖",
+  "htmlLang": "zh-Hans",
+  "painting": {
+    "slug": "qianli",
+    "zh": "千里江山圖",
+    "dir": "assets/scroll"
+  },
+  "scroll": {
+    "w": 41783,
+    "h": 1673,
+    "contentRight": 41071,
+    "tileCount": 21
+  },
+  "mode": "pane",
+  "stops": [
+    {
+      "k": "fold",
+      "on": false,
+      "label": "",
+      "aria": "全卷"
+    },
+    {
+      "k": "wide",
+      "on": false,
+      "label": "",
+      "aria": "通幅"
+    },
+    {
+      "k": "pane",
+      "on": true,
+      "label": "",
+      "aria": "展卷"
+    }
+  ],
+  "railTransform": "translate3d(-16955.5px, 0px, 0px) scale(1)",
+  "tx": -16955.5,
+  "ty": 0,
+  "zScale": 1,
+  "openAtRight": true,
+  "tileCount": 21,
+  "tiles": [
+    {
+      "i": 0,
+      "file": "tile-00.jpg",
+      "src": "assets/scroll/tiles/tile-00.jpg",
+      "loading": "lazy",
+      "complete": false,
+      "naturalWidth": 0,
+      "currentSrc": ""
+    },
+    {
+      "i": 1,
+      "file": "tile-01.jpg",
+      "src": "assets/scroll/tiles/tile-01.jpg",
+      "loading": "lazy",
+      "complete": false,
+      "naturalWidth": 0,
+      "currentSrc": ""
+    },
+    {
+      "i": 2,
+      "file": "tile-02.jpg",
+      "src": "assets/scroll/tiles/tile-02.jpg",
+      "loading": "lazy",
+      "complete": false,
+      "naturalWidth": 0,
+      "currentSrc": ""
+    },
+    {
+      "i": 3,
+      "file": "tile-03.jpg",
+      "src": "assets/scroll/tiles/tile-03.jpg",
+      "loading": "lazy",
+      "complete": false,
+      "naturalWidth": 0,
+      "currentSrc": ""
+    },
+    {
+      "i": 4,
+      "file": "tile-04.jpg",
+      "src": "assets/scroll/tiles/tile-04.jpg",
+      "loading": "lazy",
+      "complete": false,
+      "naturalWidth": 0,
+      "currentSrc": ""
+    },
+    {
+      "i": 5,
+      "file": "tile-05.jpg",
+      "src": "assets/scroll/tiles/tile-05.jpg",
+      "loading": "lazy",
+      "complete": false,
+      "naturalWidth": 0,
+      "currentSrc": ""
+    },
+    {
+      "i": 6,
+      "file": "tile-06.jpg",
+      "src": "assets/scroll/tiles/tile-06.jpg",
+      "loading": "lazy",
+      "complete": false,
+      "naturalWidth": 0,
+      "currentSrc": ""
+    },
+    {
+      "i": 7,
+      "file": "tile-07.jpg",
+      "src": "assets/scroll/tiles/tile-07.jpg",
+      "loading": "lazy",
+      "complete": false,
+      "naturalWidth": 0,
+      "currentSrc": ""
+    },
+    {
+      "i": 8,
+      "file": "tile-08.jpg",
+      "src": "assets/scroll/tiles/tile-08.jpg",
+      "loading": "lazy",
+      "complete": false,
+      "naturalWidth": 0,
+      "currentSrc": ""
+    },
+    {
+      "i": 9,
+      "file": "tile-09.jpg",
+      "src": "assets/scroll/tiles/tile-09.jpg",
+      "loading": "lazy",
+      "complete": false,
+      "naturalWidth": 0,
+      "currentSrc": ""
+    },
+    {
+      "i": 10,
+      "file": "tile-10.jpg",
+      "src": "assets/scroll/tiles/tile-10.jpg",
+      "loading": "lazy",
+      "complete": false,
+      "naturalWidth": 0,
+      "currentSrc": ""
+    },
+    {
+      "i": 11,
+      "file": "tile-11.jpg",
+      "src": "assets/scroll/tiles/tile-11.jpg",
+      "loading": "lazy",
+      "complete": false,
+      "naturalWidth": 0,
+      "currentSrc": ""
+    },
+    {
+      "i": 12,
+      "file": "tile-12.jpg",
+      "src": "assets/scroll/tiles/tile-12.jpg",
+      "loading": "lazy",
+      "complete": false,
+      "naturalWidth": 0,
+      "currentSrc": ""
+    },
+    {
+      "i": 13,
+      "file": "tile-13.jpg",
+      "src": "assets/scroll/tiles/tile-13.jpg",
+      "loading": "lazy",
+      "complete": false,
+      "naturalWidth": 0,
+      "currentSrc": ""
+    },
+    {
+      "i": 14,
+      "file": "tile-14.jpg",
+      "src": "assets/scroll/tiles/tile-14.jpg",
+      "loading": "lazy",
+      "complete": false,
+      "naturalWidth": 0,
+      "currentSrc": ""
+    },
+    {
+      "i": 15,
+      "file": "tile-15.jpg",
+      "src": "assets/scroll/tiles/tile-15.jpg",
+      "loading": "lazy",
+      "complete": false,
+      "naturalWidth": 0,
+      "currentSrc": ""
+    },
+    {
+      "i": 16,
+      "file": "tile-16.jpg",
+      "src": "assets/scroll/tiles/tile-16.jpg",
+      "loading": "eager",
+      "complete": true,
+      "naturalWidth": 2048,
+      "currentSrc": "http://127.0.0.1:4173/assets/scroll/tiles/tile-16.jpg"
+    },
+    {
+      "i": 17,
+      "file": "tile-17.jpg",
+      "src": "assets/scroll/tiles/tile-17.jpg",
+      "loading": "eager",
+      "complete": true,
+      "naturalWidth": 2048,
+      "currentSrc": "http://127.0.0.1:4173/assets/scroll/tiles/tile-17.jpg"
+    },
+    {
+      "i": 18,
+      "file": "tile-18.jpg",
+      "src": "assets/scroll/tiles/tile-18.jpg",
+      "loading": "eager",
+      "complete": true,
+      "naturalWidth": 2048,
+      "currentSrc": "http://127.0.0.1:4173/assets/scroll/tiles/tile-18.jpg"
+    },
+    {
+      "i": 19,
+      "file": "tile-19.jpg",
+      "src": "assets/scroll/tiles/tile-19.jpg",
+      "loading": "eager",
+      "complete": true,
+      "naturalWidth": 2048,
+      "currentSrc": "http://127.0.0.1:4173/assets/scroll/tiles/tile-19.jpg"
+    },
+    {
+      "i": 20,
+      "file": "tile-20.jpg",
+      "src": "assets/scroll/tiles/tile-20.jpg",
+      "loading": "eager",
+      "complete": true,
+      "naturalWidth": 823,
+      "currentSrc": "http://127.0.0.1:4173/assets/scroll/tiles/tile-20.jpg"
+    }
+  ],
+  "completeFiles": [
+    "tile-16.jpg",
+    "tile-17.jpg",
+    "tile-18.jpg",
+    "tile-19.jpg",
+    "tile-20.jpg"
+  ],
+  "tileHttp": [
+    {
+      "name": "http://127.0.0.1:4173/assets/scroll/tiles/tile-20.jpg",
+      "file": "tile-20.jpg",
+      "duration": 13,
+      "transferSize": 300
+    },
+    {
+      "name": "http://127.0.0.1:4173/assets/scroll/tiles/tile-16.jpg",
+      "file": "tile-16.jpg",
+      "duration": 6,
+      "transferSize": 300
+    },
+    {
+      "name": "http://127.0.0.1:4173/assets/scroll/tiles/tile-17.jpg",
+      "file": "tile-17.jpg",
+      "duration": 6,
+      "transferSize": 300
+    },
+    {
+      "name": "http://127.0.0.1:4173/assets/scroll/tiles/tile-18.jpg",
+      "file": "tile-18.jpg",
+      "duration": 13,
+      "transferSize": 300
+    },
+    {
+      "name": "http://127.0.0.1:4173/assets/scroll/tiles/tile-19.jpg",
+      "file": "tile-19.jpg",
+      "duration": 17,
+      "transferSize": 300
+    }
+  ],
+  "tileHttpFiles": [
+    "tile-16.jpg",
+    "tile-17.jpg",
+    "tile-18.jpg",
+    "tile-19.jpg",
+    "tile-20.jpg"
+  ],
+  "overlays": [
+    {
+      "t": "loc",
+      "on": false,
+      "off": false
+    },
+    {
+      "t": "roads",
+      "on": false,
+      "off": false
+    },
+    {
+      "t": "notes",
+      "on": false,
+      "off": false
+    },
+    {
+      "t": "write",
+      "on": false,
+      "off": false
+    },
+    {
+      "t": "read",
+      "on": false,
+      "off": false
+    },
+    {
+      "t": "log",
+      "on": false,
+      "off": true
+    }
+  ],
+  "locDisplay": "none",
+  "roadsDisplay": "none",
+  "foldDisplay": "none",
+  "deskDisplay": "block",
+  "windowSize": {
+    "w": 720,
+    "h": 720
+  },
+  "langText": "中",
+  "langAsIcon": false,
+  "langAria": "中文",
+  "bodyIcons": true,
+  "bodyClasses": [
+    "icons"
+  ],
+  "backHref": "cabinet.html",
+  "backAria": "返回畫匣",
+  "localStorage": {
+    "ccp_ui": null,
+    "ccp_lang": null
+  },
+  "chrome": {
+    "room": true,
+    "desk": true,
+    "window": true,
+    "rail": true,
+    "rollL": true,
+    "rollR": true,
+    "fold": true,
+    "panel": true,
+    "track": true,
+    "corner": true,
+    "lang": true,
+    "back": true,
+    "title": true,
+    "loc": true,
+    "locBox": true,
+    "editor": true
+  },
+  "rolls": {
+    "L": {
+      "display": "block",
+      "opacity": 1,
+      "width": "214.141px"
+    },
+    "R": {
+      "display": "block",
+      "opacity": 1,
+      "width": "51.5781px"
+    }
+  },
+  "noteCount": 4,
+  "zhint": null,
+  "cabinetCells": []
+}

@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+"""Start an isolated local viewer instance.
+
+Picks a free port >= 4173, binds python3 -m http.server to 127.0.0.1 from the
+repo root, starts a dedicated Chromium profile with its own CDP port, and
+writes a run file that doctor / control / cleanup will read.
+
+Never reuses an unknown server. A second launch gets a different port + profile.
+Never points Chrome at classicalchinesepainting.com.
+
+Usage:
+  .cursor/skills/verify-painting/bin/launch
+  .cursor/skills/verify-painting/bin/launch --evidence seed
+  .cursor/skills/verify-painting/bin/launch --port 4173   # fails if taken
+
+Ready when:
+  - server log contains: Serving HTTP on 127.0.0.1 port <PORT>
+  - GET http://127.0.0.1:<PORT>/ returns 200
+  - GET http://127.0.0.1:<PORT>/assets/scroll/manifest.js returns 200
+  - CDP http://127.0.0.1:<CDP>/json/version returns 200
+"""
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import os
+import sys
+import time
+import uuid
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+import common  # noqa: E402
+
+import subprocess
+
+
+def wait_log_line(log: Path, needle: str, timeout: float = 8.0) -> str:
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if log.is_file():
+            text = log.read_text(encoding="utf-8", errors="replace")
+            for line in text.splitlines():
+                if needle in line:
+                    return line
+        time.sleep(0.05)
+    raise SystemExit(f"launch: timed out waiting for log line containing {needle!r} in {log}")
+
+
+def wait_http(url: str, timeout: float = 8.0) -> None:
+    deadline = time.time() + timeout
+    last = None
+    while time.time() < deadline:
+        try:
+            code, _ = common.http_get(url, timeout=1.5)
+            if code == 200:
+                return
+            last = f"HTTP {code}"
+        except Exception as e:  # noqa: BLE001
+            last = str(e)
+        time.sleep(0.05)
+    raise SystemExit(f"launch: timed out waiting for 200 from {url} ({last})")
+
+
+def main() -> None:
+    common.repo_looks_right()
+    ap = argparse.ArgumentParser(description="Launch isolated painting viewer instance")
+    ap.add_argument("--evidence", default=None, help="evidence folder name (e.g. seed)")
+    ap.add_argument("--port", type=int, default=None)
+    ap.add_argument("--headed", action="store_true", help="show the Chrome window")
+    ap.add_argument("--run-id", default=None)
+    args = ap.parse_args()
+
+    bind = "127.0.0.1"
+    port = args.port or int(os.environ.get("VERIFY_PAINTING_PORT") or 0) or common.free_port(
+        common.DEFAULT_PORT_FLOOR, bind
+    )
+    cdp = common.free_port(common.DEFAULT_CDP_FLOOR, bind)
+    run_id = args.run_id or os.environ.get("VERIFY_PAINTING_RUN_ID") or time.strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:8]
+    evidence_name = args.evidence or os.environ.get("VERIFY_PAINTING_EVIDENCE_ID") or run_id
+    folder = common.RUN_DIR / run_id
+    folder.mkdir(parents=True, exist_ok=True)
+    user_data = folder / "chrome-profile"
+    user_data.mkdir(parents=True, exist_ok=True)
+    evidence_dir = common.EVIDENCE_ROOT / evidence_name
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    server_log = folder / "server.log"
+    chrome_log = folder / "chrome.log"
+
+    # Fail if this exact port is already listening — never hijack a stranger.
+    owners = common.listening_pids(port)
+    if owners:
+        raise SystemExit(f"launch: port {port} already has listeners {sorted(owners)}; pick another")
+
+    server_log.write_text("", encoding="utf-8")
+    env = os.environ.copy()
+    env["PYTHONUNBUFFERED"] = "1"
+    with server_log.open("ab", buffering=0) as sl:
+        server = subprocess.Popen(
+            [sys.executable, "-u", "-m", "http.server", str(port), "--bind", bind],
+            cwd=str(common.REPO_ROOT),
+            stdout=sl,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+            env=env,
+        )
+
+    def rollback() -> None:
+        for proc in (chrome, server):
+            if proc is not None and proc.poll() is None:
+                try:
+                    os.killpg(proc.pid, 15)
+                except Exception:
+                    try:
+                        proc.terminate()
+                    except Exception:
+                        pass
+
+    chrome = None
+    try:
+        wait_http(f"http://{bind}:{port}/")
+        wait_http(f"http://{bind}:{port}/assets/scroll/manifest.js")
+        wait_log_line(server_log, f"Serving HTTP on {bind} port {port}")
+
+        chrome_args = [
+            common.chrome_bin(),
+            f"--user-data-dir={user_data}",
+            f"--remote-debugging-address={bind}",
+            f"--remote-debugging-port={cdp}",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--disable-sync",
+            "--disable-extensions",
+            "--disable-background-networking",
+            "--disable-default-apps",
+            "--disable-popup-blocking",
+            "--disable-hang-monitor",
+            "--disable-features=Translate,MediaRouter",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--window-size=1400,900",
+            "--homepage=about:blank",
+        ]
+        if not args.headed and os.environ.get("VERIFY_PAINTING_HEADED") != "1":
+            chrome_args.append("--headless=new")
+        chrome_args.append("about:blank")
+
+        with chrome_log.open("ab") as cl:
+            chrome = subprocess.Popen(
+                chrome_args,
+                stdout=cl,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+            )
+        wait_http(f"http://{bind}:{cdp}/json/version")
+
+        # Refuse if Chrome opened production somehow (it should be about:blank).
+        code, body = common.http_get(f"http://{bind}:{cdp}/json/list")
+        if code == 200:
+            low = body.decode("utf-8", "replace").lower()
+            if "classicalchinesepainting.com" in low:
+                raise SystemExit("launch: Chrome has a production tab; aborting (isolation)")
+
+        data = {
+            "run_id": run_id,
+            "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+            "repo_root": str(common.REPO_ROOT),
+            "skill_root": str(common.SKILL_ROOT),
+            "bind": bind,
+            "port": port,
+            "base_url": f"http://{bind}:{port}",
+            "server_pid": server.pid,
+            "server_log": str(server_log),
+            "chrome_pid": chrome.pid,
+            "chrome_bin": common.chrome_bin(),
+            "chrome_log": str(chrome_log),
+            "cdp_port": cdp,
+            "cdp_url": f"http://{bind}:{cdp}",
+            "user_data_dir": str(user_data),
+            "evidence_dir": str(evidence_dir),
+            "evidence_id": evidence_name,
+            "headless": not args.headed,
+        }
+        path = common.save_run(data)
+        print(f"launch: ready  {data['base_url']}")
+        print(f"launch: run     {run_id}")
+        print(f"launch: pid     server={server.pid} chrome={chrome.pid}")
+        print(f"launch: cdp     {data['cdp_url']}")
+        print(f"launch: profile {user_data}")
+        print(f"launch: evidence {evidence_dir}")
+        print(f"launch: runfile {path}")
+        print(f"launch: log     Serving HTTP on {bind} port {port}")
+        sys.stdout.write(common.json.dumps(data, indent=2, sort_keys=True) + "\n")
+    except BaseException:
+        rollback()
+        raise
+
+
+if __name__ == "__main__":
+    main()

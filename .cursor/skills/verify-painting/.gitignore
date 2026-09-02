@@ -1,0 +1,8 @@
+# Local to this skill. The static site at repo root has no package.json.
+.run/
+node_modules/
+__pycache__/
+*.pyc
+evidence/*/
+!evidence/seed/
+!evidence/seed/**
