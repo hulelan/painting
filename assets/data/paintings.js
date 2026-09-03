@@ -120,6 +120,34 @@ window.PAINTINGS = {
     /* The museum files this as Jin 金, not Song -- the dynasty that held the north
        while the Song court ruled from Hangzhou. It is in a Song show; it is not a
        Song painting. */
+    /* Two more from Gallery 222 that the exhibition page never listed. Both are
+       on view; the checklist on the web is not the checklist on the wall. */
+    { slug:'xueshan', zh:'雪山行旅', en:'Travelers in Snow-Covered Mountains',
+      artist:{zh:'（傳）荊浩', en:'Attributed to Jing Hao'}, dates:'c.870–940',
+      dynasty:{zh:'五代', en:'Five Dynasties'},
+      museum:{zh:'納爾遜-阿特金斯藝術博物館', en:'The Nelson-Atkins Museum of Art'},
+      acc:'40-15', inches:[29.5, 53.5], form:'hanging scroll',
+      dir:'assets/paintings/xueshan', tiles:'assets/paintings/xueshan/tiles/',
+      strip:'assets/paintings/xueshan/strip.jpg', w:699, h:1280,
+      source:'Wikimedia Commons', licence:'PD-Art',
+      file:'https://commons.wikimedia.org/wiki/File:Jing_Hao._Travelers_in_Snow-Covered_Mountains_135.89_x_74.93_cm_Nelson-Atkins_museum.jpg',
+      record:'https://art.nelson-atkins.org/objects/20840',
+      /* the worst scan on the site: 699px for a 136cm scroll, about 13ppi. The
+         museum's own is 350x640, half that. Kept because the alternative is not
+         showing a painting that is hanging on a wall right now. */
+      lowres:true },
+
+    { slug:'guanpu', zh:'觀瀑圖', en:'Gazing at a Waterfall',
+      artist:{zh:'佚名', en:'Unknown'}, dates:'mid-1100s',
+      dynasty:{zh:'南宋', en:'Southern Song'},
+      museum:{zh:'納爾遜-阿特金斯藝術博物館', en:'The Nelson-Atkins Museum of Art'},
+      acc:'2007.7', inches:[9.875, 9.375], form:'album leaf',
+      dir:'assets/paintings/guanpu', tiles:'assets/paintings/guanpu/tiles/',
+      strip:'assets/paintings/guanpu/strip.jpg', w:1891, h:2000,
+      source:'The Nelson-Atkins Museum of Art', licence:'no licence granted — see the note above',
+      file:'https://art.nelson-atkins.org/objects/29084/gazing-at-a-waterfall',
+      record:'https://art.nelson-atkins.org/objects/29084' },
+
     { slug:'xinglv', zh:'江山行旅圖', en:'Traveling Among Streams and Mountains',
       artist:{zh:'太古遺民', en:'Taigu Yimin'}, dates:'active early 1200s',
       dynasty:{zh:'金', en:'Jin'},
