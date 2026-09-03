@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import re
 import socket
 import subprocess
@@ -26,6 +27,11 @@ DEFAULT_PORT_FLOOR = 4173
 DEFAULT_CDP_FLOOR = 9333
 CHROME_CANDIDATES = [
     os.environ.get("VERIFY_PAINTING_CHROME"),
+    # macOS keeps its browsers in bundles, and this repo is developed on one
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+    str(Path.home() / "Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
     "/usr/bin/google-chrome",
     "/usr/local/bin/google-chrome",
     "/usr/bin/google-chrome-stable",
@@ -124,11 +130,54 @@ def pid_alive(pid: int) -> bool:
 
 
 def proc_cmdline(pid: int) -> str:
+    """The process's command line, on Linux and on macOS.
+
+    /proc is Linux-only. On a Mac the old version returned "" and every caller
+    read that as "not our process", so doctor failed closed on a perfectly good
+    instance -- safe, but it never passed. ps is the portable answer.
+    """
     p = Path(f"/proc/{pid}/cmdline")
-    if not p.is_file():
+    if p.is_file():
+        raw = p.read_bytes().replace(b"\x00", b" ").strip()
+        return raw.decode("utf-8", "replace")
+    try:
+        out = subprocess.check_output(
+            ["ps", "-o", "command=", "-p", str(pid)],
+            text=True, stderr=subprocess.DEVNULL,
+        )
+    except (OSError, subprocess.CalledProcessError):
         return ""
-    raw = p.read_bytes().replace(b"\x00", b" ").strip()
-    return raw.decode("utf-8", "replace")
+    return out.strip()
+
+
+def parse_register(text: str) -> list[dict]:
+    """The entries out of assets/data/paintings.js.
+
+    Read by node, not by regex. The file is JavaScript -- comments, trailing
+    commas, apostrophes inside strings ("Fishermen\'s Evening Song") -- and a
+    pattern that converts it to JSON gets that last one wrong in a way that is
+    quiet and confusing. The skill already requires node for control.
+    """
+    import json as _json
+    node = shutil.which("node") or os.environ.get("VERIFY_PAINTING_NODE")
+    if not node:
+        return []
+    src = (
+        "let window={};"
+        "eval(require('fs').readFileSync(0,'utf8'));"
+        "process.stdout.write(JSON.stringify((window.PAINTINGS&&window.PAINTINGS.items)||[]))"
+    )
+    try:
+        out = subprocess.run([node, "-e", src], input=text, text=True,
+                             capture_output=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    if out.returncode != 0:
+        return []
+    try:
+        return _json.loads(out.stdout or "[]")
+    except Exception:
+        return []
 
 
 def listening_pids(port: int) -> set[int]:

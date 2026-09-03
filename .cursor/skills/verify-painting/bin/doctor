@@ -196,8 +196,54 @@ def check() -> dict:
         f"sum={sum(widths)} SCROLL.w={scroll.get('w')} contentRight={scroll.get('contentRight')}",
     )
 
+    # ---- the other seven scrolls ------------------------------------------
+    # The site is a register of paintings now, not one scroll. Checking only
+    # 千里江山圖 leaves seven that can 404, mis-declare their size, or -- as
+    # happened -- share one fold strip and all show the wrong picture.
+    code, reg = common.http_get(base + "/assets/data/paintings.js")
+    if code != 200:
+        fail("register", f"GET /assets/data/paintings.js -> {code}")
+    items = common.parse_register(reg.decode("utf-8", "replace"))
+    if not items:
+        fail("register", "paintings.js parsed to no entries")
+    hosted = [it for it in items if it.get("dir")]
+    seen_strips = {}
+    for it in hosted:
+        slug = it["slug"]
+        mcode, mraw = common.http_get(base + "/" + it["dir"] + "/manifest.js")
+        if mcode != 200:
+            fail("painting_" + slug, f"{slug}: manifest -> {mcode}")
+        sc = common.parse_manifest(mraw.decode("utf-8", "replace"))
+        ts = sc.get("tiles") or []
+        if not ts:
+            fail("painting_" + slug, f"{slug}: manifest declares no tiles")
+        if sum(t.get("w", 0) for t in ts) != (sc.get("h") if sc.get("axis") == "v" else sc.get("w")):
+            fail("painting_" + slug,
+                 f"{slug}: tile widths do not sum to the declared size")
+        if it.get("w") and it["w"] != sc.get("w"):
+            fail("painting_" + slug,
+                 f"{slug}: register says w={it['w']}, manifest says {sc.get('w')}")
+        tcode, tbytes = common.http_get(base + "/" + it["tiles"] + ts[0]["f"])
+        if tcode != 200 or not tbytes.startswith(b"\xff\xd8"):
+            fail("painting_" + slug, f"{slug}: first tile -> {tcode}, {len(tbytes)} bytes")
+        # the fold strip is per painting; two sharing one means the Whole view
+        # is painting somebody else's scroll
+        strip = it.get("strip")
+        if not strip:
+            fail("painting_" + slug, f"{slug}: no fold strip in the register")
+        if strip in seen_strips:
+            fail("strip_shared",
+                 f"{slug} and {seen_strips[strip]} share {strip}; Whole view would show one painting for both")
+        seen_strips[strip] = slug
+        scode, sbytes = common.http_get(base + "/" + strip)
+        if scode != 200 or not sbytes.startswith(b"\xff\xd8"):
+            fail("painting_" + slug, f"{slug}: strip -> {scode}")
+    ok("paintings", f"{len(hosted)} scrolls: manifest, first tile and a distinct fold strip each "
+                    f"({', '.join(it['slug'] for it in hosted)})")
+
     report["base_url"] = base
     report["BUILD"] = served_build
+    report["paintings"] = [it["slug"] for it in hosted]
     report["tile_count"] = 21
     report["contentRight"] = scroll.get("contentRight")
     return report

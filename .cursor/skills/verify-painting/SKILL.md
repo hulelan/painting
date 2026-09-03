@@ -5,6 +5,42 @@ description: Drive the 千里江山图 / classicalchinesepainting.com handscroll
 
 # verify-painting
 
+## Eight scrolls, one viewer
+
+`assets/data/paintings.js` is the register: `window.PAINTINGS.items`, each with
+`slug`, `dir`, `tiles`, `strip`, `w`, `h`, and for the Nelson-Atkins works an
+`acc` and a `source`. `index.html?p=<slug>` picks one; no `?p=` means
+`PAINTINGS.default`, which is `qianli`.
+
+    qianli     41783x1673  21 tiles   the Wang Ximeng scroll, Palace Museum
+    houchibi   22175x1067             喬仲常 後赤壁賦圖
+    shierjing  22492x2400             夏珪 山水十二景
+    chunyou    26346x2500             （傳）馬遠 春遊賦詩圖
+    linluan    29396x3756             江參 林巒積翠圖
+    xinglv     25195x2400             太古遺民 江山行旅圖
+    yufu        4001x 867             許道寧 漁父圖
+    qinglan     2010x4001  axis v     李成 晴巒蕭寺圖 -- a hanging scroll
+
+Sizes drift as better scans arrive; read them from the register rather than
+from this table. `bin/doctor` checks every hosted painting: manifest, first
+tile, declared size against the register, and a **distinct** fold strip --
+`#fold .row` once had one hardcoded URL and every painting's Whole view showed
+the Wang Ximeng scroll.
+
+**`qinglan` is the only vertical one.** `S.axis==='v'` puts `body.vert` on:
+`scale=apW/L` (fit the width), travel is `y0` not `x0`, wheel moves vertically,
+`x0=0` on arrival, and the roll ends, the zoom stops and the locator are all
+hidden. Proofs written for a handscroll do not apply to it.
+
+## Cache stamp
+
+`window.BUILD` is in `index.html` and every data URL carries `?b=<build>`.
+Assets are `max-age=600`, so without the stamp a new page arrives beside
+ten-minute-old data -- which is how the fold-strip fix appeared to do nothing
+after it shipped. `tools/stamp_build.py` rewrites it; doctor compares served
+BUILD against the checkout.
+
+
 Agent-facing control skill for this checkout: a **static** GitHub Pages site (no `package.json`, no Makefile, no Playwright at site level, no API). Primary surface is the handscroll viewer in `index.html`. Sister poetry site is out of scope. `css/shell.css` is a cross-site tab-strip contract — do not edit it. Do not flatten the 21 JPEG strips under `assets/scroll/tiles/` into one image (mobile Safari decode caps).
 
 Read this file cold. Commands below are from this repo, not a template. Re-read `index.html` / `cabinet.html` / `assets/scroll/manifest.js` if anything looks stale.
@@ -28,7 +64,7 @@ What it does (do not substitute a server you did not start):
 
 1. Picks a free TCP port on `127.0.0.1` starting at **4173**, and a free CDP port starting at **9333**.
 2. Runs `python3 -m http.server $PORT --bind 127.0.0.1` with cwd = repo root, `start_new_session=True`.
-3. Creates a dedicated Chromium `--user-data-dir` at `$SKILL/.run/<run-id>/chrome-profile`. Starts system Chrome (`VERIFY_PAINTING_CHROME` or `/usr/bin/google-chrome`) headless on `about:blank` with `--remote-debugging-port=$CDP`. Never navigates to `https://classicalchinesepainting.com`.
+3. Creates a dedicated Chromium `--user-data-dir` at `$SKILL/.run/<run-id>/chrome-profile`. Starts system Chrome (`VERIFY_PAINTING_CHROME`, then the macOS bundles under `/Applications`, then the Linux paths) headless on `about:blank` with `--remote-debugging-port=$CDP`. Never navigates to `https://classicalchinesepainting.com`.
 4. Writes `$SKILL/.run/<run-id>/run.json` and copies it to `$SKILL/.run/current.json`. Doctor, control, and cleanup read that file. Fields: `run_id`, `base_url`, `port`, `server_pid`, `chrome_pid`, `cdp_url`, `user_data_dir`, `evidence_dir`, `repo_root`.
 
 **Ready when all of these are true** (launch already waits; you can re-check):
@@ -65,12 +101,13 @@ Checks, all required:
 |---|---|
 | Run file | `$SKILL/.run/current.json` (or `VERIFY_PAINTING_RUN_FILE`) exists and was written by launch |
 | Bind / host | `bind=127.0.0.1`; `base_url` host is not `classicalchinesepainting.com` |
-| Process up | `server_pid` alive; `/proc/<pid>/cmdline` contains `http.server`, the port, and `127.0.0.1` |
+| Process up | `server_pid` alive; its command line contains `http.server`, the port, and `127.0.0.1`. Read from `/proc` on Linux, `ps -o command=` on macOS -- `/proc` does not exist there, and returning `""` made doctor fail closed on every healthy Mac instance |
 | Port owned by our PID | `lsof -iTCP:$PORT -sTCP:LISTEN` is **exactly** `server_pid` — extra listeners = shared = refuse |
 | GET `/` | 200 |
 | GET `/assets/scroll/manifest.js` | 200 |
 | GET `/assets/scroll/tiles/tile-20.jpg` | 200, JPEG SOI, not a stub |
 | BUILD | served `window.BUILD='…'` equals checkout `index.html` (`tools/stamp_build.py` stamps it; do not require it equal `git rev-parse --short HEAD` — this checkout can be one stamp behind HEAD) |
+| Every painting | each hosted entry in the register: manifest 200, first tile is a real JPEG, declared size matches, fold strip present and not shared with another painting |
 | 21 tiles | served `window.SCROLL.tiles` is 21 files `tile-00.jpg`…`tile-20.jpg`, no width ≥ 40000 (that would be a flattened huge image), widths sum to `SCROLL.w` (41783), disk listing matches |
 | Chromium profile is ours | `chrome_pid` alive; cmdline contains this run's `user_data_dir` under `$SKILL/.run/<run-id>/chrome-profile` and the CDP port; CDP port owned by `chrome_pid`; CDP tab list has no production URL |
 
@@ -102,8 +139,8 @@ IDs present in the markup: `#room` `#desk` `#window` `#rail` `#rollL` `#rollR` `
 Overlays (click toggles class `on` on the `.persp`; see the click handler on `.persp`):
 
 - `.persp[data-t="loc"]` → `#loc` `display:block`, `#locBox` is the viewport mark
-- `.persp[data-t="roads"]` → `#roads` SVG `display:block` (22 paths in `assets/data/roads.js` in this checkout)
-- `.persp[data-t="notes"]` → noticed boxes `.nt` (4 items in `assets/data/notes.js`); gated by zoom unless `?notes=all`
+- `.persp[data-t="roads"]` → `#roads` SVG `display:block`. Do not assert a path count: roads are merged from device links most weeks. Read `window.ROADS.paths.length` at runtime and compare against the file if you need a number.
+- `.persp[data-t="notes"]` → noticed boxes `.nt`; count comes from `assets/data/notes.js` for 千里江山圖 and `notes-<slug>.js` for the rest, plus anything in this browser's `ccp_notes_*`. Gated by zoom (nothing under 1.25x, full weight by 2x) unless `?notes=all`.
 - `.persp[data-t="write"]` `#editor` — localStorage notes; not required for viewer proofs
 - `.persp[data-t="read"]` → `#script.on` colophon list
 - `.persp[data-t="log"]` → `#log.on` room log
