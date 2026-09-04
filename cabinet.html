@@ -147,9 +147,9 @@ const I18N={
   en:{h1:'The Case', lang:'中', geo:'Geometric', pic:'Pictorial', classic:'classic view',
       await:'no scan yet', elsewhere:'no free scan — see it at Chicago ↗',
       sub:n=>n.all+' compartments. '+n.open+' filled.'},
-  zh:{h1:'畫　匣', lang:'EN', geo:'幾何', pic:'寫實', classic:'舊版',
-      await:'尚無掃描本', elsewhere:'無自由授權掃描本　芝加哥大學可觀 ↗',
-      sub:n=>N(n.all)+'格　'+N(n.open)+'實'}
+  zh:{h1:'画　匣', lang:'EN', geo:'几何', pic:'写实', classic:'旧版',
+      await:'尚无扫描本', elsewhere:'无自由授权扫描本　芝加哥大学可观 ↗',
+      sub:n=>N(n.all)+'格　'+N(n.open)+'实'}
 };
 // The case is built from the register now, not from a pair of hard-coded
 // entries. A scroll with no scan is still shown -- shut, and labelled as such.
@@ -157,7 +157,7 @@ const I18N={
 const NUM=['〇','一','二','三','四','五','六','七','八','九','十'];
 const N=x=>NUM[x]||String(x);
 const REG=(window.PAINTINGS&&window.PAINTINGS.items)||[];
-const SITE={zh:'詩　淵', en:'Shi Yuan', meta:{zh:'古詩古文 二九六六篇', en:'2,966 poems and prose works'},
+const SITE={zh:'诗　渊', en:'Shi Yuan', meta:{zh:'古诗古文 二九六六篇', en:'2,966 poems and prose works'},
             href:'https://classicalchinesepoetry.com/', ready:true, site:true};
 function entries(lang){
   const out=REG.map(it=>({

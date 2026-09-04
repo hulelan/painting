@@ -472,12 +472,12 @@ body.topbar #loc{top:60px;bottom:auto}
      its data files are still ten minutes stale -- which is how the Whole view
      kept painting the wrong scroll after the fix had shipped. The build stamp
      makes each deploy a new URL. tools/stamp_build.py rewrites it. -->
-<script>window.BUILD='b399447';</script>
-<link rel="preload" as="script" href="assets/data/paintings.js?b=b399447">
-<link rel="preload" as="script" href="assets/scroll/manifest.js?b=b399447">
-<link rel="preload" as="script" href="assets/data/roads.js?b=b399447">
+<script>window.BUILD='eecaedc';</script>
+<link rel="preload" as="script" href="assets/data/paintings.js?b=eecaedc">
+<link rel="preload" as="script" href="assets/scroll/manifest.js?b=eecaedc">
+<link rel="preload" as="script" href="assets/data/roads.js?b=eecaedc">
 <link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
-<script src="assets/data/paintings.js?b=b399447"></script>
+<script src="assets/data/paintings.js?b=eecaedc"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
    are per-painting, so they are written in here rather than fixed in the page.
@@ -511,7 +511,7 @@ const S=window.SCROLL, EP=(window.EPISODES&&window.EPISODES.episodes)||[],
 const L=S.w, PH=S.h, CR=S.contentRight||S.w;
 // A hanging scroll is read down a wall, not unrolled along a table, so it gets
 // a different geometry: fit the width, travel vertically, no roll ends. This is
-// switched by the manifest's own axis, so it applies to 晴巒蕭寺圖 and to
+// switched by the manifest's own axis, so it applies to 晴峦萧寺图 and to
 // nothing else -- the other seven are handscrolls and must not change.
 const VERT = S.axis==='v';
 if(VERT) document.body.classList.add('vert');
@@ -539,13 +539,13 @@ const I18N={
       title:(window.PAINTING? PAINTING.en+' · '+PAINTING.artist.en+' · '+PAINTING.dynasty.en
                              : 'A Thousand Li of Rivers and Mountains · Wang Ximeng · Northern Song'),
       seg:(i,n)=> i===0?'1 · opening' : i===n-1? n+' · end' : String(i+1)},
-  zh:{zoom:'縮放', persp:'視角', whole:'全卷', pane:'展卷', detail:'細看',
-      wide:'通幅', loc:'卷影', marks:'物', roads:'道路', notes:'所見', write:'題', read:'題識', log:'共室', lang:'EN',
-      save:'存', del:'刪', cancel:'罷', back:'返回畫匣',
-      uiZh:'中文', uiEn:'English', uiIco:'圖示 —— 不用文字',
-      hidden:'已隱藏 —— 點畫面自己找', found:'你找到了',
+  zh:{zoom:'缩放', persp:'视角', whole:'全卷', pane:'展卷', detail:'细看',
+      wide:'通幅', loc:'卷影', marks:'物', roads:'道路', notes:'所见', write:'题', read:'题识', log:'共室', lang:'EN',
+      save:'存', del:'删', cancel:'罢', back:'返回画匣',
+      uiZh:'中文', uiEn:'English', uiIco:'图示 —— 不用文字',
+      hidden:'已隐藏 —— 点画面自己找', found:'你找到了',
       title:(window.PAINTING? PAINTING.zh+'　'+PAINTING.artist.zh+'　'+PAINTING.dynasty.zh
-                             : '千里江山圖　王希孟　北宋'),
+                             : '千里江山图　王希孟　北宋'),
       seg:(i,n)=> i===0?'一（起首）' : i===n-1? String(n)+'（卷末）' : String(i+1)}
 };
 // The toggle has three stops, not two: 中 → EN → pictograms → 中.
@@ -595,9 +595,9 @@ const TYPE={
   en:{building:'Building',pavilion:'Pavilion',temple:'Temple',pagoda:'Pagoda',bridge:'Bridge',
       boat:'Boat',figure:'Figure',watermill:'Watermill',jetty:'Jetty',fence:'Enclosure',
       animal:'Animal',other:'Detail'},
-  zh:{building:'屋舍',pavilion:'樓閣',temple:'寺',pagoda:'塔',bridge:'橋',
+  zh:{building:'屋舍',pavilion:'楼阁',temple:'寺',pagoda:'塔',bridge:'桥',
       boat:'舟',figure:'人',watermill:'水磨',jetty:'埠',fence:'垣',
-      animal:'獸',other:'細節'}
+      animal:'兽',other:'细节'}
 };
 let apH=0, apW=0, scale=1, Z=1, x0=0, y0=0, vel=0, panning=false, target=null;
 let core=0, thick=0, TX=0, TY=0, kept=null, lastCustom=null;
@@ -890,7 +890,7 @@ let zhintEl=null;
 function hintZoom(on){
   if(on && !zhintEl){
     zhintEl=document.createElement('div'); zhintEl.id='zhint';
-    zhintEl.textContent = lang==='en' ? 'zoom in to read what people noticed' : '放大即見所書';
+    zhintEl.textContent = lang==='en' ? 'zoom in to read what people noticed' : '放大即见所书';
     win.appendChild(zhintEl);
   } else if(!on && zhintEl){ zhintEl.remove(); zhintEl=null; }
 }
@@ -1208,7 +1208,7 @@ const ROOM=(function(){
 let roomSeq=-1, roomName='';
 try{ roomName=localStorage.getItem('ccp_name')||''; }catch(e){}
 function askName(){
-  const n=(window.prompt(lang==='en'?'Sign your notes as:':'題識署名：', roomName||'')||'').trim().slice(0,40);
+  const n=(window.prompt(lang==='en'?'Sign your notes as:':'题识署名：', roomName||'')||'').trim().slice(0,40);
   if(n){ roomName=n; try{ localStorage.setItem('ccp_name',n); }catch(e){} }
   return roomName;
 }
@@ -1261,11 +1261,11 @@ function editNote(n){
   if(ROOM&&ROOM.api){
     w.textContent = lang==='en'
       ? 'everyone in this room will see this' + (roomName? ' · signed '+roomName : '')
-      : '此室諸人皆可見' + (roomName? '　署名 '+roomName : '');
+      : '此室诸人皆可见' + (roomName? '　署名 '+roomName : '');
     w.className='where shared';
   } else {
     w.textContent = lang==='en' ? 'kept in this browser only — nobody else can see it'
-                                : '僅存於此瀏覽器　他人不見';
+                                : '仅存于此浏览器　他人不见';
     w.className='where private';
   }
   box.querySelector('.et').value=n.title||'';
@@ -1289,14 +1289,14 @@ function buildScript(){
   const host=$('script'); if(!host) return;
   const rows=NOTES.slice().sort((a,b)=> (VERT? a.y-b.y : b.x-a.x));
   host.innerHTML = rows.length ? '' :
-    '<div class="empty">'+(lang==='en'?'nothing written yet':'尚無題識')+'</div>';
+    '<div class="empty">'+(lang==='en'?'nothing written yet':'尚无题识')+'</div>';
   rows.forEach(n=>{
     const at = VERT ? Math.round(100*n.y/PH) : Math.round(100*(CR-n.x)/CR);
     const d=document.createElement('div');
     d.className='row'+(n.mine?' mine':'')+(n.room?' room':'');
     const a=document.createElement('span'); a.className='at'; a.textContent=at+'%';
     const tt=document.createElement('span'); tt.className='tt';
-    tt.textContent=n.title||(lang==='en'?'(untitled)':'（無題）');
+    tt.textContent=n.title||(lang==='en'?'(untitled)':'（无题）');
     d.appendChild(a); d.appendChild(tt);
     if(n.by){ const b=document.createElement('span'); b.className='by'; b.textContent=n.by; d.appendChild(b); }
     if(n.text){ const bd=document.createElement('div'); bd.className='bd'; bd.textContent=n.text; d.appendChild(bd); }
@@ -1304,7 +1304,7 @@ function buildScript(){
     host.appendChild(d);
   });
   const c=$('scriptCount');
-  if(c) c.textContent = rows.length ? rows.length+(lang==='en'?' notes':' 則') : '';
+  if(c) c.textContent = rows.length ? rows.length+(lang==='en'?' notes':' 则') : '';
 }
 // ---- who wrote what, and when --------------------------------------------
 // The log is the room's history, not a surveillance feature: it records that a
@@ -1314,12 +1314,12 @@ function buildLog(){
   const host=$('log'); if(!host) return;
   host.innerHTML='';
   const head=document.createElement('div'); head.className='lhead';
-  head.textContent = ROOM ? (lang==='en'?'Room · everyone':'共室　諸人') : (lang==='en'?'not in a room':'未入共室');
+  head.textContent = ROOM ? (lang==='en'?'Room · everyone':'共室　诸人') : (lang==='en'?'not in a room':'未入共室');
   host.appendChild(head);
   if(!ROOM){
     const d=document.createElement('div'); d.className='empty';
     d.textContent = lang==='en' ? 'open a room link to write together'
-                                : '開共室之鏈，同題一卷';
+                                : '开共室之链，同题一卷';
     host.appendChild(d);
     const act=document.createElement('div'); act.className='act';
     const b=document.createElement('button');
@@ -1332,7 +1332,7 @@ function buildLog(){
       const id=btoa(String.fromCharCode.apply(null,a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
       let api=''; try{ api=localStorage.getItem('ccp_api')||''; }catch(e){}
       if(!api){
-        api=(window.prompt(lang==='en'?'Worker URL (see tools/room-worker.js):':'共室端點（見 tools/room-worker.js）：','')||'').trim().replace(/\/+$/,'');
+        api=(window.prompt(lang==='en'?'Worker URL (see tools/room-worker.js):':'共室端点（见 tools/room-worker.js）：','')||'').trim().replace(/\/+$/,'');
         if(!api) return;
         try{ localStorage.setItem('ccp_api',api); }catch(e){}
       }
@@ -1341,7 +1341,7 @@ function buildLog(){
     };
     act.appendChild(b);
     const e2=document.createElement('button');
-    e2.textContent = lang==='en' ? 'save my notes' : '存我所題';
+    e2.textContent = lang==='en' ? 'save my notes' : '存我所题';
     e2.onclick=exportRoom; act.appendChild(e2);
     host.appendChild(act);
     return;
@@ -1353,11 +1353,11 @@ function buildLog(){
   host.appendChild(who);
   const act=document.createElement('div'); act.className='act';
   const mk2=(label,fn)=>{ const b=document.createElement('button'); b.textContent=label; b.onclick=fn; return b; };
-  act.appendChild(mk2(lang==='en'?'copy invite':'複製邀鏈', ()=>{
+  act.appendChild(mk2(lang==='en'?'copy invite':'复制邀链', ()=>{
     const u=location.origin+location.pathname+location.search+
       '#room='+ROOM.id+(ROOM.api?'&api='+encodeURIComponent(ROOM.api):'');
     navigator.clipboard.writeText(u).then(
-      ()=>toast(lang==='en'?'invite copied — anyone with it can write':'已複製　持鏈者皆可題'),
+      ()=>toast(lang==='en'?'invite copied — anyone with it can write':'已复制　持链者皆可题'),
       ()=>toast(u));
   }));
   act.appendChild(mk2(lang==='en'?'my name':'署名', ()=>{ askName(); buildLog(); }));
@@ -1366,9 +1366,9 @@ function buildLog(){
   const rows=ROOMLOG.slice().reverse().slice(0,120);
   if(!rows.length){
     const d=document.createElement('div'); d.className='empty';
-    d.textContent=lang==='en'?'nothing written yet':'尚無題識'; host.appendChild(d); return;
+    d.textContent=lang==='en'?'nothing written yet':'尚无题识'; host.appendChild(d); return;
   }
-  const VERB={add:{en:'wrote',zh:'題'},edit:{en:'edited',zh:'改'},del:{en:'removed',zh:'刪'}};
+  const VERB={add:{en:'wrote',zh:'题'},edit:{en:'edited',zh:'改'},del:{en:'removed',zh:'删'}};
   const NAME={};
   ((window.PAINTINGS&&PAINTINGS.items)||[]).forEach(it=>{ NAME[it.slug]={zh:it.zh,en:it.en}; });
   rows.forEach(e=>{
@@ -1402,7 +1402,7 @@ function exportRoom(){
   a.download='annotations-'+out.savedAt.slice(0,10)+'.json'; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),4000);
   const n=ROOMNOTES.length+MYNOTES.length;
-  toast((lang==='en'?'saved ':'已存　')+n+(lang==='en'?' notes across all paintings':' 則'));
+  toast((lang==='en'?'saved ':'已存　')+n+(lang==='en'?' notes across all paintings':' 则'));
 }
 function gotoNote(n){
   const want = Math.min(nativeZ(), Math.max(1.6, (VERT?apW:apH)/((n.w||300)*scale*2.2)));
@@ -1460,7 +1460,7 @@ function applyLang(){
   np.classList.toggle('off', NOTES.length===0);
   np.title = NOTES.length? '' : 'nothing noted yet — use trace.html';
   document.title = window.PAINTING ? (lang==='en'?PAINTING.en:PAINTING.zh)
-                  : (lang==='en'?'A Thousand Li of Rivers and Mountains':'千里江山圖');
+                  : (lang==='en'?'A Thousand Li of Rivers and Mountains':'千里江山图');
   buildTrack(); if(mode==='fold') layoutFold();
 }
 $('lang').addEventListener('click',()=>{
@@ -1498,7 +1498,7 @@ if(VERT){ mode='pane'; }
 if(window.NOT_READY){
   const b=document.createElement('div'); b.id='notready';
   const it=window.NOT_READY;
-  b.innerHTML = it.zh ? ('<b>'+it.zh+'</b> '+(it.en||'')+' — 尚無掃描本，暫以千里江山圖代之'
+  b.innerHTML = it.zh ? ('<b>'+it.zh+'</b> '+(it.en||'')+' — 尚无扫描本，暂以千里江山图代之'
                         +'<br><span>no scan of this one yet; showing the Wang Ximeng scroll instead</span>')
                       : ('unknown painting “'+it.slug+'” — showing the default');
   document.body.appendChild(b);
