@@ -400,11 +400,20 @@ body.topbar .persp{padding:0;font-size:11px;letter-spacing:1px;gap:6px}
 body.topbar .persp .box{width:11px;height:11px}
 body.topbar #corner{right:10px;top:auto;bottom:9px;flex-direction:row;
   align-items:center;gap:10px}
-body.topbar #title{display:none}
+/* On a phone the corner has room for the two buttons and nothing else, so the
+   caption goes to the foot of the screen -- still there, out of the painting's
+   way. It says more there than it did in the corner: the museum too. */
+body.topbar #title{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:15;
+  max-width:none;text-align:center;padding:6px 12px calc(6px + env(safe-area-inset-bottom));
+  background:linear-gradient(0deg,rgba(10,8,6,.95),rgba(10,8,6,.78) 70%,transparent);
+  font-size:11px;letter-spacing:2px;color:#8d8270;line-height:1.5}
+body[class*="bg-"].topbar #title{color:var(--th-muted);
+  background:linear-gradient(0deg,var(--th-bg),transparent)}
+#title .mus{display:none}
+body.topbar #title .mus{display:block;font-size:10px;color:#6b6151;letter-spacing:1px}
 body.topbar #loc{top:60px;bottom:auto}
 @media(max-width:760px){
   #corner{right:10px;top:10px;gap:6px}
-  #title{display:none}
 }
 </style>
 </head>
@@ -472,12 +481,12 @@ body.topbar #loc{top:60px;bottom:auto}
      its data files are still ten minutes stale -- which is how the Whole view
      kept painting the wrong scroll after the fix had shipped. The build stamp
      makes each deploy a new URL. tools/stamp_build.py rewrites it. -->
-<script>window.BUILD='eecaedc';</script>
-<link rel="preload" as="script" href="assets/data/paintings.js?b=eecaedc">
-<link rel="preload" as="script" href="assets/scroll/manifest.js?b=eecaedc">
-<link rel="preload" as="script" href="assets/data/roads.js?b=eecaedc">
+<script>window.BUILD='84a6560';</script>
+<link rel="preload" as="script" href="assets/data/paintings.js?b=84a6560">
+<link rel="preload" as="script" href="assets/scroll/manifest.js?b=84a6560">
+<link rel="preload" as="script" href="assets/data/roads.js?b=84a6560">
 <link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
-<script src="assets/data/paintings.js?b=eecaedc"></script>
+<script src="assets/data/paintings.js?b=84a6560"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
    are per-painting, so they are written in here rather than fixed in the page.
@@ -485,6 +494,14 @@ body.topbar #loc{top:60px;bottom:auto}
    before the viewer below runs, and the alternative is rewriting the whole
    viewer as async for the sake of one lookup. */
 (function(){
+  // Arriving at the bare address used to open 千里江山图, which read as "this
+  // site is that scroll" -- confusing once there were ten. No ?p= means the
+  // case instead, where you choose. Every existing ?p= link still works, and
+  // whatever else was on the URL travels with you.
+  if(!/[?&]p=/.test(location.search)){
+    location.replace('cabinet.html'+location.search+location.hash);
+    return;
+  }
   var R=window.PAINTINGS, m=/[?&]p=([a-z0-9_-]+)/i.exec(location.search);
   var slug=(m&&m[1])||R.default;
   var it=R.items.filter(function(x){return x.slug===slug;})[0];
@@ -1428,7 +1445,17 @@ function applyLang(){
   // the chevron IS the label; the translated string becomes its tooltip
   $('back').title=t('back'); $('back').setAttribute('aria-label',t('back'));
   // pictograms are wordless, so the one caption left keeps the scroll's own name
-  $('title').textContent = ICONS_ON ? I18N.zh.title : t('title');
+  const cap=$('title');
+  cap.textContent = ICONS_ON ? I18N.zh.title : t('title');
+  // The collection line is always built and hidden by CSS unless the caption is
+  // at the foot. Building it only when topbar is on would miss a rotation:
+  // measure() sets that class on resize, and applyLang does not run again.
+  if(window.PAINTING && PAINTING.museum){
+    const m=document.createElement('span'); m.className='mus';
+    m.textContent = (lang==='en' ? PAINTING.museum.en : PAINTING.museum.zh)
+                    + (PAINTING.acc ? '　'+PAINTING.acc : '');
+    cap.appendChild(m);
+  }
   // Whose photograph this is stays recorded -- in the register, in the README,
   // and on the title itself -- but it is no longer set beside the painting.
   // PD-Art carries no attribution requirement, and a licence string over a
