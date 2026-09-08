@@ -1,0 +1,25 @@
+{
+ "_note": "Which photographs show which painting. Established by six passes over the frames in September 2026; the evidence for each is the third field. Ranges are inclusive and refer to the IMG_ number.",
+ "ranges": [
+  ["5795-5813", "shierjing", "the view-title cartouche reads 遙山書鴈, one of the four surviving Xia Gui titles; 5799-5813 are the colophon section of the same scroll"],
+  ["5814-5844", "yufu",      "dragon-brocade opening, then sheer flat-faced cliffs with curtain washes and tiny staffage — EXCEPT 5844, see below"],
+  ["5844-5844", "_check",    "ink on paper, three characters written into the painted field; leaned 后赤壁赋图 at low confidence, wants a human eye"],
+  ["5845-5900", "linluan",   "the inscription 千里江山上士葛…乙巳仲夏之月 matches the reference character for character; silk throughout, weave visible at close range"],
+  ["5901-5973", "xinglv",    "5901 brings in the mounting brocade with three Qianlong seals and gridless paper; the opening matches xinglv seal for seal"],
+  ["5974-5977", "_other",    "a round fan album leaf — not one of the ten"],
+  ["5982-5990", "qinglan",   "hanging-scroll mount, the stilted pavilion over water, the trestle bridge, four red seals in the margin"],
+  ["5991-6007", "_other",    "the round fan leaf again: curved mount arc, gold-flecked silk, angular crab-claw branches, the rider and the poled boat"],
+  ["6010-6013", "guanpu",    "square leaf: pavilion with seated gentleman, pine from upper left, striated rock column, waterfall down the right edge"],
+  ["6014-6022", "_other",    "a second unidentified leaf (all four mount edges seen) and, at 6022, a third object — its silk weave has the same two thread densities with the axes swapped"],
+  ["6023-6023", "guanpu",    "the lower-right two-thirds of the Gazing at a Waterfall leaf"],
+  ["6068-6078", "linluan",   "the fir stand and the railed temple hall about 40% along, matched against the scroll's own tiles"],
+  ["6092-6096", "shierjing", "the view title 煙堤晚泊 and the 臣夏珪畫 signature with collector seals"],
+  ["6097-6115", "qinglan",   "the wine-shop vignette, the plank trestle bridge, and the pagoda matched pixel for pixel"],
+  ["6116-6124", "yufu",      "coarse open weave, pale washed ridges topped with rows of small trees over vast blank silk — 6116 is the weakest frame in the set"],
+  ["6125-6181", "xinglv",    "paper with fibre and creases, dry scrubbed texture strokes, travellers with a pack animal; 6180 and 6181 still paper"],
+  ["6182-6190", "yufu",      "6182 is silk again — woven grid, warm tan, Xu Daoning's flat cliff curtain washes; 6190 matches the wheelbarrow group at the scroll's foot"],
+  ["6191-6194", "linluan",   "temple on a wooded ledge with a long tapering stair into blank silk, willow strands, coarse tan silk with repair patches"],
+  ["6195-6204", "shierjing", "the skiff with two figures from 渔笛清幽, the reedy bank with net-poles, wet sparse ink on coarse silk"],
+  ["6205-6226", "chunyou",   "a scholar holding a brush over paper at a long table; green pigment in the potted plants, which rules out every ink-only candidate"]
+ ]
+}

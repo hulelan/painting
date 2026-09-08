@@ -120,24 +120,11 @@ window.PAINTINGS = {
     /* The museum files this as Jin 金, not Song -- the dynasty that held the north
        while the Song court ruled from Hangzhou. It is in a Song show; it is not a
        Song painting. */
-    /* Two more from Gallery 222 that the exhibition page never listed. Both are
-       on view; the checklist on the web is not the checklist on the wall. */
-    { slug:'xueshan', zh:'雪山行旅', en:'Travelers in Snow-Covered Mountains',
-      artist:{zh:'（传）荆浩', en:'Attributed to Jing Hao'}, dates:'c.870–940',
-      dynasty:{zh:'五代', en:'Five Dynasties'},
-      museum:{zh:'纳尔逊-阿特金斯艺术博物馆', en:'The Nelson-Atkins Museum of Art'},
-      acc:'40-15', inches:[29.5, 53.5], form:'hanging scroll',
-      dir:'assets/paintings/xueshan', tiles:'assets/paintings/xueshan/tiles/',
-      strip:'assets/paintings/xueshan/strip.jpg', w:699, h:1280,
-      source:'Wikimedia Commons', licence:'PD-Art',
-      file:'https://commons.wikimedia.org/wiki/File:Jing_Hao._Travelers_in_Snow-Covered_Mountains_135.89_x_74.93_cm_Nelson-Atkins_museum.jpg',
-      record:'https://art.nelson-atkins.org/objects/20840',
-      /* the worst scan on the site: 699px for a 136cm scroll, about 13ppi. The
-         museum's own is 350x640, half that. Kept because the alternative is not
-         showing a painting that is hanging on a wall right now. */
-      lowres:true },
-
-    { slug:'guanpu', zh:'观瀑图', en:'Gazing at a Waterfall',
+        /* 观瀑图 came in with 雪山行旅, which has since been removed: 699x1280 for a
+       136cm hanging scroll is about 13ppi, the worst on the site by a wide
+       margin, and no photograph of it was taken. Better absent than present as
+       a smear. It is in git history if a real scan turns up. */
+{ slug:'guanpu', zh:'观瀑图', en:'Gazing at a Waterfall',
       artist:{zh:'佚名', en:'Unknown'}, dates:'mid-1100s',
       dynasty:{zh:'南宋', en:'Southern Song'},
       museum:{zh:'纳尔逊-阿特金斯艺术博物馆', en:'The Nelson-Atkins Museum of Art'},
