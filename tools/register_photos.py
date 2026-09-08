@@ -126,8 +126,27 @@ def do_slug(slug, write):
                   ensure_ascii=False, indent=1)
         print(f"  wrote {slug}/photos/photos.json")
 
+def verify(photo_path, scan_full, H, box):
+    """Warp the photograph onto the scan and correlate. The inlier count says the
+    geometry is self-consistent; only this says it landed on the right picture."""
+    ph = cv2.imread(photo_path, cv2.IMREAD_GRAYSCALE)
+    x, y, w, h = box
+    x0, y0 = max(0, int(x)), max(0, int(y))
+    x1 = min(scan_full.shape[1], int(x + w)); y1 = min(scan_full.shape[0], int(y + h))
+    if x1 - x0 < 24 or y1 - y0 < 24:
+        return None
+    warp = cv2.warpPerspective(ph, np.array(H), (scan_full.shape[1], scan_full.shape[0]))
+    a = warp[y0:y1, x0:x1].astype(np.float32)
+    b = scan_full[y0:y1, x0:x1].astype(np.float32)
+    m = a > 0
+    if m.sum() < 800:
+        return None
+    return float(np.corrcoef(a[m], b[m])[0, 1])
+
 ap = argparse.ArgumentParser()
 ap.add_argument("--slug"); ap.add_argument("--all", action="store_true")
+ap.add_argument("--classify", action="store_true",
+                help="try every painting, not just the folder it sits in")
 ap.add_argument("--write", action="store_true")
 a = ap.parse_args()
 slugs = [a.slug] if a.slug else (

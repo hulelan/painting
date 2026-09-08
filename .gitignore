@@ -1,2 +1,11 @@
 .DS_Store
 mock/
+
+# The gallery photographs themselves: 1.7 GB of full-size phone JPEGs, which is
+# not what a git repository is for. photos.json IS tracked -- the placements are
+# the work, and they are small. Publishing will need resized copies, made when
+# there is a viewer to show them.
+assets/paintings/*/photos/*.JPG
+assets/paintings/*/photos/*.jpeg
+assets/paintings/_other/*.JPG
+assets/paintings/_unsorted/*.JPG
