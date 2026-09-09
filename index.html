@@ -262,14 +262,19 @@ body.vert #rail img{display:block}
 /* the photographs, each laid on the painting by its own homography */
 #photos{position:absolute;left:0;top:0;z-index:6;transform-origin:0 0;display:none;
   pointer-events:none}
+/* The outline marks the place; the photograph inside it is what fades. They
+   were one element with one opacity, so hiding the photograph hid the outline
+   too and the toggle appeared to do nothing at all. */
 .shot{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:auto;
-  cursor:pointer;opacity:0;outline:1px solid rgba(120,220,190,.85);
-  outline-offset:-1px;transition:opacity .25s ease}
-.shot img{width:100%;height:100%;display:block}
-.shot:hover{opacity:.35}
-.shot.on{opacity:1;outline-color:rgba(255,215,106,.95);z-index:3}
-/* while one is open the rest get out of the way */
-body.shotopen .shot:not(.on){opacity:0;pointer-events:none;outline-color:rgba(120,220,190,.35)}
+  cursor:pointer;outline:1px solid rgba(120,220,190,.9);outline-offset:-1px;
+  background:rgba(120,220,190,.06)}
+.shot img{width:100%;height:100%;display:block;opacity:0;transition:opacity .25s ease}
+.shot:hover{outline-color:rgba(170,245,220,1);background:rgba(120,220,190,.14)}
+.shot:hover img{opacity:.4}
+.shot.on{outline-color:rgba(255,215,106,.95);background:none;z-index:3}
+.shot.on img{opacity:1}
+/* while one is open the rest step back, but stay findable */
+body.shotopen .shot:not(.on){outline-color:rgba(120,220,190,.28);background:none;pointer-events:none}
 #shotbar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:70;
   display:none;align-items:center;gap:12px;background:rgba(20,17,12,.95);
   border:1px solid #4a4030;border-radius:4px;padding:9px 12px;max-width:92vw}
@@ -514,12 +519,12 @@ body.topbar #loc{top:60px;bottom:auto}
      its data files are still ten minutes stale -- which is how the Whole view
      kept painting the wrong scroll after the fix had shipped. The build stamp
      makes each deploy a new URL. tools/stamp_build.py rewrites it. -->
-<script>window.BUILD='d197f3d';</script>
-<link rel="preload" as="script" href="assets/data/paintings.js?b=d197f3d">
-<link rel="preload" as="script" href="assets/scroll/manifest.js?b=d197f3d">
-<link rel="preload" as="script" href="assets/data/roads.js?b=d197f3d">
+<script>window.BUILD='063faed';</script>
+<link rel="preload" as="script" href="assets/data/paintings.js?b=063faed">
+<link rel="preload" as="script" href="assets/scroll/manifest.js?b=063faed">
+<link rel="preload" as="script" href="assets/data/roads.js?b=063faed">
 <link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
-<script src="assets/data/paintings.js?b=d197f3d"></script>
+<script src="assets/data/paintings.js?b=063faed"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
    are per-painting, so they are written in here rather than fixed in the page.
@@ -1273,7 +1278,7 @@ function buildShots(){
     wrap.style.width=(pw||100)+'px'; wrap.style.height=(ph||100)+'px';
     wrap.dataset.i=i;
     const img=document.createElement('img');
-    img.loading='lazy'; img.decoding='async';
+    img.decoding='async';   // not lazy: they are wanted the moment the layer is on
     img.src=(PAINTING.dir||'assets/scroll')+'/photos/web/'+it.file.replace(/ /g,'_');
     wrap.appendChild(img);
     wrap.addEventListener('click',ev=>{ ev.stopPropagation(); openShot(i); });
@@ -1301,12 +1306,12 @@ function openShot(i){
     (lang==='en'? 'x '+it.box[0]+'  ·  '+it.ppsp+'\u00d7 magnification  ·  '+it.inliers+' inliers  ·  ncc '+it.ncc
                 : 'x '+it.box[0]+'　放大 '+it.ppsp+' 倍　'+it.inliers+' 对　相关 '+it.ncc);
   const sl=p.querySelector('input');
-  sl.value=100; shotEls[i].style.opacity=1;
+  sl.value=100; shotEls[i].querySelector('img').style.opacity=1;
   gotoBox(it.box);
 }
 function closeShot(){
   if(shotOn===null) return;
-  shotEls.forEach(el=>{ el.classList.remove('on'); el.style.opacity=''; });
+  shotEls.forEach(el=>{ el.classList.remove('on'); el.querySelector('img').style.opacity=''; });
   document.body.classList.remove('shotopen');
   $('shotbar').classList.remove('on'); shotOn=null;
 }
@@ -1618,7 +1623,7 @@ $('lang').addEventListener('click',()=>{
   const b=$('shotbar');
   b.addEventListener('pointerdown',e=>e.stopPropagation());
   b.querySelector('input').addEventListener('input',e=>{
-    if(shotOn!==null) shotEls[shotOn].style.opacity=(+e.target.value/100);
+    if(shotOn!==null) shotEls[shotOn].querySelector('img').style.opacity=(+e.target.value/100);
   });
   b.querySelector('.pv').onclick=()=>stepShot(-1);
   b.querySelector('.nx').onclick=()=>stepShot(1);
