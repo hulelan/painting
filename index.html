@@ -252,7 +252,14 @@ body.vert #rail img{display:block}
 :lang(en) #zhint, :lang(en) .lb, :lang(en) .nt .lbl{
   letter-spacing:.2px; text-wrap:balance;
 }
-:lang(en) /* the photographs, each laid on the painting by its own homography */
+:lang(en) #credit{ letter-spacing:0; text-wrap:pretty }
+/* the corner title is the worst case: longest string, narrowest column */
+:lang(en) #title{ max-width:min(46vw,380px); line-height:1.45 }
+/* and the cells were sized for five characters, not fifty */
+:lang(en) .cell{ min-height:118px }
+:lang(en) .cell .name{ font-size:14.5px; line-height:1.35 }
+:lang(en) .cell .meta{ line-height:1.4 }
+/* the photographs, each laid on the painting by its own homography */
 #photos{position:absolute;left:0;top:0;z-index:6;transform-origin:0 0;display:none;
   pointer-events:none}
 .shot{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:auto;
@@ -276,13 +283,6 @@ body.shotopen .shot:not(.on){opacity:0;pointer-events:none;outline-color:rgba(12
 #shotbar button:hover{background:#2e2820;color:#f0e6cd}
 #shotCount{margin-left:6px;font-size:10px;color:#6f6552}
 body.icons #shotCount{display:none}
-#credit{ letter-spacing:0; text-wrap:pretty }
-/* the corner title is the worst case: longest string, narrowest column */
-:lang(en) #title{ max-width:min(46vw,380px); line-height:1.45 }
-/* and the cells were sized for five characters, not fifty */
-:lang(en) .cell{ min-height:118px }
-:lang(en) .cell .name{ font-size:14.5px; line-height:1.35 }
-:lang(en) .cell .meta{ line-height:1.4 }
 #notready{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:60;
   background:rgba(24,20,14,.92);border:1px solid #4a4030;border-radius:3px;
   padding:9px 14px;font-size:12px;letter-spacing:1px;color:#d8c9a4;
@@ -448,6 +448,7 @@ body.topbar #loc{top:60px;bottom:auto}
     <div id="window">
       <div id="rail"></div>
       <svg id="roads"></svg>
+      <div id="photos"></div>
       <div id="sheen"></div>
       <div id="marks"></div>
       <div id="marquee"></div>
@@ -487,7 +488,6 @@ body.topbar #loc{top:60px;bottom:auto}
   <div id="title"></div>
 </div>
 
-<div id="photos"></div>
 <div id="shotbar">
   <button class="pv">‹</button>
   <div class="txt"><div class="nm"></div><div class="st"></div></div>
@@ -514,12 +514,12 @@ body.topbar #loc{top:60px;bottom:auto}
      its data files are still ten minutes stale -- which is how the Whole view
      kept painting the wrong scroll after the fix had shipped. The build stamp
      makes each deploy a new URL. tools/stamp_build.py rewrites it. -->
-<script>window.BUILD='514108e';</script>
-<link rel="preload" as="script" href="assets/data/paintings.js?b=514108e">
-<link rel="preload" as="script" href="assets/scroll/manifest.js?b=514108e">
-<link rel="preload" as="script" href="assets/data/roads.js?b=514108e">
+<script>window.BUILD='d197f3d';</script>
+<link rel="preload" as="script" href="assets/data/paintings.js?b=d197f3d">
+<link rel="preload" as="script" href="assets/scroll/manifest.js?b=d197f3d">
+<link rel="preload" as="script" href="assets/data/roads.js?b=d197f3d">
 <link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
-<script src="assets/data/paintings.js?b=514108e"></script>
+<script src="assets/data/paintings.js?b=d197f3d"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
    are per-painting, so they are written in here rather than fixed in the page.
