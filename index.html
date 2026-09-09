@@ -266,15 +266,17 @@ body.vert #rail img{display:block}
    were one element with one opacity, so hiding the photograph hid the outline
    too and the toggle appeared to do nothing at all. */
 .shot{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:auto;
-  cursor:pointer;outline:1px solid rgba(120,220,190,.9);outline-offset:-1px;
-  background:rgba(120,220,190,.06)}
-.shot img{width:100%;height:100%;display:block;opacity:0;transition:opacity .25s ease}
-.shot:hover{outline-color:rgba(170,245,220,1);background:rgba(120,220,190,.14)}
-.shot:hover img{opacity:.4}
+  cursor:pointer;outline:1px solid rgba(120,220,190,.55);outline-offset:-1px}
+/* Switching the layer on shows the photographs themselves, all of them, laid
+   where they belong -- that is the view that answers "are these placed right".
+   Outlines alone were a worse answer to the same question. */
+.shot img{width:100%;height:100%;display:block;opacity:.94;transition:opacity .25s ease}
+.shot:hover{outline-color:rgba(170,245,220,1);z-index:2}
 .shot.on{outline-color:rgba(255,215,106,.95);background:none;z-index:3}
 .shot.on img{opacity:1}
-/* while one is open the rest step back, but stay findable */
-body.shotopen .shot:not(.on){outline-color:rgba(120,220,190,.28);background:none;pointer-events:none}
+/* with one open the rest drop back far enough to see the painting through them */
+body.shotopen .shot:not(.on){outline-color:rgba(120,220,190,.25);background:none;pointer-events:none}
+body.shotopen .shot:not(.on) img{opacity:.12}
 #shotbar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:70;
   display:none;align-items:center;gap:12px;background:rgba(20,17,12,.95);
   border:1px solid #4a4030;border-radius:4px;padding:9px 12px;max-width:92vw}
@@ -519,12 +521,12 @@ body.topbar #loc{top:60px;bottom:auto}
      its data files are still ten minutes stale -- which is how the Whole view
      kept painting the wrong scroll after the fix had shipped. The build stamp
      makes each deploy a new URL. tools/stamp_build.py rewrites it. -->
-<script>window.BUILD='063faed';</script>
-<link rel="preload" as="script" href="assets/data/paintings.js?b=063faed">
-<link rel="preload" as="script" href="assets/scroll/manifest.js?b=063faed">
-<link rel="preload" as="script" href="assets/data/roads.js?b=063faed">
+<script>window.BUILD='7de711f';</script>
+<link rel="preload" as="script" href="assets/data/paintings.js?b=7de711f">
+<link rel="preload" as="script" href="assets/scroll/manifest.js?b=7de711f">
+<link rel="preload" as="script" href="assets/data/roads.js?b=7de711f">
 <link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
-<script src="assets/data/paintings.js?b=063faed"></script>
+<script src="assets/data/paintings.js?b=7de711f"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
    are per-painting, so they are written in here rather than fixed in the page.
