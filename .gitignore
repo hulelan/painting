@@ -9,3 +9,6 @@ assets/paintings/*/photos/*.JPG
 assets/paintings/*/photos/*.jpeg
 assets/paintings/_other/*.JPG
 assets/paintings/_unsorted/*.JPG
+# The web-sized copies too: 108 MB, and publishing 266 photographs of a gallery
+# visit is your decision to make, not a side effect of a verification tool.
+assets/paintings/*/photos/web/

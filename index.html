@@ -252,7 +252,31 @@ body.vert #rail img{display:block}
 :lang(en) #zhint, :lang(en) .lb, :lang(en) .nt .lbl{
   letter-spacing:.2px; text-wrap:balance;
 }
-:lang(en) #credit{ letter-spacing:0; text-wrap:pretty }
+:lang(en) /* the photographs, each laid on the painting by its own homography */
+#photos{position:absolute;left:0;top:0;z-index:6;transform-origin:0 0;display:none;
+  pointer-events:none}
+.shot{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:auto;
+  cursor:pointer;opacity:0;outline:1px solid rgba(120,220,190,.85);
+  outline-offset:-1px;transition:opacity .25s ease}
+.shot img{width:100%;height:100%;display:block}
+.shot:hover{opacity:.35}
+.shot.on{opacity:1;outline-color:rgba(255,215,106,.95);z-index:3}
+/* while one is open the rest get out of the way */
+body.shotopen .shot:not(.on){opacity:0;pointer-events:none;outline-color:rgba(120,220,190,.35)}
+#shotbar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:70;
+  display:none;align-items:center;gap:12px;background:rgba(20,17,12,.95);
+  border:1px solid #4a4030;border-radius:4px;padding:9px 12px;max-width:92vw}
+#shotbar.on{display:flex}
+#shotbar .txt{min-width:180px}
+#shotbar .nm{font-size:12px;color:#e2d4ae;letter-spacing:.5px}
+#shotbar .st{font-size:10px;color:#8d8270;letter-spacing:.5px;margin-top:2px}
+#shotbar input{width:190px;accent-color:#c9a24a}
+#shotbar button{background:#241f18;color:#cbbd9c;border:1px solid #3b342a;
+  border-radius:2px;padding:4px 9px;font-size:13px;cursor:pointer}
+#shotbar button:hover{background:#2e2820;color:#f0e6cd}
+#shotCount{margin-left:6px;font-size:10px;color:#6f6552}
+body.icons #shotCount{display:none}
+#credit{ letter-spacing:0; text-wrap:pretty }
 /* the corner title is the worst case: longest string, narrowest column */
 :lang(en) #title{ max-width:min(46vw,380px); line-height:1.45 }
 /* and the cells were sized for five characters, not fifty */
@@ -451,6 +475,7 @@ body.topbar #loc{top:60px;bottom:auto}
   <div class="persp" data-t="write"><span class="box"></span><span class="lb"></span></div>
   <div class="persp" data-t="read"><span class="box"></span><span class="lb"></span><span id="scriptCount"></span></div>
   <div class="persp" data-t="log"><span class="box"></span><span class="lb"></span></div>
+  <div class="persp" data-t="shots"><span class="box"></span><span class="lb"></span><span id="shotCount"></span></div>
   </div>
 </div>
 
@@ -462,6 +487,14 @@ body.topbar #loc{top:60px;bottom:auto}
   <div id="title"></div>
 </div>
 
+<div id="photos"></div>
+<div id="shotbar">
+  <button class="pv">‹</button>
+  <div class="txt"><div class="nm"></div><div class="st"></div></div>
+  <input type="range" min="0" max="100" value="100">
+  <button class="nx">›</button>
+  <button class="cl">✕</button>
+</div>
 <div id="editor">
   <div class="where"></div>
   <input class="et" maxlength="90" placeholder="what is it">
@@ -481,12 +514,12 @@ body.topbar #loc{top:60px;bottom:auto}
      its data files are still ten minutes stale -- which is how the Whole view
      kept painting the wrong scroll after the fix had shipped. The build stamp
      makes each deploy a new URL. tools/stamp_build.py rewrites it. -->
-<script>window.BUILD='8d8b0d5';</script>
-<link rel="preload" as="script" href="assets/data/paintings.js?b=8d8b0d5">
-<link rel="preload" as="script" href="assets/scroll/manifest.js?b=8d8b0d5">
-<link rel="preload" as="script" href="assets/data/roads.js?b=8d8b0d5">
+<script>window.BUILD='514108e';</script>
+<link rel="preload" as="script" href="assets/data/paintings.js?b=514108e">
+<link rel="preload" as="script" href="assets/scroll/manifest.js?b=514108e">
+<link rel="preload" as="script" href="assets/data/roads.js?b=514108e">
 <link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
-<script src="assets/data/paintings.js?b=8d8b0d5"></script>
+<script src="assets/data/paintings.js?b=514108e"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
    are per-painting, so they are written in here rather than fixed in the page.
@@ -519,6 +552,8 @@ body.topbar #loc{top:60px;bottom:auto}
   // case for a painting nobody has written on yet, hence the silent onerror
   if(slug!==R.default)
     document.write('<scr'+'ipt src="assets/data/notes-'+slug+'.js'+B+'" onerror="void 0"></scr'+'ipt>');
+  // where each gallery photograph sits on this scroll, if any have been placed
+  document.write('<scr'+'ipt src="'+it.dir+'/photos/photos.js'+B+'" onerror="void 0"></scr'+'ipt>');
 })();
 </script>
 <script>
@@ -549,7 +584,7 @@ const desk=$('desk'), win=$('window'), rail=$('rail'), rollL=$('rollL'), rollR=$
 
 const I18N={
   en:{zoom:'Zoom', persp:'Perspectives', whole:'Whole', pane:'Pane', detail:'Detail',
-      wide:'Wide', loc:'Locator', marks:'Things', roads:'Roads', notes:'Noticed', write:'Write', read:'Colophons', log:'Room', lang:'中',
+      wide:'Wide', loc:'Locator', marks:'Things', roads:'Roads', notes:'Noticed', write:'Write', read:'Colophons', log:'Room', shots:'Photographs', lang:'中',
       save:'save', del:'delete', cancel:'cancel', back:'Return to Cabinet',
       uiZh:'中文', uiEn:'English', uiIco:'pictograms — no words',
       hidden:'hidden — click the painting to find them', found:'you found',
@@ -557,7 +592,7 @@ const I18N={
                              : 'A Thousand Li of Rivers and Mountains · Wang Ximeng · Northern Song'),
       seg:(i,n)=> i===0?'1 · opening' : i===n-1? n+' · end' : String(i+1)},
   zh:{zoom:'缩放', persp:'视角', whole:'全卷', pane:'展卷', detail:'细看',
-      wide:'通幅', loc:'卷影', marks:'物', roads:'道路', notes:'所见', write:'题', read:'题识', log:'共室', lang:'EN',
+      wide:'通幅', loc:'卷影', marks:'物', roads:'道路', notes:'所见', write:'题', read:'题识', log:'共室', shots:'照片', lang:'EN',
       save:'存', del:'删', cancel:'罢', back:'返回画匣',
       uiZh:'中文', uiEn:'English', uiIco:'图示 —— 不用文字',
       hidden:'已隐藏 —— 点画面自己找', found:'你找到了',
@@ -803,7 +838,7 @@ function render(){
     TX=-x0*sE; TY=-y0*sE;
     const tf='translate3d('+TX.toFixed(2)+'px,'+TY.toFixed(2)+'px,0) scale('+Z.toFixed(4)+')';
     rail.style.transform=tf;
-    roadsEl.style.transform=tf;
+    roadsEl.style.transform=tf; photosEl.style.transform=tf;
     roadsEl.style.display=(showRoads&&ROADS.length)?'block':'none';
     if(showRoads) litRoads();
     const fade=VERT?0:((mode==='wide')?0:(Z<=1.03?1:Math.max(0,1-(Z-1)/0.5)));
@@ -818,7 +853,7 @@ function render(){
     const f=Math.max(0,Math.min(1,x0/Math.max(1,L-visW())));
     sheen.style.setProperty('--sheenX',(12+f*76).toFixed(1)+'%');
     win.classList.toggle('zoomed', Z>1.03);
-    renderMarks(sE); renderNotes(sE); renderKept(sE);
+    renderMarks(sE); renderNotes(sE); renderShots(); renderKept(sE);
   }
   syncLoc(); syncTrack();
 }
@@ -1167,6 +1202,8 @@ document.querySelectorAll('.persp').forEach(el=>{
     if(k==='write'){ setWriting(!writing); return; }
     if(k==='read'){ $('script').classList.toggle('on'); buildScript(); return; }
     if(k==='log'){ $('log').classList.toggle('on'); buildLog(); return; }
+    if(k==='shots'){ if(!SHOTS.length) return; showShots=!showShots;
+      el.classList.toggle('on',showShots); if(!showShots) closeShot(); render(); return; }
     render();
   });
 });
@@ -1191,6 +1228,9 @@ const ICO={
   // a brush laid across the page, and a page of writing
   write:'<path d="M4 20 L13 11"/><path d="M12 10 L17 5 L20 8 L15 13 Z"/><circle class="f" cx="4.6" cy="19.4" r="1.5"/>',
   // several hands round one table
+  // a frame with a lens: the photographs
+  shots:'<rect x="2.5" y="6" width="19" height="13"/><circle cx="12" cy="12.5" r="3.6"/>'+
+        '<rect class="f" x="8.5" y="3.5" width="5" height="2.5"/>',
   log:'<circle cx="12" cy="12" r="3"/><circle class="f" cx="5" cy="6" r="1.7"/>'+
       '<circle class="f" cx="19" cy="6" r="1.7"/><circle class="f" cx="5" cy="18" r="1.7"/>'+
       '<circle class="f" cx="19" cy="18" r="1.7"/>',
@@ -1207,6 +1247,80 @@ function iconise(el,key,word){
   if(ICONS_ON&&ICO[key]){ el.innerHTML=ico(key); el.setAttribute('aria-label',word); el.title=word; }
   else el.textContent=word;
 }
+// ---- the photographs, laid on the painting --------------------------------
+// A placement is a homography from photo pixels to source pixels, and CSS can
+// express exactly that: matrix3d takes the same 3x3, column-major, with the
+// third row and column left as identity. So the photograph can be laid over the
+// scroll where it claims to belong rather than shown beside it -- which is the
+// only way to see whether a placement is right. Fade it against the scan and a
+// few pixels of error are obvious; side by side, they are invisible.
+const SHOTS=(window.PHOTOS&&window.PHOTOS.items)||[];
+let showShots=false, shotOn=null, shotEls=[];
+const photosEl=$('photos');
+function cssMatrix(H, k){          // photo px -> source px -> scaled px
+  const a=H[0][0]*k, b=H[0][1]*k, c=H[0][2]*k;
+  const d=H[1][0]*k, e=H[1][1]*k, f=H[1][2]*k;
+  const g=H[2][0],   h=H[2][1];
+  return `matrix3d(${a},${d},0,${g}, ${b},${e},0,${h}, 0,0,1,0, ${c},${f},0,1)`;
+}
+function buildShots(){
+  photosEl.innerHTML=''; shotEls=[];
+  SHOTS.forEach((it,i)=>{
+    const wrap=document.createElement('div');
+    wrap.className='shot';
+    // the photograph's own pixel box; the matrix does the rest
+    const pw=it.pw||it.w||0, ph=it.ph||it.h||0;
+    wrap.style.width=(pw||100)+'px'; wrap.style.height=(ph||100)+'px';
+    wrap.dataset.i=i;
+    const img=document.createElement('img');
+    img.loading='lazy'; img.decoding='async';
+    img.src=(PAINTING.dir||'assets/scroll')+'/photos/web/'+it.file.replace(/ /g,'_');
+    wrap.appendChild(img);
+    wrap.addEventListener('click',ev=>{ ev.stopPropagation(); openShot(i); });
+    photosEl.appendChild(wrap); shotEls.push(wrap);
+  });
+  const c=$('shotCount'); if(c) c.textContent = SHOTS.length? String(SHOTS.length):'';
+}
+function renderShots(){
+  photosEl.style.display = (showShots && mode!=='fold') ? 'block' : 'none';
+  if(!showShots) return;
+  const k=scale;                    // source px -> the scaled space the rail lives in
+  shotEls.forEach((el,i)=>{ el.style.transform=cssMatrix(SHOTS[i].H, k); });
+}
+// One photograph at a time, faded against the painting underneath it. The
+// slider is the instrument: at 0 you see the scan, at 1 the photograph, and a
+// misplacement shows up as the picture sliding sideways as you drag.
+function openShot(i){
+  shotOn=i;
+  document.body.classList.add('shotopen');
+  shotEls.forEach((el,j)=>el.classList.toggle('on', j===i));
+  const it=SHOTS[i], p=$('shotbar');
+  p.classList.add('on');
+  p.querySelector('.nm').textContent=it.file;
+  p.querySelector('.st').textContent=
+    (lang==='en'? 'x '+it.box[0]+'  ·  '+it.ppsp+'\u00d7 magnification  ·  '+it.inliers+' inliers  ·  ncc '+it.ncc
+                : 'x '+it.box[0]+'　放大 '+it.ppsp+' 倍　'+it.inliers+' 对　相关 '+it.ncc);
+  const sl=p.querySelector('input');
+  sl.value=100; shotEls[i].style.opacity=1;
+  gotoBox(it.box);
+}
+function closeShot(){
+  if(shotOn===null) return;
+  shotEls.forEach(el=>{ el.classList.remove('on'); el.style.opacity=''; });
+  document.body.classList.remove('shotopen');
+  $('shotbar').classList.remove('on'); shotOn=null;
+}
+function gotoBox(b){
+  const want=Math.min(nativeZ(), Math.max(1.2, (VERT?apH:apH)/((b[3]||400)*scale*1.25)));
+  Z=Math.max(1,Math.min(nativeZ(), want));
+  x0=b[0]+b[2]/2-visW()/2; y0=b[1]+b[3]/2-visH()/2;
+  customUsed=true; mode='custom'; clamp(); buildTrack(); render();
+}
+function stepShot(d){
+  if(shotOn===null||!SHOTS.length) return;
+  openShot((shotOn+d+SHOTS.length)%SHOTS.length);
+}
+
 // ---- the room -------------------------------------------------------------
 // A shared notebook across every painting, not one per scroll: the trip is the
 // unit. Joining is holding the link. #room=<id> is the credential and stays in
@@ -1470,6 +1584,10 @@ function applyLang(){
   iconise(rp.querySelector('.lb'),'roads',t('roads'));
   rp.classList.toggle('off', ROADS.length===0);
   rp.title = ROADS.length? '' : 'no roads traced yet — use trace.html';
+  const sp=document.querySelector('.persp[data-t="shots"]');
+  iconise(sp.querySelector('.lb'),'shots',t('shots'));
+  sp.classList.toggle('off', SHOTS.length===0);
+  sp.title = SHOTS.length? '' : 'no photographs placed on this scroll yet';
   const wp=document.querySelector('.persp[data-t="write"]');
   iconise(wp.querySelector('.lb'),'write',t('write'));
   const rp2=document.querySelector('.persp[data-t="read"]');
@@ -1497,6 +1615,17 @@ $('lang').addEventListener('click',()=>{
   applyLang();
 });
 (function(){
+  const b=$('shotbar');
+  b.addEventListener('pointerdown',e=>e.stopPropagation());
+  b.querySelector('input').addEventListener('input',e=>{
+    if(shotOn!==null) shotEls[shotOn].style.opacity=(+e.target.value/100);
+  });
+  b.querySelector('.pv').onclick=()=>stepShot(-1);
+  b.querySelector('.nx').onclick=()=>stepShot(1);
+  b.querySelector('.cl').onclick=closeShot;
+  buildShots();
+})();
+(function(){
   const ed=$('editor');
   ed.querySelector('.ok').onclick=()=>{
     if(!editing) return;
@@ -1514,7 +1643,9 @@ $('lang').addEventListener('click',()=>{
   ed.addEventListener('pointerdown',e=>e.stopPropagation());
 })();
 addEventListener('keydown',e=>{
-  if(e.key==='Escape'){ if($('editor').classList.contains('on')) closeEditor();
+  if(e.key==='['){ stepShot(-1); } else if(e.key===']'){ stepShot(1); }
+  if(e.key==='Escape'){ if(shotOn!==null) closeShot();
+                        else if($('editor').classList.contains('on')) closeEditor();
                         else if(writing) setWriting(false); }
   if(e.key==='1') setMode('fold'); else if(e.key==='2') setMode('wide');
   else if(e.key==='3') setMode('pane'); else if(e.key==='4'&&customUsed) setMode('custom');
