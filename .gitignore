@@ -9,6 +9,6 @@ assets/paintings/*/photos/*.JPG
 assets/paintings/*/photos/*.jpeg
 assets/paintings/_other/*.JPG
 assets/paintings/_unsorted/*.JPG
-# The web-sized copies too: 108 MB, and publishing 266 photographs of a gallery
-# visit is your decision to make, not a side effect of a verification tool.
-assets/paintings/*/photos/web/
+# The web copies ARE published now -- 120 MB at 1800px, which is what the
+# zoom-in path needs to have anything to show. The full-size originals are not:
+# 1.7 GB of 5712px phone JPEGs is not what a repository is for.
