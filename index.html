@@ -532,12 +532,12 @@ body.topbar #loc{top:60px;bottom:auto}
      its data files are still ten minutes stale -- which is how the Whole view
      kept painting the wrong scroll after the fix had shipped. The build stamp
      makes each deploy a new URL. tools/stamp_build.py rewrites it. -->
-<script>window.BUILD='bb99c9e';</script>
-<link rel="preload" as="script" href="assets/data/paintings.js?b=bb99c9e">
-<link rel="preload" as="script" href="assets/scroll/manifest.js?b=bb99c9e">
-<link rel="preload" as="script" href="assets/data/roads.js?b=bb99c9e">
+<script>window.BUILD='f88ee86';</script>
+<link rel="preload" as="script" href="assets/data/paintings.js?b=f88ee86">
+<link rel="preload" as="script" href="assets/scroll/manifest.js?b=f88ee86">
+<link rel="preload" as="script" href="assets/data/roads.js?b=f88ee86">
 <link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
-<script src="assets/data/paintings.js?b=bb99c9e"></script>
+<script src="assets/data/paintings.js?b=f88ee86"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
    are per-painting, so they are written in here rather than fixed in the page.
@@ -1325,8 +1325,15 @@ function buildShots(){
     wrap.style.width=(pw||100)+'px'; wrap.style.height=(ph||100)+'px';
     wrap.dataset.i=i;
     const img=document.createElement('img');
-    img.decoding='async';   // not lazy: they are wanted the moment the layer is on
-    img.src=(PAINTING.dir||'assets/scroll')+'/photos/web/'+it.file.replace(/ /g,'_');
+    img.decoding='async';
+    // Two sizes. Eighteen 1800px photographs stacked over one album leaf is
+    // ~175MB of decoded bitmap, each promoted to its own GPU layer by matrix3d,
+    // and the tab dies. The collage gets 820px copies (36MB); the one you open
+    // swaps up to the full size, because that is the only one being read.
+    const base=(PAINTING.dir||'assets/scroll')+'/photos/';
+    img.dataset.small=base+'small/'+it.file.replace(/ /g,'_');
+    img.dataset.full =base+'web/'+it.file.replace(/ /g,'_');
+    img.src=img.dataset.small;
     wrap.appendChild(img);
     wrap.addEventListener('click',ev=>{ ev.stopPropagation(); openShot(i); });
     photosEl.appendChild(wrap); shotEls.push(wrap);
@@ -1371,11 +1378,24 @@ function renderShots(){
   if(!live) return;
   const k=scale, sE=scale*Z, left=x0, right=x0+visW(), top=y0, bot=y0+visH();
   const marksNow = Z >= MARK_FROM();
+  // A hard ceiling on how many are composited at once. Overlapping photographs
+  // of the same rock add nothing to the collage and cost a layer each, so the
+  // nearest to the middle of the view win.
+  let allow=null;
+  if(shotMode===2){
+    const cx=x0+visW()/2, cy=y0+visH()/2;
+    const inView=[];
+    SHOTS.forEach((it,i)=>{ const b=it.box;
+      if(b[0]<right && b[0]+b[2]>left && b[1]<bot && b[1]+b[3]>top)
+        inView.push([i, Math.hypot(b[0]+b[2]/2-cx, b[1]+b[3]/2-cy)]); });
+    inView.sort((a,b)=>a[1]-b[1]);
+    allow=new Set(inView.slice(0,16).map(v=>v[0]));
+  }
   shotEls.forEach((el,i)=>{
     const it=SHOTS[i], b=it.box;
-    const near = b[0]<right && b[0]+b[2]>left && b[1]<bot && b[1]+b[3]>top;
-    // laid-on mode draws everything; otherwise only the one you opened
-    const want = shotOn===i || (shotMode===2 && (near || shotOn!==null));
+    const near = allow ? allow.has(i)
+                       : (b[0]<right && b[0]+b[2]>left && b[1]<bot && b[1]+b[3]>top);
+    const want = shotOn===i || (shotMode===2 && near);
     el.style.display = want ? 'block' : 'none';
     if(!want) return;
     el.style.transform=cssMatrix(it.H, k);
@@ -1404,12 +1424,19 @@ function openShot(i){
     (lang==='en'? 'x '+it.box[0]+'  ·  '+it.ppsp+'\u00d7 magnification  ·  '+it.inliers+' inliers  ·  ncc '+it.ncc
                 : 'x '+it.box[0]+'　放大 '+it.ppsp+' 倍　'+it.inliers+' 对　相关 '+it.ncc);
   const sl=p.querySelector('input');
-  sl.value=100; shotEls[i].querySelector('img').style.opacity=1;
+  sl.value=100;
+  const im=shotEls[i].querySelector('img');
+  if(im.dataset.full && im.src!==im.dataset.full) im.src=im.dataset.full;
+  im.style.opacity=1;
   gotoBox(it.box, it.ppsp);
 }
 function closeShot(){
   if(shotOn===null) return;
-  shotEls.forEach(el=>{ el.classList.remove('on'); el.querySelector('img').style.opacity=''; });
+  shotEls.forEach(el=>{ el.classList.remove('on');
+    const im=el.querySelector('img');
+    im.style.opacity='';
+    if(im.dataset.small && im.src!==im.dataset.small) im.src=im.dataset.small;  // give the memory back
+  });
   document.body.classList.remove('shotopen');
   $('shotbar').classList.remove('on'); shotOn=null;
 }
