@@ -277,6 +277,17 @@ body.vert #rail img{display:block}
 /* with one open the rest drop back far enough to see the painting through them */
 body.shotopen .shot:not(.on){outline-color:rgba(120,220,190,.25);background:none;pointer-events:none}
 body.shotopen .shot:not(.on) img{opacity:.12}
+/* the mark: fixed size, so it reads as an offer rather than a patch */
+#shotdots{position:absolute;inset:0;z-index:8;pointer-events:none;display:none}
+.shotdot{position:absolute;width:13px;height:13px;margin:-7px 0 0 -7px;border-radius:50%;
+  border:1px solid rgba(150,235,205,.85);background:rgba(20,40,36,.45);
+  pointer-events:auto;cursor:pointer;transition:transform .2s ease, background .2s ease}
+.shotdot::after{content:"";position:absolute;inset:3.5px;border-radius:50%;
+  background:rgba(150,235,205,.9)}
+.shotdot:hover{transform:scale(1.45);background:rgba(30,70,60,.7)}
+body[class*="bg-"] .shotdot{border-color:rgba(40,110,95,.9);background:rgba(255,255,255,.55)}
+body[class*="bg-"] .shotdot::after{background:rgba(30,90,78,.95)}
+.persp.half .box::after{transform:scale(.55)}
 #shotbar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:70;
   display:none;align-items:center;gap:12px;background:rgba(20,17,12,.95);
   border:1px solid #4a4030;border-radius:4px;padding:9px 12px;max-width:92vw}
@@ -521,12 +532,12 @@ body.topbar #loc{top:60px;bottom:auto}
      its data files are still ten minutes stale -- which is how the Whole view
      kept painting the wrong scroll after the fix had shipped. The build stamp
      makes each deploy a new URL. tools/stamp_build.py rewrites it. -->
-<script>window.BUILD='e162565';</script>
-<link rel="preload" as="script" href="assets/data/paintings.js?b=e162565">
-<link rel="preload" as="script" href="assets/scroll/manifest.js?b=e162565">
-<link rel="preload" as="script" href="assets/data/roads.js?b=e162565">
+<script>window.BUILD='3be37d7';</script>
+<link rel="preload" as="script" href="assets/data/paintings.js?b=3be37d7">
+<link rel="preload" as="script" href="assets/scroll/manifest.js?b=3be37d7">
+<link rel="preload" as="script" href="assets/data/roads.js?b=3be37d7">
 <link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
-<script src="assets/data/paintings.js?b=e162565"></script>
+<script src="assets/data/paintings.js?b=3be37d7"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
    are per-painting, so they are written in here rather than fixed in the page.
@@ -1133,7 +1144,7 @@ win.addEventListener('pointercancel',winUp);
 // scan's own limit -- that is the whole point of having it. Elsewhere the
 // ceiling stays where it was, because stretching the scan further shows nothing.
 function zoomCap(){
-  if(!SHOTS.length) return nativeZ();
+  if(!SHOTS.length || shotMode===0) return nativeZ();
   const cx=x0+visW()/2, cy=y0+visH()/2;
   let best=1;
   for(const it of SHOTS){
@@ -1223,8 +1234,16 @@ document.querySelectorAll('.persp').forEach(el=>{
     if(k==='write'){ setWriting(!writing); return; }
     if(k==='read'){ $('script').classList.toggle('on'); buildScript(); return; }
     if(k==='log'){ $('log').classList.toggle('on'); buildLog(); return; }
-    if(k==='shots'){ if(!SHOTS.length) return; showShots=!showShots;
-      el.classList.toggle('on',showShots); if(!showShots) closeShot(); render(); return; }
+    if(k==='shots'){ if(!SHOTS.length) return;
+      shotMode=(shotMode+1)%3;                       // off -> marks -> laid on
+      el.classList.toggle('on', shotMode!==0);
+      el.classList.toggle('half', shotMode===1);
+      if(shotMode===0) closeShot();
+      const c=$('shotCount');
+      if(c) c.textContent = shotMode===0? String(SHOTS.length)
+                          : shotMode===1? (lang==='en'?'marks':'点')
+                          : (lang==='en'?'laid on':'铺');
+      render(); return; }
     render();
   });
 });
@@ -1276,7 +1295,11 @@ function iconise(el,key,word){
 // only way to see whether a placement is right. Fade it against the scan and a
 // few pixels of error are obvious; side by side, they are invisible.
 const SHOTS=(window.PHOTOS&&window.PHOTOS.items)||[];
-let showShots=false, shotOn=null, shotEls=[];
+// 0 off · 1 marks · 2 laid on. Off is the default and means off: a photograph
+// pushed in front of you unasked is the thing you did not want, and the plain
+// scroll is what most looking is for.
+let shotMode=0, shotOn=null, shotEls=[], dotEls=[];
+const dotsEl=document.createElement('div'); dotsEl.id='shotdots';
 const photosEl=$('photos');
 function cssMatrix(H, k){          // photo px -> source px -> scaled px
   const a=H[0][0]*k, b=H[0][1]*k, c=H[0][2]*k;
@@ -1285,7 +1308,9 @@ function cssMatrix(H, k){          // photo px -> source px -> scaled px
   return `matrix3d(${a},${d},0,${g}, ${b},${e},0,${h}, 0,0,1,0, ${c},${f},0,1)`;
 }
 function buildShots(){
-  photosEl.innerHTML=''; shotEls=[];
+  photosEl.innerHTML=''; shotEls=[]; dotEls=[];
+  if(!dotsEl.parentNode) marksEl.parentNode.insertBefore(dotsEl, marksEl);
+  dotsEl.innerHTML='';
   SHOTS.forEach((it,i)=>{
     const wrap=document.createElement('div');
     wrap.className='shot';
@@ -1299,6 +1324,13 @@ function buildShots(){
     wrap.appendChild(img);
     wrap.addEventListener('click',ev=>{ ev.stopPropagation(); openShot(i); });
     photosEl.appendChild(wrap); shotEls.push(wrap);
+    // the mark: a small fixed dot, not a rectangle scaled with the painting.
+    // It says a closer look exists here without showing it to you.
+    const dot=document.createElement('div'); dot.className='shotdot';
+    dot.title=(it.ppsp||1).toFixed(1)+'\u00d7';
+    dot.addEventListener('pointerdown',ev=>ev.stopPropagation());
+    dot.addEventListener('click',ev=>{ ev.stopPropagation(); openShot(i); });
+    dotsEl.appendChild(dot); dotEls.push(dot);
   });
   const c=$('shotCount'); if(c) c.textContent = SHOTS.length? String(SHOTS.length):'';
 }
@@ -1308,33 +1340,34 @@ function buildShots(){
 // scan is being stretched and the photograph has detail the scan cannot supply.
 // That is the moment to fade it in, and it is why this is not a toggle: it is
 // what zooming in *means* where a photograph exists.
-function revealAt(it){
-  const need = 0.55 / Math.max(1, it.ppsp || 1);   // deeper photographs arrive later
-  return nativeZ() * Math.max(0.45, need + 0.35);
-}
-function shotWeight(it){
-  if(showShots) return 0.94;                        // the layer is on: show them all
-  const z0=revealAt(it), z1=z0*1.35;
-  if(Z <= z0) return 0;
-  return Math.min(1, (Z - z0) / (z1 - z0));
-}
+// A mark is worth offering once the scan is being stretched -- that is when a
+// photograph has something the scroll cannot show you. Before that it would
+// only be clutter over a picture that is already sharp.
+const MARK_FROM = () => nativeZ()*0.62;
 function renderShots(){
-  const any = showShots || SHOTS.length;
-  photosEl.style.display = (any && mode!=='fold') ? 'block' : 'none';
-  if(!any) return;
-  const k=scale, left=x0, right=x0+visW(), top=y0, bot=y0+visH();
+  const live = SHOTS.length && mode!=='fold';
+  photosEl.style.display = (live && (shotMode===2 || shotOn!==null)) ? 'block' : 'none';
+  dotsEl.style.display   = (live && shotMode===1 && shotOn===null) ? 'block' : 'none';
+  if(!live) return;
+  const k=scale, sE=scale*Z, left=x0, right=x0+visW(), top=y0, bot=y0+visH();
+  const marksNow = Z >= MARK_FROM();
   shotEls.forEach((el,i)=>{
     const it=SHOTS[i], b=it.box;
-    const near = b[0] < right && b[0]+b[2] > left && b[1] < bot && b[1]+b[3] > top;
-    if(!near && !showShots){ el.style.display='none'; return; }
-    el.style.display='block';
+    const near = b[0]<right && b[0]+b[2]>left && b[1]<bot && b[1]+b[3]>top;
+    // laid-on mode draws everything; otherwise only the one you opened
+    const want = shotOn===i || (shotMode===2 && (near || shotOn!==null));
+    el.style.display = want ? 'block' : 'none';
+    if(!want) return;
     el.style.transform=cssMatrix(it.H, k);
-    if(shotOn===null){
-      const w=shotWeight(it);
-      el.querySelector('img').style.opacity = w;
-      el.style.outlineColor = w>0 ? 'rgba(120,220,190,.35)' : 'rgba(120,220,190,0)';
-      el.style.pointerEvents = w>0 ? 'auto' : 'none';
-    }
+    if(shotOn===null) el.querySelector('img').style.opacity=0.94;
+  });
+  if(shotMode!==1 || shotOn!==null) return;
+  dotEls.forEach((d,i)=>{
+    const it=SHOTS[i], b=it.box;
+    const cx=(b[0]+b[2]/2)*sE+TX, cy=(b[1]+b[3]/2)*sE+TY;
+    const near = b[0]<right && b[0]+b[2]>left && b[1]<bot && b[1]+b[3]>top;
+    if(!near || !marksNow){ d.style.display='none'; return; }
+    d.style.display='block'; d.style.left=cx+'px'; d.style.top=cy+'px';
   });
 }
 // One photograph at a time, faded against the painting underneath it. The
