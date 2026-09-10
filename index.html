@@ -532,12 +532,12 @@ body.topbar #loc{top:60px;bottom:auto}
      its data files are still ten minutes stale -- which is how the Whole view
      kept painting the wrong scroll after the fix had shipped. The build stamp
      makes each deploy a new URL. tools/stamp_build.py rewrites it. -->
-<script>window.BUILD='3be37d7';</script>
-<link rel="preload" as="script" href="assets/data/paintings.js?b=3be37d7">
-<link rel="preload" as="script" href="assets/scroll/manifest.js?b=3be37d7">
-<link rel="preload" as="script" href="assets/data/roads.js?b=3be37d7">
+<script>window.BUILD='bb99c9e';</script>
+<link rel="preload" as="script" href="assets/data/paintings.js?b=bb99c9e">
+<link rel="preload" as="script" href="assets/scroll/manifest.js?b=bb99c9e">
+<link rel="preload" as="script" href="assets/data/roads.js?b=bb99c9e">
 <link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
-<script src="assets/data/paintings.js?b=3be37d7"></script>
+<script src="assets/data/paintings.js?b=bb99c9e"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
    are per-painting, so they are written in here rather than fixed in the page.
@@ -1239,11 +1239,7 @@ document.querySelectorAll('.persp').forEach(el=>{
       el.classList.toggle('on', shotMode!==0);
       el.classList.toggle('half', shotMode===1);
       if(shotMode===0) closeShot();
-      const c=$('shotCount');
-      if(c) c.textContent = shotMode===0? String(SHOTS.length)
-                          : shotMode===1? (lang==='en'?'marks':'点')
-                          : (lang==='en'?'laid on':'铺');
-      render(); return; }
+      paintShotToggle(); render(); return; }
     render();
   });
 });
@@ -1269,8 +1265,18 @@ const ICO={
   write:'<path d="M4 20 L13 11"/><path d="M12 10 L17 5 L20 8 L15 13 Z"/><circle class="f" cx="4.6" cy="19.4" r="1.5"/>',
   // several hands round one table
   // a frame with a lens: the photographs
+  // off: a camera. marks: the camera with its dot filled. laid on: sheets stacked
+  // on the scroll. The state is the icon, because in pictogram mode there are no
+  // words to carry it.
   shots:'<rect x="2.5" y="6" width="19" height="13"/><circle cx="12" cy="12.5" r="3.6"/>'+
         '<rect class="f" x="8.5" y="3.5" width="5" height="2.5"/>',
+  // marks: the scroll with three dots on it -- what the state actually puts on
+  // the painting. A filled camera lens was too near the empty one to read at 26px.
+  shots1:'<rect x="2" y="7" width="20" height="10"/>'+
+        '<circle class="f" cx="7.5" cy="12" r="1.9"/><circle class="f" cx="13" cy="12" r="1.9"/>'+
+        '<circle class="f" cx="18.5" cy="12" r="1.9"/>',
+  shots2:'<rect x="1.5" y="4" width="15" height="11"/><rect class="f" x="5" y="8" width="15" height="11"/>'+
+        '<rect x="5" y="8" width="15" height="11"/>',
   log:'<circle cx="12" cy="12" r="3"/><circle class="f" cx="5" cy="6" r="1.7"/>'+
       '<circle class="f" cx="19" cy="6" r="1.7"/><circle class="f" cx="5" cy="18" r="1.7"/>'+
       '<circle class="f" cx="19" cy="18" r="1.7"/>',
@@ -1344,6 +1350,20 @@ function buildShots(){
 // photograph has something the scroll cannot show you. Before that it would
 // only be clutter over a picture that is already sharp.
 const MARK_FROM = () => nativeZ()*0.62;
+// what the toggle looks like in each of its three states
+function paintShotToggle(){
+  const el=document.querySelector('.persp[data-t="shots"]'); if(!el) return;
+  const lb=el.querySelector('.lb');
+  const key = shotMode===2 ? 'shots2' : shotMode===1 ? 'shots1' : 'shots';
+  const word = shotMode===2 ? (lang==='en'?'Photographs · laid on':'照片　铺')
+             : shotMode===1 ? (lang==='en'?'Photographs · marks':'照片　点')
+             : (lang==='en'?'Photographs':'照片');
+  if(ICONS_ON && ICO[key]){ lb.innerHTML=ico(key); lb.setAttribute('aria-label',word); }
+  else lb.textContent=word;
+  el.title=word;
+  const c=$('shotCount');
+  if(c) c.textContent = shotMode===0 ? String(SHOTS.length) : '';
+}
 function renderShots(){
   const live = SHOTS.length && mode!=='fold';
   photosEl.style.display = (live && (shotMode===2 || shotOn!==null)) ? 'block' : 'none';
@@ -1403,7 +1423,8 @@ function gotoBox(b, deep){
   customUsed=true; mode='custom'; clamp(); buildTrack(); render();
 }
 function stepShot(d){
-  if(shotOn===null||!SHOTS.length) return;
+  if(!SHOTS.length) return;
+  if(shotOn===null){ openShot(d>0?0:SHOTS.length-1); return; }   // from anywhere, start walking
   openShot((shotOn+d+SHOTS.length)%SHOTS.length);
 }
 
@@ -1671,7 +1692,7 @@ function applyLang(){
   rp.classList.toggle('off', ROADS.length===0);
   rp.title = ROADS.length? '' : 'no roads traced yet — use trace.html';
   const sp=document.querySelector('.persp[data-t="shots"]');
-  iconise(sp.querySelector('.lb'),'shots',t('shots'));
+  paintShotToggle();
   sp.classList.toggle('off', SHOTS.length===0);
   sp.title = SHOTS.length? '' : 'no photographs placed on this scroll yet';
   const wp=document.querySelector('.persp[data-t="write"]');
@@ -1729,7 +1750,11 @@ $('lang').addEventListener('click',()=>{
   ed.addEventListener('pointerdown',e=>e.stopPropagation());
 })();
 addEventListener('keydown',e=>{
+  if(e.key==='p'||e.key==='P'){ const el=document.querySelector('.persp[data-t="shots"]'); if(el) el.click(); }
   if(e.key==='['){ stepShot(-1); } else if(e.key===']'){ stepShot(1); }
+  if(shotOn!==null && (e.key==='ArrowRight'||e.key==='ArrowLeft')){
+    e.preventDefault(); stepShot(e.key==='ArrowRight'?1:-1);
+  }
   if(e.key==='Escape'){ if(shotOn!==null) closeShot();
                         else if($('editor').classList.contains('on')) closeEditor();
                         else if(writing) setWriting(false); }
