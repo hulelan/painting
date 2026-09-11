@@ -278,6 +278,7 @@ body.vert #rail img{display:block}
 body.shotopen .shot:not(.on){outline-color:rgba(120,220,190,.25);background:none;pointer-events:none}
 body.shotopen .shot:not(.on) img{opacity:.12}
 /* the mark: fixed size, so it reads as an offer rather than a patch */
+#collage{position:absolute;left:0;top:0;z-index:6;pointer-events:none;display:none}
 #shotdots{position:absolute;inset:0;z-index:8;pointer-events:none;display:none}
 .shotdot{position:absolute;width:13px;height:13px;margin:-7px 0 0 -7px;border-radius:50%;
   border:1px solid rgba(150,235,205,.85);background:rgba(20,40,36,.45);
@@ -466,6 +467,7 @@ body.topbar #loc{top:60px;bottom:auto}
     <div id="window">
       <div id="rail"></div>
       <svg id="roads"></svg>
+      <canvas id="collage"></canvas>
       <div id="photos"></div>
       <div id="sheen"></div>
       <div id="marks"></div>
@@ -532,12 +534,12 @@ body.topbar #loc{top:60px;bottom:auto}
      its data files are still ten minutes stale -- which is how the Whole view
      kept painting the wrong scroll after the fix had shipped. The build stamp
      makes each deploy a new URL. tools/stamp_build.py rewrites it. -->
-<script>window.BUILD='f88ee86';</script>
-<link rel="preload" as="script" href="assets/data/paintings.js?b=f88ee86">
-<link rel="preload" as="script" href="assets/scroll/manifest.js?b=f88ee86">
-<link rel="preload" as="script" href="assets/data/roads.js?b=f88ee86">
+<script>window.BUILD='95d8eab';</script>
+<link rel="preload" as="script" href="assets/data/paintings.js?b=95d8eab">
+<link rel="preload" as="script" href="assets/scroll/manifest.js?b=95d8eab">
+<link rel="preload" as="script" href="assets/data/roads.js?b=95d8eab">
 <link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
-<script src="assets/data/paintings.js?b=f88ee86"></script>
+<script src="assets/data/paintings.js?b=95d8eab"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
    are per-painting, so they are written in here rather than fixed in the page.
@@ -1326,14 +1328,15 @@ function buildShots(){
     wrap.dataset.i=i;
     const img=document.createElement('img');
     img.decoding='async';
-    // Two sizes. Eighteen 1800px photographs stacked over one album leaf is
-    // ~175MB of decoded bitmap, each promoted to its own GPU layer by matrix3d,
-    // and the tab dies. The collage gets 820px copies (36MB); the one you open
-    // swaps up to the full size, because that is the only one being read.
+    // This element exists for ONE photograph at a time -- the one you open.
+    // The collage of all of them is not made of elements at all: see the
+    // canvas below. A DOM element with a matrix3d is a GPU layer rasterised at
+    // its layout size, ~39 MB each at 2x, whatever the image inside; sixteen
+    // of those is what was killing the tab, and shrinking the JPEGs could not
+    // touch it. Nothing is loaded here until it is opened.
     const base=(PAINTING.dir||'assets/scroll')+'/photos/';
-    img.dataset.small=base+'small/'+it.file.replace(/ /g,'_');
     img.dataset.full =base+'web/'+it.file.replace(/ /g,'_');
-    img.src=img.dataset.small;
+    it._small=base+'small/'+it.file.replace(/ /g,'_');
     wrap.appendChild(img);
     wrap.addEventListener('click',ev=>{ ev.stopPropagation(); openShot(i); });
     photosEl.appendChild(wrap); shotEls.push(wrap);
@@ -1371,37 +1374,100 @@ function paintShotToggle(){
   const c=$('shotCount');
   if(c) c.textContent = shotMode===0 ? String(SHOTS.length) : '';
 }
+// The collage is drawn, not composited. One canvas the size of the window,
+// every in-view photograph painted onto it with its own affine transform, then
+// nothing else to hold: no layer per photograph, no decode kept at full size,
+// and the cost of a hundred photographs is a hundred drawImage calls, which is
+// cheap. This is what lets the collage exist at all on a small leaf where every
+// photograph overlaps every other, and what lets it grow later.
+//
+// Affine, not projective: the fitted homographies have perspective terms of
+// order 1e-7, which over an 800px image moves nothing by a pixel. The opened
+// photograph, which is a DOM element, keeps the full matrix3d.
+const collage=$('collage'), cctx=collage.getContext('2d');
+const bitmaps=new Map();                    // index -> Image (small copy)
+let collageDirty=false;
+function bitmapFor(i){
+  let im=bitmaps.get(i);
+  if(im) return im;
+  im=new Image(); im.decoding='async';
+  // draw directly on load, not via requestAnimationFrame: rAF is suspended in
+  // a hidden tab, and a collage that only paints once you look away and back
+  // is a collage that appears not to work
+  im.onload=()=>{ collageDirty=true; drawCollage(); };
+  im.src=SHOTS[i]._small;
+  bitmaps.set(i,im);
+  return im;
+}
+function sizeCollage(){
+  const dpr=Math.min(2, window.devicePixelRatio||1);
+  const W=Math.round(apW*dpr), H=Math.round(apH*dpr);
+  if(collage.width!==W||collage.height!==H){ collage.width=W; collage.height=H; }
+  collage.style.width=apW+'px'; collage.style.height=apH+'px';
+  return dpr;
+}
+// source px -> screen px is (x*sE+TX, y*sE+TY); the photograph's own H maps
+// photo px -> source px. Compose them and hand the 2x3 to the canvas.
+function drawCollage(){
+  if(shotMode!==2 || shotOn!==null || mode==='fold'){ collage.style.display='none'; return; }
+  collage.style.display='block';
+  const dpr=sizeCollage();
+  cctx.setTransform(1,0,0,1,0,0);
+  cctx.clearRect(0,0,collage.width,collage.height);
+  const sE=scale*Z, left=x0, right=x0+visW(), top=y0, bot=y0+visH();
+  const order=[];
+  SHOTS.forEach((it,i)=>{ const b=it.box;
+    if(b[0]<right && b[0]+b[2]>left && b[1]<bot && b[1]+b[3]>top) order.push(i); });
+  // wide views underneath, close details on top: the detailed one is the one
+  // you would want to see where two disagree
+  order.sort((a,b)=>(SHOTS[b].box[2]*SHOTS[b].box[3])-(SHOTS[a].box[2]*SHOTS[a].box[3]));
+  cctx.globalAlpha=0.94;
+  for(const i of order){
+    const it=SHOTS[i], im=bitmapFor(i);
+    if(!(im.complete && im.naturalWidth)) continue;
+    const H=it.H, k=(it.pw||im.naturalWidth)/im.naturalWidth;   // H is for the web copy; this bitmap is smaller
+    const a=H[0][0]*k, b=H[1][0]*k, c=H[0][1]*k, d=H[1][1]*k, e=H[0][2], f=H[1][2];
+    cctx.setTransform(dpr*sE*a, dpr*sE*b, dpr*sE*c, dpr*sE*d, dpr*(sE*e+TX), dpr*(sE*f+TY));
+    cctx.drawImage(im,0,0);
+  }
+  cctx.setTransform(1,0,0,1,0,0);
+  collageDirty=false;
+}
+// which photograph is under a point of the window, in collage mode: the most
+// detailed one whose frame contains it
+function shotAt(px,py){
+  const sE=scale*Z, sx=(px-TX)/sE, sy=(py-TY)/sE;
+  let best=-1, bestArea=Infinity;
+  SHOTS.forEach((it,i)=>{
+    const b=it.box;
+    if(sx<b[0]||sx>b[0]+b[2]||sy<b[1]||sy>b[1]+b[3]) return;
+    const H=it.H, k=1;
+    // invert the affine part: photo = A^-1 (src - t)
+    const a=H[0][0],c=H[0][1],e=H[0][2],bb=H[1][0],d=H[1][1],f=H[1][2];
+    const det=a*d-bb*c; if(!det) return;
+    const ux=( d*(sx-e) - c*(sy-f))/det, uy=(-bb*(sx-e) + a*(sy-f))/det;
+    const pw=it.pw||0, ph=it.ph||0;
+    if(ux<0||uy<0||ux>pw||uy>ph) return;
+    const area=b[2]*b[3];
+    if(area<bestArea){ bestArea=area; best=i; }
+  });
+  return best;
+}
 function renderShots(){
   const live = SHOTS.length && mode!=='fold';
-  photosEl.style.display = (live && (shotMode===2 || shotOn!==null)) ? 'block' : 'none';
+  photosEl.style.display = (live && shotOn!==null) ? 'block' : 'none';
   dotsEl.style.display   = (live && shotMode===1 && shotOn===null) ? 'block' : 'none';
-  if(!live) return;
+  if(!live){ collage.style.display='none'; return; }
   const k=scale, sE=scale*Z, left=x0, right=x0+visW(), top=y0, bot=y0+visH();
-  const marksNow = Z >= MARK_FROM();
-  // A hard ceiling on how many are composited at once. Overlapping photographs
-  // of the same rock add nothing to the collage and cost a layer each, so the
-  // nearest to the middle of the view win.
-  let allow=null;
-  if(shotMode===2){
-    const cx=x0+visW()/2, cy=y0+visH()/2;
-    const inView=[];
-    SHOTS.forEach((it,i)=>{ const b=it.box;
-      if(b[0]<right && b[0]+b[2]>left && b[1]<bot && b[1]+b[3]>top)
-        inView.push([i, Math.hypot(b[0]+b[2]/2-cx, b[1]+b[3]/2-cy)]); });
-    inView.sort((a,b)=>a[1]-b[1]);
-    allow=new Set(inView.slice(0,16).map(v=>v[0]));
-  }
+  // the DOM carries at most one photograph
   shotEls.forEach((el,i)=>{
-    const it=SHOTS[i], b=it.box;
-    const near = allow ? allow.has(i)
-                       : (b[0]<right && b[0]+b[2]>left && b[1]<bot && b[1]+b[3]>top);
-    const want = shotOn===i || (shotMode===2 && near);
+    const want = shotOn===i;
     el.style.display = want ? 'block' : 'none';
-    if(!want) return;
-    el.style.transform=cssMatrix(it.H, k);
-    if(shotOn===null) el.querySelector('img').style.opacity=0.94;
+    if(want) el.style.transform=cssMatrix(SHOTS[i].H, k);
   });
+  drawCollage();
   if(shotMode!==1 || shotOn!==null) return;
+  const marksNow = Z >= MARK_FROM();
   dotEls.forEach((d,i)=>{
     const it=SHOTS[i], b=it.box;
     const cx=(b[0]+b[2]/2)*sE+TX, cy=(b[1]+b[3]/2)*sE+TY;
@@ -1426,7 +1492,7 @@ function openShot(i){
   const sl=p.querySelector('input');
   sl.value=100;
   const im=shotEls[i].querySelector('img');
-  if(im.dataset.full && im.src!==im.dataset.full) im.src=im.dataset.full;
+  if(im.dataset.full && !im.getAttribute('src')) im.src=im.dataset.full;
   im.style.opacity=1;
   gotoBox(it.box, it.ppsp);
 }
@@ -1435,10 +1501,11 @@ function closeShot(){
   shotEls.forEach(el=>{ el.classList.remove('on');
     const im=el.querySelector('img');
     im.style.opacity='';
-    if(im.dataset.small && im.src!==im.dataset.small) im.src=im.dataset.small;  // give the memory back
+    if(im.getAttribute('src')) im.removeAttribute('src');    // give the memory back
   });
   document.body.classList.remove('shotopen');
   $('shotbar').classList.remove('on'); shotOn=null;
+  render();                                  // the collage comes back
 }
 function gotoBox(b, deep){
   // the scan's ceiling is nativeZ; a photograph carries ppsp times more detail,
@@ -1747,6 +1814,15 @@ $('lang').addEventListener('click',()=>{
   if(ui!=='ico'){ lang=ui; localStorage.setItem('ccp_lang',lang); }
   localStorage.setItem('ccp_ui',ui);
   applyLang();
+});
+// In collage mode a click on the window is a click on a photograph, if one is
+// under the pointer. The marquee path ignores taps (it wants a drag), so this
+// does not fight it.
+win.addEventListener('click',e=>{
+  if(shotMode!==2 || shotOn!==null) return;
+  const r=win.getBoundingClientRect();
+  const i=shotAt(e.clientX-r.left, e.clientY-r.top);
+  if(i>=0){ e.stopPropagation(); openShot(i); }
 });
 (function(){
   const b=$('shotbar');
