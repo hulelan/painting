@@ -150,4 +150,4 @@ window.PAINTINGS = {
 // The one endpoint the shared colophons go through (tools/tiba-worker.js).
 // Empty until the worker is deployed; the viewer then offers no send button
 // and everything else works the same. Never carried in a link.
-window.TIBA_API = '';
+window.TIBA_API = 'https://ccp-tiba.chineseclassicalpainting.workers.dev';

@@ -37,6 +37,9 @@ def call(api, path, body=None, owner_key=None):
     url = api.rstrip("/") + path
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(url, data=data, method="POST" if data else "GET")
+    # workers.dev sits behind Cloudflare's bot filter, which answers 403 (error
+    # 1010) to Python's default user agent. Name the tool and it is let through.
+    req.add_header("User-Agent", "ccp-tiba/1 (tools/tiba.py)")
     if data:
         req.add_header("Content-Type", "application/json")
     if owner_key:
