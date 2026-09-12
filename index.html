@@ -159,11 +159,10 @@ body.topbar.icons .stop .lb{margin-top:3px}
 body.topbar.icons .ico{width:22px;height:22px}
 #marks{position:absolute;inset:0;z-index:7;pointer-events:none;display:none}
 /* roads draw themselves as you arrive — see drawIn() */
-/* writing on the painting: the cursor says the drag will frame, not zoom */
-body.writing #window{cursor:crosshair}
-body.writing #marquee{border-color:rgba(233,209,150,.9)}
-.nt.mine{border-style:dashed;border-color:rgba(150,205,180,.72);cursor:pointer}
-.nt.mine .lbl{color:#bfe6d2}
+/* placing a colophon: the next tap on the painting is where it goes */
+body.placing #window{cursor:crosshair}
+/* the mounting silk after the painting, and every colophon on it: one canvas */
+#silk{position:absolute;inset:0;z-index:2;pointer-events:none;display:none}
 #editor{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:70;
   width:min(420px,90vw);display:none;background:rgba(20,17,12,.96);
   border:1px solid #4a4030;border-radius:4px;padding:12px}
@@ -172,6 +171,11 @@ body.writing #marquee{border-color:rgba(233,209,150,.9)}
   border-bottom:1px solid rgba(90,80,60,.25)}
 #editor .where.private{color:#7f9a88}
 #editor .where.shared{color:#c2ae7f}
+#editor .where.mounted{color:#d9b45a}
+#editor .who{font-size:11px;color:#8d8270;margin-bottom:6px}
+#editor .who:empty{display:none}
+#editor textarea[readonly]{color:#e4d8b8;background:#151109}
+#editor button.send{background:#2f3a22;border-color:#4f6a30;color:#dfeac2}
 #editor input,#editor textarea{width:100%;background:#0f0c09;color:#e4d8b8;
   border:1px solid #3b342a;border-radius:2px;padding:7px 8px;margin-bottom:7px;
   font:inherit;font-size:13px;resize:vertical}
@@ -189,36 +193,25 @@ body.writing #marquee{border-color:rgba(233,209,150,.9)}
 #script .row:hover{background:rgba(217,180,90,.07)}
 #script .at{font-size:10px;color:#6f6552;letter-spacing:1px;margin-right:8px}
 #script .tt{font-size:13px;color:#d9caa4}
-#script .row.mine .tt{color:#bfe6d2}
+#script .row.private .tt{color:#bfe6d2}
+#script .tier{font-size:10px;margin-right:8px;padding:0 4px;border:1px solid #5a5040;color:#d9caa4;letter-spacing:1px}
+#script .tier.mounted{color:#d9b45a;border-color:#6a5a34}
+#script .tier.private{color:#bfe6d2;border-color:#3f6a55}
+#script .by{font-size:10px;color:#6f6552;margin-left:8px}
+#script .hand{font-size:11px;color:#8d8270;padding:2px 8px 10px;border-bottom:1px solid rgba(90,80,60,.2)}
+#script .act{display:flex;flex-wrap:wrap;gap:6px;padding:8px 8px 6px}
+#script .act button{background:#241f18;color:#cbbd9c;border:1px solid #3b342a;
+  font:inherit;font-size:11px;letter-spacing:1px;padding:5px 9px;cursor:pointer}
+#script .act button:hover{background:#2e2820;color:#f0e6cd}
 #script .bd{margin-top:4px;font-size:12px;line-height:1.5;color:#8d8270;text-wrap:pretty}
 #script .empty{padding:14px;font-size:12px;color:#6f6552;text-align:center}
 #scriptCount{margin-left:6px;font-size:10px;color:#6f6552}
 body.icons #scriptCount{display:none}
-#log{position:fixed;right:22px;top:96px;bottom:26px;width:min(340px,46vw);z-index:60;
-  display:none;overflow-y:auto;background:rgba(18,15,11,.95);border:1px solid #3a3327;
-  border-radius:3px;padding:8px}
-#log.on{display:block}
-#log .lhead{font-size:12px;letter-spacing:2px;color:#c2ae7f;padding:6px 8px 8px}
-#log .who{font-size:11px;color:#8d8270;padding:0 8px 10px;border-bottom:1px solid rgba(90,80,60,.2)}
-#log .lrow{display:flex;gap:7px;align-items:baseline;flex-wrap:wrap;
-  padding:7px 8px;border-bottom:1px solid rgba(90,80,60,.12);font-size:12px}
-#log .lt{color:#635a49;font-size:10px;min-width:82px}
-#log .lb2{color:#bfe6d2}
-#log .lv{color:#8d8270}
-#log .lw{color:#6f6552;font-size:11px}
-#log .lq{color:#d9caa4}
-#log .empty{padding:14px;font-size:12px;color:#6f6552;text-align:center}
-#log .act{display:flex;gap:8px;padding:10px 8px 4px}
-#log .act button{flex:1;background:#241f18;color:#cbbd9c;border:1px solid #3b342a;
-  border-radius:2px;padding:6px 8px;font-size:11px;cursor:pointer}
-#log .act button:hover{background:#2e2820;color:#f0e6cd}
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:80;
   background:rgba(20,17,12,.95);border:1px solid #4a4030;border-radius:3px;
   padding:8px 14px;font-size:12px;color:#d8c9a4;opacity:0;transition:opacity .3s;
   pointer-events:none;max-width:86vw;text-align:center}
 #toast.on{opacity:1}
-.nt.room{border-color:rgba(190,170,235,.66)}
-.nt.room .lbl{color:#cfc2ee}
 #script .row.room .tt{color:#cfc2ee}
 #script .by{font-size:10px;color:#8d8270;margin-left:7px}
 /* a hanging scroll: no roll ends, no unrolling stops, no horizontal locator.
@@ -249,7 +242,7 @@ body.vert #rail img{display:block}
    and none of this is a paragraph. */
 :lang(en) #title, :lang(en) .cell .name, :lang(en) .cell .meta,
 :lang(en) .cell .await, :lang(en) #geo .sub, :lang(en) #notready,
-:lang(en) #zhint, :lang(en) .lb, :lang(en) .nt .lbl{
+:lang(en) .lb{
   letter-spacing:.2px; text-wrap:balance;
 }
 :lang(en) #credit{ letter-spacing:0; text-wrap:pretty }
@@ -308,15 +301,10 @@ body.icons #shotCount{display:none}
   transition:opacity .6s ease;max-width:88vw;text-align:center}
 #notready span{color:#8d8270;font-size:11px}
 #notready.go{opacity:0;pointer-events:none}
-#zhint{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:9;
-  font-size:12px;letter-spacing:2px;color:#a2947a;pointer-events:none;
   text-shadow:0 1px 6px #000}
 /* a noted thing: a box round it, the remark set just above */
-.nt{position:absolute;border:1px solid rgba(233,209,150,.62);pointer-events:auto;
   box-shadow:0 0 14px rgba(217,180,90,.16), inset 0 0 18px rgba(217,180,90,.07);
   transition:border-color .3s}
-.nt:hover{border-color:rgba(247,231,190,.95)}
-.nt .lbl{position:absolute;left:0;bottom:100%;margin-bottom:5px;white-space:nowrap;
   font-size:11px;letter-spacing:1px;color:#f0e2bb;text-shadow:0 1px 4px #000,0 0 10px #000}
 .mk{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;
   border:1px solid rgba(233,209,150,.5);pointer-events:auto;cursor:pointer;
@@ -466,6 +454,7 @@ body.topbar #loc{top:60px;bottom:auto}
     <div class="roll" id="rollL"><div class="body"></div></div>
     <div id="window">
       <div id="rail"></div>
+      <canvas id="silk"></canvas>
       <svg id="roads"></svg>
       <canvas id="collage"></canvas>
       <div id="photos"></div>
@@ -492,10 +481,7 @@ body.topbar #loc{top:60px;bottom:auto}
     <h2 id="hPersp">Perspectives</h2>
     <div class="persp" data-t="loc"><span class="box"></span><span class="lb"></span></div>
     <div class="persp" data-t="roads"><span class="box"></span><span class="lb"></span></div>
-  <div class="persp" data-t="notes"><span class="box"></span><span class="lb"></span></div>
-  <div class="persp" data-t="write"><span class="box"></span><span class="lb"></span></div>
-  <div class="persp" data-t="read"><span class="box"></span><span class="lb"></span><span id="scriptCount"></span></div>
-  <div class="persp" data-t="log"><span class="box"></span><span class="lb"></span></div>
+  <div class="persp" data-t="tiba"><span class="box"></span><span class="lb"></span><span id="scriptCount"></span></div>
   <div class="persp" data-t="shots"><span class="box"></span><span class="lb"></span><span id="shotCount"></span></div>
   </div>
 </div>
@@ -517,12 +503,11 @@ body.topbar #loc{top:60px;bottom:auto}
 </div>
 <div id="editor">
   <div class="where"></div>
-  <input class="et" maxlength="90" placeholder="what is it">
-  <textarea class="eb" rows="3" maxlength="1200" placeholder="what you noticed"></textarea>
-  <div class="row"><button class="ok"></button><button class="del"></button><button class="no"></button></div>
+  <div class="who"></div>
+  <textarea class="eb" rows="4" maxlength="480"></textarea>
+  <div class="row"><button class="ok"></button><button class="send"></button><button class="del"></button><button class="no"></button></div>
 </div>
 <div id="script"></div>
-<div id="log"></div>
 <div id="rollTag"></div>
 <!-- The register has to be read before we know which manifest to fetch, which
      puts a round trip between the HTML arriving and the first tile being asked
@@ -534,12 +519,12 @@ body.topbar #loc{top:60px;bottom:auto}
      its data files are still ten minutes stale -- which is how the Whole view
      kept painting the wrong scroll after the fix had shipped. The build stamp
      makes each deploy a new URL. tools/stamp_build.py rewrites it. -->
-<script>window.BUILD='95d8eab';</script>
-<link rel="preload" as="script" href="assets/data/paintings.js?b=95d8eab">
-<link rel="preload" as="script" href="assets/scroll/manifest.js?b=95d8eab">
-<link rel="preload" as="script" href="assets/data/roads.js?b=95d8eab">
+<script>window.BUILD='22f885b';</script>
+<link rel="preload" as="script" href="assets/data/paintings.js?b=22f885b">
+<link rel="preload" as="script" href="assets/scroll/manifest.js?b=22f885b">
+<link rel="preload" as="script" href="assets/data/roads.js?b=22f885b">
 <link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
-<script src="assets/data/paintings.js?b=95d8eab"></script>
+<script src="assets/data/paintings.js?b=22f885b"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
    are per-painting, so they are written in here rather than fixed in the page.
@@ -568,10 +553,9 @@ body.topbar #loc{top:60px;bottom:auto}
   (it.data||[]).forEach(function(d){
     document.write('<scr'+'ipt src="assets/data/'+d+'.js'+B+'" onerror="void 0"></scr'+'ipt>');
   });
-  // every other scroll's notes live in their own file; a 404 is the normal
-  // case for a painting nobody has written on yet, hence the silent onerror
-  if(slug!==R.default)
-    document.write('<scr'+'ipt src="assets/data/notes-'+slug+'.js'+B+'" onerror="void 0"></scr'+'ipt>');
+  // the mounted colophons live in one file per scroll; a 404 is the normal
+  // case for a painting nobody has written after yet, hence the silent onerror
+  document.write('<scr'+'ipt src="assets/data/tiba-'+slug+'.js'+B+'" onerror="void 0"></scr'+'ipt>');
   // where each gallery photograph sits on this scroll, if any have been placed
   document.write('<scr'+'ipt src="'+it.dir+'/photos/photos.js'+B+'" onerror="void 0"></scr'+'ipt>');
 })();
@@ -604,16 +588,20 @@ const desk=$('desk'), win=$('window'), rail=$('rail'), rollL=$('rollL'), rollR=$
 
 const I18N={
   en:{zoom:'Zoom', persp:'Perspectives', whole:'Whole', pane:'Pane', detail:'Detail',
-      wide:'Wide', loc:'Locator', marks:'Things', roads:'Roads', notes:'Noticed', write:'Write', read:'Colophons', log:'Room', shots:'Photographs', lang:'中',
-      save:'save', del:'delete', cancel:'cancel', back:'Return to Cabinet',
+      wide:'Wide', loc:'Locator', marks:'Things', roads:'Roads', tiba:'Colophons', shots:'Photographs', lang:'中',
+      save:'save', del:'delete', withdraw:'withdraw', send:'send', cancel:'close', back:'Return to Cabinet',
+      writeTail:'write after', markSpot:'mark a spot', invite:'copy invite', sign:'sign as', saveFile:'save file',
+      placeholder:'what you would write after looking',
       uiZh:'中文', uiEn:'English', uiIco:'pictograms — no words',
       hidden:'hidden — click the painting to find them', found:'you found',
       title:(window.PAINTING? PAINTING.en+' · '+PAINTING.artist.en+' · '+PAINTING.dynasty.en
                              : 'A Thousand Li of Rivers and Mountains · Wang Ximeng · Northern Song'),
       seg:(i,n)=> i===0?'1 · opening' : i===n-1? n+' · end' : String(i+1)},
   zh:{zoom:'缩放', persp:'视角', whole:'全卷', pane:'展卷', detail:'细看',
-      wide:'通幅', loc:'卷影', marks:'物', roads:'道路', notes:'所见', write:'题', read:'题识', log:'共室', shots:'照片', lang:'EN',
-      save:'存', del:'删', cancel:'罢', back:'返回画匣',
+      wide:'通幅', loc:'卷影', marks:'物', roads:'道路', tiba:'题跋', shots:'照片', lang:'EN',
+      save:'存', del:'删', withdraw:'撤', send:'送呈', cancel:'罢', back:'返回画匣',
+      writeTail:'题于卷後', markSpot:'点题', invite:'复制邀链', sign:'署名', saveFile:'存档',
+      placeholder:'观後所题',
       uiZh:'中文', uiEn:'English', uiIco:'图示 —— 不用文字',
       hidden:'已隐藏 —— 点画面自己找', found:'你找到了',
       title:(window.PAINTING? PAINTING.zh+'　'+PAINTING.artist.zh+'　'+PAINTING.dynasty.zh
@@ -636,7 +624,7 @@ if(!UI_NEXT[ui]) ui='zh';
 let lang = ui==='ico' ? (localStorage.getItem('ccp_lang')||'zh') : ui;
 const t=k=>I18N[lang][k];
 
-let mode='pane', showLoc=false, showMarks=false, showRoads=false, showNotes=false, customUsed=false;
+let mode='pane', showLoc=false, showMarks=false, showRoads=false, customUsed=false;
 const ROADS=(window.ROADS&&window.ROADS.paths)||[];
 // things.js -- 207 objects catalogued by a model -- is no longer loaded. Two
 // independent annotation passes agreed with it on barely half the contested
@@ -645,23 +633,7 @@ const ROADS=(window.ROADS&&window.ROADS.paths)||[];
 // a visitor as if it were known. What is shown is what a person looked at and
 // wrote down.
 const THINGS=[];
-const PUB_NOTES=(window.NOTES&&window.NOTES.items)||[];
-// Your own notes live in this browser under the key the tracer uses, so a note
-// written here is the same object the tracer would have written -- one store,
-// two ways in. `mine` marks them apart on screen: mounted colophons in one
-// hand, yours in another, the way an unmounted sheet sits beside the scroll.
 const SLUG=(window.PAINTING&&PAINTING.slug)||'qianli';
-const NKEY = SLUG==='qianli' ? 'ccp_notes_v1' : 'ccp_notes_'+SLUG;
-let MYNOTES=[], ROOMNOTES=[], ROOMLOG=[];
-try{ const o=JSON.parse(localStorage.getItem(NKEY)||'null'); if(o&&o.notes) MYNOTES=o.notes; }catch(e){}
-function saveMine(){
-  try{ localStorage.setItem(NKEY,JSON.stringify({srcW:L,srcH:PH,notes:MYNOTES})); }catch(e){}
-}
-// three hands on one scroll: mounted, the room's, and yours
-const allNotes=()=>PUB_NOTES
-  .concat(ROOMNOTES.filter(n=>(n.slug||'qianli')===SLUG).map(n=>Object.assign({room:true},n)))
-  .concat(MYNOTES.map(n=>Object.assign({mine:true},n)));
-let NOTES=allNotes();
 const ITEMS = THINGS;   // empty: the raw detections were the census, and it did not hold up
 const TYPE={
   en:{building:'Building',pavilion:'Pavilion',temple:'Temple',pagoda:'Pagoda',bridge:'Bridge',
@@ -816,9 +788,17 @@ function measure(){
   layoutFold(); clamp(); render();
 }
 const rollRadius=len=>Math.sqrt(core*core+thick*Math.max(0,len)*scale/Math.PI);
+// The scroll is longer than the painting. Past the last mountain (left of x=0
+// on a handscroll, below PH on a hanging one) is mounting silk that the
+// colophons are written on, so the pan domain reaches into it. Blank silk
+// exists before anything is written; there has to be somewhere to write.
+const TAIL_MIN=(VERT?L:PH)*0.5;
+let tailLen=TAIL_MIN;
+const railMin=()=>VERT?0:-tailLen;
+const railMaxY=()=>VERT?PH+tailLen:PH;
 function clamp(){
-  x0=Math.max(0,Math.min(Math.max(0,L-visW()),x0));
-  y0=Math.max(0,Math.min(Math.max(0,PH-visH()),y0));
+  x0=Math.max(railMin(),Math.min(Math.max(0,L-visW()),x0));
+  y0=Math.max(0,Math.min(Math.max(0,railMaxY()-visH()),y0));
 }
 
 function layoutFold(){
@@ -873,7 +853,7 @@ function render(){
     const f=Math.max(0,Math.min(1,x0/Math.max(1,L-visW())));
     sheen.style.setProperty('--sheenX',(12+f*76).toFixed(1)+'%');
     win.classList.toggle('zoomed', Z>1.03);
-    renderMarks(sE); renderNotes(sE); renderShots(); renderKept(sE);
+    renderMarks(sE); drawTiba(sE); renderShots(); renderKept(sE);
   }
   syncLoc(); syncTrack();
 }
@@ -899,7 +879,7 @@ function revealThing(d,known){
 }
 function renderMarks(sE){
   // the layer carries both; it hides only when neither wants it
-  marksEl.style.display=(showMarks||showNotes)&&mode!=='fold' ? 'block' : 'none';
+  marksEl.style.display=showMarks&&mode!=='fold' ? 'block' : 'none';
   if(!showMarks||mode==='fold'){ markEls.forEach(e=>e.style.display='none'); return; }
   for(let i=0;i<ITEMS.length;i++){
     const d=ITEMS[i], el=markEls[i];
@@ -907,64 +887,6 @@ function renderMarks(sE){
     if(sx<-30||sx>apW+30||sy<-30||sy>apH+30){ el.style.display='none'; continue; }
     el.style.display='block'; el.style.left=sx+'px'; el.style.top=sy+'px';
   }
-}
-// A note has extent -- it was drawn as a box round something -- so it is drawn
-// as a box, not as the dot used for catalogue items. The remark rides with it
-// instead of waiting behind a click: there are four of them, not two hundred.
-let noteEls=[];
-function buildNotes(){
-  noteEls.forEach(e=>e.remove());
-  NOTES=allNotes();
-  noteEls=NOTES.map(d=>{
-    const el=document.createElement('div'); el.className='nt'+(d.mine?' mine':'');
-    el.innerHTML='<span class="lbl"></span>';
-    el.querySelector('.lbl').textContent=d.title||'';
-    if(d.text) el.title=d.text;
-    el.addEventListener('pointerdown',ev=>ev.stopPropagation());
-    el.addEventListener('click',ev=>{ ev.stopPropagation(); if(d.mine) editNote(d); });
-    marksEl.appendChild(el); return el;
-  });
-  // writing the first note has to enable the toggle that shows notes, or the
-  // note is saved and invisible
-  const np=document.querySelector('.persp[data-t="notes"]');
-  if(np){ np.classList.toggle('off', NOTES.length===0); if(NOTES.length) np.title=''; }
-  buildScript();
-}
-buildNotes();
-// A note is about something small -- a waterfall 250px wide on a 41,783px scroll.
-// At full view its box is four pixels across and its label is noise, so notes
-// arrive with the zoom that makes them legible: nothing below 1.3x, full weight
-// by 2x. ?notes=all turns the gating off.
-const NOTES_ALL=/[?&]notes=all/.test(location.search);
-function noteWeight(){
-  if(NOTES_ALL) return 1;
-  return Math.max(0, Math.min(1, (Z-1.25)/0.75));
-}
-function renderNotes(sE){
-  if(!showNotes||mode==='fold'){ noteEls.forEach(e=>e.style.display='none'); return; }
-  const w=noteWeight();
-  if(w<=0){ noteEls.forEach(e=>e.style.display='none'); hintZoom(true); return; }
-  hintZoom(false);
-  for(let i=0;i<NOTES.length;i++){
-    const d=NOTES[i], el=noteEls[i];
-    const w=Math.max(6,(d.w||40)*sE), h=Math.max(6,(d.h||40)*sE);
-    const sx=d.x*sE+TX-w/2, sy=d.y*sE+TY-h/2;
-    if(sx<-w-40||sx>apW+40||sy<-h-40||sy>apH+40){ el.style.display='none'; continue; }
-    el.style.display='block';
-    el.style.left=sx+'px'; el.style.top=sy+'px';
-    el.style.width=w+'px'; el.style.height=h+'px';
-    el.style.opacity=noteWeight();
-  }
-}
-// If notes are asked for but the view is too wide to show them, say why once
-// rather than leaving the toggle looking broken.
-let zhintEl=null;
-function hintZoom(on){
-  if(on && !zhintEl){
-    zhintEl=document.createElement('div'); zhintEl.id='zhint';
-    zhintEl.textContent = lang==='en' ? 'zoom in to read what people noticed' : '放大即见所书';
-    win.appendChild(zhintEl);
-  } else if(!on && zhintEl){ zhintEl.remove(); zhintEl=null; }
 }
 function renderKept(sE){
   if(!kept){ keptEl.style.display='none'; return; }
@@ -977,7 +899,8 @@ function syncLoc(){
   if(!showLoc) return;
   const w=loc.clientWidth;
   if(mode==='fold'){ locBox.style.left='0px'; locBox.style.width=w+'px'; return; }
-  const a=(x0/L)*w, b=(visW()/L)*w;
+  const m=railMin(), span=L-m;
+  const a=((x0-m)/span)*w, b=(visW()/span)*w;
   locBox.style.left=Math.max(0,Math.min(w-b,a))+'px';
   locBox.style.width=Math.max(3,b)+'px';
 }
@@ -1029,13 +952,13 @@ function loop(now){
     } else if(vel!==0){
       vel*=Math.pow(.94,dt*60); x0+=vel*dt;
       if(Math.abs(vel)<8){ vel=0; snap(); }
-      const mx=Math.max(0,L-visW()); if(x0<0||x0>mx) vel=0;
+      const mx=Math.max(0,L-visW()); if(x0<railMin()||x0>mx) vel=0;
     }
   }
   clamp(); render(); requestAnimationFrame(loop);
 }
 function snap(){
-  if(Z>1.03||!EP.length) return;
+  if(Z>1.03||!EP.length||x0<0) return;
   let best=null,bd=1e9;
   for(const e of EP){ const d=Math.abs(e.x0-x0); if(d<bd){bd=d;best=e.x0;} }
   if(best!==null&&bd<visW()*0.32) target=best;
@@ -1072,8 +995,10 @@ function rollUp(){
 
 // --- drag the SILK to select; when already zoomed, to pan ------------------
 let marq=null, panZ=null;
+let tapAt=null;                 // where the pointer went down; a click that moved is a drag
 win.addEventListener('pointerdown',e=>{
   if(pts.size>1) return;
+  tapAt={x:e.clientX,y:e.clientY};
   const r=win.getBoundingClientRect();
   // touch: a finger drag means "move the scroll", always. Zoom is pinch.
   if(e.pointerType==='touch' || Z>1.03){
@@ -1106,13 +1031,6 @@ function winUp(){
   const w=parseFloat(marqEl.style.width)||0, h=parseFloat(marqEl.style.height)||0;
   const lf=parseFloat(marqEl.style.left)||0, tp=parseFloat(marqEl.style.top)||0;
   marqEl.style.display='none'; marq=null;
-  if(writing){
-    if(w>10&&h>10){
-      const sE0=scale*Z;
-      newNoteFromBox(x0+lf/sE0, y0+tp/sE0, w/sE0, h/sE0);
-    }
-    return;
-  }
   if(w<26||h<26){
     if(!showMarks && ITEMS.length && w<6 && h<6){      // a tap, not a scrub: go hunting
       const sE0=scale*Z, cx=(lf-TX)/sE0, cy=(tp-TY)/sE0;
@@ -1232,10 +1150,7 @@ document.querySelectorAll('.persp').forEach(el=>{
     if(k==='loc'){ showLoc=!showLoc; el.classList.toggle('on',showLoc); layoutFold(); }
     if(k==='marks'){ showMarks=!showMarks; el.classList.toggle('on',showMarks); }
     if(k==='roads'){ if(!ROADS.length) return; showRoads=!showRoads; el.classList.toggle('on',showRoads); }
-    if(k==='notes'){ if(!NOTES.length) return; showNotes=!showNotes; el.classList.toggle('on',showNotes); }
-    if(k==='write'){ setWriting(!writing); return; }
-    if(k==='read'){ $('script').classList.toggle('on'); buildScript(); return; }
-    if(k==='log'){ $('log').classList.toggle('on'); buildLog(); return; }
+    if(k==='tiba'){ $('script').classList.toggle('on'); buildScript(); render(); return; }
     if(k==='shots'){ if(!SHOTS.length) return;
       shotMode=(shotMode+1)%3;                       // off -> marks -> laid on
       el.classList.toggle('on', shotMode!==0);
@@ -1262,10 +1177,6 @@ const ICO={
   marks:'<circle cx="7" cy="9" r="2.2"/><circle cx="16" cy="7" r="2.2"/>'+
         '<circle cx="11" cy="17" r="2.2"/><circle cx="19.5" cy="15" r="2.2"/>',
   roads:'<path d="M2 17 L6 12 L10 14 L14 8 L18 10 L22 6" stroke-width="2"/>',
-  // a note is a box drawn round something, so the icon is a box with a corner turned
-  // a brush laid across the page, and a page of writing
-  write:'<path d="M4 20 L13 11"/><path d="M12 10 L17 5 L20 8 L15 13 Z"/><circle class="f" cx="4.6" cy="19.4" r="1.5"/>',
-  // several hands round one table
   // a frame with a lens: the photographs
   // off: a camera. marks: the camera with its dot filled. laid on: sheets stacked
   // on the scroll. The state is the icon, because in pictogram mode there are no
@@ -1279,11 +1190,12 @@ const ICO={
         '<circle class="f" cx="18.5" cy="12" r="1.9"/>',
   shots2:'<rect x="1.5" y="4" width="15" height="11"/><rect class="f" x="5" y="8" width="15" height="11"/>'+
         '<rect x="5" y="8" width="15" height="11"/>',
-  log:'<circle cx="12" cy="12" r="3"/><circle class="f" cx="5" cy="6" r="1.7"/>'+
-      '<circle class="f" cx="19" cy="6" r="1.7"/><circle class="f" cx="5" cy="18" r="1.7"/>'+
-      '<circle class="f" cx="19" cy="18" r="1.7"/>',
-  read:'<rect x="4" y="3" width="16" height="18"/><path d="M8 8 H16"/><path d="M8 12 H16"/><path d="M8 16 H13"/>',
-  notes:'<rect x="3" y="4" width="18" height="14"/><path d="M7 21 L11 17"/><circle class="f" cx="17" cy="11" r="1.6"/>'
+  // the last peak of the painting, the seam where the mounting silk joins it,
+  // and two columns of writing beyond: the thing the control travels to
+  tiba:'<path class="f" d="M13.5 19 L17 11 L19.5 15 L22 8.5 L22 19 Z"/>'+
+       '<path d="M11.5 2.5 V21.5"/>'+
+       '<rect class="f" x="6.5" y="5.5" width="2" height="11"/>'+
+       '<rect class="f" x="2.5" y="5.5" width="2" height="7.5"/>'
 };
 function ico(k){
   return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">'+(ICO[k]||'')+'</svg>';
@@ -1399,11 +1311,11 @@ function bitmapFor(i){
   bitmaps.set(i,im);
   return im;
 }
-function sizeCollage(){
+function sizeCanvas(cv){
   const dpr=Math.min(2, window.devicePixelRatio||1);
   const W=Math.round(apW*dpr), H=Math.round(apH*dpr);
-  if(collage.width!==W||collage.height!==H){ collage.width=W; collage.height=H; }
-  collage.style.width=apW+'px'; collage.style.height=apH+'px';
+  if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; }
+  cv.style.width=apW+'px'; cv.style.height=apH+'px';
   return dpr;
 }
 // source px -> screen px is (x*sE+TX, y*sE+TY); the photograph's own H maps
@@ -1411,7 +1323,7 @@ function sizeCollage(){
 function drawCollage(){
   if(shotMode!==2 || shotOn!==null || mode==='fold'){ collage.style.display='none'; return; }
   collage.style.display='block';
-  const dpr=sizeCollage();
+  const dpr=sizeCanvas(collage);
   cctx.setTransform(1,0,0,1,0,0);
   cctx.clearRect(0,0,collage.width,collage.height);
   const sE=scale*Z, left=x0, right=x0+visW(), top=y0, bot=y0+visH();
@@ -1522,44 +1434,34 @@ function stepShot(d){
   openShot((shotOn+d+SHOTS.length)%SHOTS.length);
 }
 
-// ---- the room -------------------------------------------------------------
-// A shared notebook across every painting, not one per scroll: the trip is the
-// unit. Joining is holding the link. #room=<id> is the credential and stays in
-// the fragment, which browsers never send to a server -- so it is not in any
-// log, referrer or analytics trail. There is no account and no password; that
-// is the right trade for a group of friends and the wrong one for the public.
-const ROOM=(function(){
-  const h=location.hash;
-  const r=/[#&]room=([A-Za-z0-9_-]{8,64})/.exec(h);
-  const a=/[#&]api=([^&]+)/.exec(h);
-  if(a){ try{ localStorage.setItem('ccp_api', decodeURIComponent(a[1]).replace(/\/+$/,'')); }catch(e){} }
-  if(!r) return null;
-  let api=''; try{ api=localStorage.getItem('ccp_api')||''; }catch(e){}
-  return api ? {id:r[1], api:api} : {id:r[1], api:''};
+// ---- 題跋: writing after the painting, and on it ---------------------------
+// A colophon is one person's writing about one painting, signed and dated.
+// One record, three statuses: private (this browser), shared (the circle's
+// endpoint), mounted (a committed file). The id is minted here and is the same
+// string in all three places, so a mounted colophon is the same colophon,
+// advanced, not a copy. Status is stored only in this browser; the endpoint
+// implies shared and the file implies mounted, so nothing can drift.
+const RANK={private:0,shared:1,mounted:2};
+const TKEY='ccp_tiba_v1', HKEY='ccp_hand_v1';
+const TIBA_API=(window.TIBA_API||'').replace(/\/+$/,'');
+const PUB_TIBA=(window.TIBA&&window.TIBA.items)||[];
+let MINE=[], SHARED=[], COLOPHONS=[], HAND={name:'',pass:''};
+try{ const o=JSON.parse(localStorage.getItem(TKEY)||'null'); if(o&&o.items) MINE=o.items; }catch(e){}
+try{ const o=JSON.parse(localStorage.getItem(HKEY)||'null'); if(o) HAND={name:o.name||'',pass:o.pass||''}; }catch(e){}
+function saveTiba(){ try{ localStorage.setItem(TKEY,JSON.stringify({v:1,items:MINE})); }catch(e){} }
+function saveHand(){ try{ localStorage.setItem(HKEY,JSON.stringify(HAND)); }catch(e){} }
+// The invitation arrives in the fragment, is kept, and is taken off the URL so
+// a copied address does not carry it on by accident. Inviting is a button.
+(function(){
+  const m=/[#&]tiba=([A-Za-z0-9_-]{8,64})/.exec(location.hash);
+  if(!m) return;
+  HAND.pass=m[1]; saveHand();
+  history.replaceState(null,'',location.pathname+location.search);
 })();
-let roomSeq=-1, roomName='';
-try{ roomName=localStorage.getItem('ccp_name')||''; }catch(e){}
-function askName(){
-  const n=(window.prompt(lang==='en'?'Sign your notes as:':'题识署名：', roomName||'')||'').trim().slice(0,40);
-  if(n){ roomName=n; try{ localStorage.setItem('ccp_name',n); }catch(e){} }
-  return roomName;
-}
-function roomFetch(){
-  if(!ROOM||!ROOM.api) return Promise.resolve();
-  return fetch(ROOM.api+'/r/'+ROOM.id,{cache:'no-store'})
-    .then(r=>r.ok?r.json():Promise.reject(new Error('HTTP '+r.status)))
-    .then(o=>{ ROOMNOTES=o.notes||[]; ROOMLOG=o.log||[]; roomSeq=o.seq;
-               buildNotes(); render(); });
-}
-function roomPost(op,payload){
-  if(!ROOM||!ROOM.api) return Promise.resolve();
-  if(!roomName && !askName()) return Promise.resolve();
-  return fetch(ROOM.api+'/r/'+ROOM.id,{method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(Object.assign({by:roomName,op:op},payload))})
-    .then(r=>r.ok?r.json():r.json().then(e=>Promise.reject(new Error(e.error||r.status))))
-    .then(()=>roomFetch())
-    .catch(e=>{ toast((lang==='en'?'could not send: ':'未能送出：')+e.message); });
+const invited=()=>!!(TIBA_API&&HAND.pass);
+function newId(){
+  const a=new Uint8Array(16); crypto.getRandomValues(a);
+  return btoa(String.fromCharCode.apply(null,a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 }
 function toast(msg){
   let t=$('toast');
@@ -1567,181 +1469,337 @@ function toast(msg){
   t.textContent=msg; t.classList.add('on');
   clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),4000);
 }
-
-// ---- writing on the painting ---------------------------------------------
-// A colophon is placed: it sits beside what it answers. So writing is framing.
-// In write mode a drag draws a box instead of choosing a zoom, and lets go into
-// an editor. Everything else -- pan, pinch, the panel -- is untouched, because
-// the mode is a flag the drag handler reads, not a separate interface.
-let writing=false, editing=null;
-function setWriting(on){
-  writing=on;
-  document.body.classList.toggle('writing',on);
-  const el=document.querySelector('.persp[data-t="write"]');
-  if(el) el.classList.toggle('on',on);
-  if(on && !showNotes){ showNotes=true;
-    const n=document.querySelector('.persp[data-t="notes"]'); if(n) n.classList.add('on');
-  }
-  render();
+function askName(){
+  const n=(window.prompt(lang==='en'?'Sign as:':'署名：',HAND.name||'')||'').trim().slice(0,40);
+  if(n){ HAND.name=n; saveHand(); }
+  return HAND.name;
 }
-function editNote(n){
-  editing=n;
-  const box=$('editor');
-  // Anyone can write here, and most people writing will assume it goes
-  // somewhere. Say plainly which of the two it is, before they type.
-  const w=box.querySelector('.where');
-  if(ROOM&&ROOM.api){
-    w.textContent = lang==='en'
-      ? 'everyone in this room will see this' + (roomName? ' · signed '+roomName : '')
-      : '此室诸人皆可见' + (roomName? '　署名 '+roomName : '');
-    w.className='where shared';
-  } else {
-    w.textContent = lang==='en' ? 'kept in this browser only — nobody else can see it'
-                                : '仅存于此浏览器　他人不见';
-    w.className='where private';
-  }
-  box.querySelector('.et').value=n.title||'';
-  box.querySelector('.eb').value=n.text||'';
-  box.classList.add('on');
-  box.querySelector('.et').focus();
+// Join the three stores by id. Provenance sets a floor on status and the
+// browser's own record is advanced to meet it, never rewound. The higher
+// status wins the whole record, so a typo the owner fixed while mounting is
+// what you read. Running this on its own output changes nothing.
+function joinTiba(){
+  const by=new Map(); let advanced=false;
+  MINE.forEach(c=>{ if(c.slug===SLUG) by.set(c.id, Object.assign({}, c, {status:c.status||'private', mine:true})); });
+  const merge=(rec,floor)=>{
+    const prev=by.get(rec.id);
+    if(prev && RANK[floor]<=RANK[prev.status]) return;
+    by.set(rec.id, Object.assign({}, rec, {status:floor, mine:!!(prev&&prev.mine)}));
+    const m=MINE.find(x=>x.id===rec.id);
+    if(m && RANK[floor]>RANK[m.status||'private']){
+      m.at=rec.at||m.at; m.by=rec.by||m.by; m.text=rec.text; if(rec.spot) m.spot=rec.spot;
+      m.status=floor; advanced=true;
+    }
+  };
+  SHARED.forEach(c=>merge(c,'shared'));
+  PUB_TIBA.forEach(c=>merge(c,'mounted'));
+  if(advanced) saveTiba();
+  COLOPHONS=[...by.values()].sort((a,b)=> a.at<b.at?-1 : a.at>b.at?1 : a.id<b.id?-1:1);
+  layoutTail(); buildScript(); paintTibaRow();
 }
-function closeEditor(){ $('editor').classList.remove('on'); editing=null; }
-function newNoteFromBox(x,y,w,h){
-  const id=MYNOTES.reduce((m,n)=>Math.max(m,n.id||0),0)+1;
-  const n={id:id, x:Math.round(x+w/2), y:Math.round(y+h/2),
-           w:Math.round(w), h:Math.round(h), type:'note', title:'', text:''};
-  MYNOTES.push(n); saveMine(); buildNotes(); render(); editNote(n);
+function fetchTiba(){
+  if(!invited()) return Promise.resolve();
+  return fetch(TIBA_API+'/t/'+HAND.pass+'?p='+encodeURIComponent(SLUG),{cache:'no-store'})
+    .then(r=>{
+      if(r.status===403){ HAND.pass=''; saveHand(); return Promise.reject(new Error(lang==='en'?'the invite no longer opens':'邀链已失效')); }
+      return r.ok ? r.json() : Promise.reject(new Error('HTTP '+r.status));
+    })
+    .then(o=>{ SHARED=o.items||[]; joinTiba(); render(); })
+    .catch(e=>{ if(!fetchTiba.warned){ fetchTiba.warned=true; toast((lang==='en'?'could not reach the circle: ':'未能连上共室：')+e.message); } });
 }
-
-// ---- reading the colophons in order --------------------------------------
-// Notes are found by zooming, which makes them discoveries and not a text. A
-// handscroll's inscriptions are read in the order the scroll unrolls, so this
-// lists them that way: right to left, which for these coordinates is by x.
-function buildScript(){
-  const host=$('script'); if(!host) return;
-  const rows=NOTES.slice().sort((a,b)=> (VERT? a.y-b.y : b.x-a.x));
-  host.innerHTML = rows.length ? '' :
-    '<div class="empty">'+(lang==='en'?'nothing written yet':'尚无题识')+'</div>';
-  rows.forEach(n=>{
-    const at = VERT ? Math.round(100*n.y/PH) : Math.round(100*(CR-n.x)/CR);
-    const d=document.createElement('div');
-    d.className='row'+(n.mine?' mine':'')+(n.room?' room':'');
-    const a=document.createElement('span'); a.className='at'; a.textContent=at+'%';
-    const tt=document.createElement('span'); tt.className='tt';
-    tt.textContent=n.title||(lang==='en'?'(untitled)':'（无题）');
-    d.appendChild(a); d.appendChild(tt);
-    if(n.by){ const b=document.createElement('span'); b.className='by'; b.textContent=n.by; d.appendChild(b); }
-    if(n.text){ const bd=document.createElement('div'); bd.className='bd'; bd.textContent=n.text; d.appendChild(bd); }
-    d.addEventListener('click',()=>{ gotoNote(n); });
-    host.appendChild(d);
-  });
-  const c=$('scriptCount');
-  if(c) c.textContent = rows.length ? rows.length+(lang==='en'?' notes':' 则') : '';
+function tibaPost(body){
+  return fetch(TIBA_API+'/t/'+HAND.pass,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(r=>r.ok?r.json():r.json().then(e=>Promise.reject(new Error(e.error||r.status))));
 }
-// ---- who wrote what, and when --------------------------------------------
-// The log is the room's history, not a surveillance feature: it records that a
-// note was written, edited or removed, by the name its writer typed. It is what
-// makes a shared notebook legible when six people use it over a week.
-function buildLog(){
-  const host=$('log'); if(!host) return;
-  host.innerHTML='';
-  const head=document.createElement('div'); head.className='lhead';
-  head.textContent = ROOM ? (lang==='en'?'Room · everyone':'共室　诸人') : (lang==='en'?'not in a room':'未入共室');
-  host.appendChild(head);
-  if(!ROOM){
-    const d=document.createElement('div'); d.className='empty';
-    d.textContent = lang==='en' ? 'open a room link to write together'
-                                : '开共室之链，同题一卷';
-    host.appendChild(d);
-    const act=document.createElement('div'); act.className='act';
-    const b=document.createElement('button');
-    b.textContent = lang==='en' ? 'start a room' : '新建共室';
-    b.onclick=()=>{
-      // 128 bits from the CSPRNG. The id IS the credential, so it must be
-      // unguessable and must be made here -- a server that hands out ids has
-      // a list of them.
-      const a=new Uint8Array(16); crypto.getRandomValues(a);
-      const id=btoa(String.fromCharCode.apply(null,a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-      let api=''; try{ api=localStorage.getItem('ccp_api')||''; }catch(e){}
-      if(!api){
-        api=(window.prompt(lang==='en'?'Worker URL (see tools/room-worker.js):':'共室端点（见 tools/room-worker.js）：','')||'').trim().replace(/\/+$/,'');
-        if(!api) return;
-        try{ localStorage.setItem('ccp_api',api); }catch(e){}
-      }
-      location.hash='room='+id+'&api='+encodeURIComponent(api);
-      location.reload();
-    };
-    act.appendChild(b);
-    const e2=document.createElement('button');
-    e2.textContent = lang==='en' ? 'save my notes' : '存我所题';
-    e2.onclick=exportRoom; act.appendChild(e2);
-    host.appendChild(act);
-    return;
-  }
-  const names={};
-  ROOMNOTES.forEach(n=>{ names[n.by||'anon']=(names[n.by||'anon']||0)+1; });
-  const who=document.createElement('div'); who.className='who';
-  who.textContent=Object.keys(names).map(k=>k+' '+names[k]).join('　·　');
-  host.appendChild(who);
-  const act=document.createElement('div'); act.className='act';
-  const mk2=(label,fn)=>{ const b=document.createElement('button'); b.textContent=label; b.onclick=fn; return b; };
-  act.appendChild(mk2(lang==='en'?'copy invite':'复制邀链', ()=>{
-    const u=location.origin+location.pathname+location.search+
-      '#room='+ROOM.id+(ROOM.api?'&api='+encodeURIComponent(ROOM.api):'');
-    navigator.clipboard.writeText(u).then(
-      ()=>toast(lang==='en'?'invite copied — anyone with it can write':'已复制　持链者皆可题'),
-      ()=>toast(u));
-  }));
-  act.appendChild(mk2(lang==='en'?'my name':'署名', ()=>{ askName(); buildLog(); }));
-  act.appendChild(mk2(lang==='en'?'save all':'存全部', exportRoom));
-  host.appendChild(act);
-  const rows=ROOMLOG.slice().reverse().slice(0,120);
-  if(!rows.length){
-    const d=document.createElement('div'); d.className='empty';
-    d.textContent=lang==='en'?'nothing written yet':'尚无题识'; host.appendChild(d); return;
-  }
-  const VERB={add:{en:'wrote',zh:'题'},edit:{en:'edited',zh:'改'},del:{en:'removed',zh:'删'}};
-  const NAME={};
-  ((window.PAINTINGS&&PAINTINGS.items)||[]).forEach(it=>{ NAME[it.slug]={zh:it.zh,en:it.en}; });
-  rows.forEach(e=>{
-    const d=document.createElement('div'); d.className='lrow';
-    const t=document.createElement('span'); t.className='lt';
-    t.textContent=new Date(e.at).toLocaleString(lang==='en'?'en-US':'zh-Hans',
-      {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
-    const b=document.createElement('span'); b.className='lb2'; b.textContent=e.by||'anon';
-    const v=document.createElement('span'); v.className='lv';
-    v.textContent=(VERB[e.op]||VERB.add)[lang==='en'?'en':'zh'];
-    const w=document.createElement('span'); w.className='lw';
-    const nm=NAME[e.slug]||{}; w.textContent=(lang==='en'?(nm.en||e.slug):(nm.zh||e.slug));
-    const q=document.createElement('span'); q.className='lq'; q.textContent=e.title||'';
-    [t,b,v,w,q].forEach(x=>d.appendChild(x));
-    host.appendChild(d);
-  });
+function sendTiba(m){
+  if(!invited()) return Promise.resolve();
+  if(!m.by && !askName()){ toast(lang==='en'?'sign it first':'请先署名'); return Promise.resolve(); }
+  m.by=m.by||HAND.name;
+  const item={id:m.id,slug:m.slug,at:m.at,by:m.by,text:m.text}; if(m.spot) item.spot=m.spot;
+  return tibaPost({op:'write',item:item})
+    .then(o=>{ if(o.item&&o.item.id) m.id=o.item.id; if(RANK[m.status]<1) m.status='shared'; saveTiba(); return fetchTiba(); })
+    .then(()=>toast(lang==='en'?'sent to the circle':'已呈'))
+    .catch(e=>toast((lang==='en'?'could not send: ':'未能送出：')+e.message));
 }
-// ---- take the whole room away with you -----------------------------------
-// Every note on every painting, in one file. A room lives on someone else's
-// computer; this is how it stops being the only copy.
-function exportRoom(){
-  const out={v:1, of:'classicalchinesepainting.com', room:ROOM?ROOM.id:null,
-             savedAt:new Date().toISOString(),
-             paintings:{}, mine:{slug:SLUG, notes:MYNOTES}, log:ROOMLOG};
-  ROOMNOTES.forEach(n=>{
-    const k=n.slug||'qianli';
-    (out.paintings[k]=out.paintings[k]||[]).push(n);
-  });
+function withdrawTiba(m){
+  const done=()=>{ MINE=MINE.filter(x=>x!==m); saveTiba(); joinTiba(); render(); };
+  if(m.status!=='shared'||!invited()){ done(); return; }
+  tibaPost({op:'withdraw',id:m.id,by:m.by})
+    .then(()=>{ done(); return fetchTiba(); })
+    .catch(e=>{ if(/404/.test(e.message)){ done(); return; }
+                toast((lang==='en'?'could not withdraw: ':'未能撤回：')+e.message); });
+}
+// Every colophon of yours on every painting, in one file. tools/tiba.py takes
+// it with --from, which is how the owner mounts without an endpoint.
+function exportTiba(){
+  const out={v:1, of:'classicalchinesepainting.com', savedAt:new Date().toISOString(), items:MINE};
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(out,null,1)],{type:'application/json'}));
-  a.download='annotations-'+out.savedAt.slice(0,10)+'.json'; a.click();
+  a.download='tiba-'+out.savedAt.slice(0,10)+'.json'; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),4000);
-  const n=ROOMNOTES.length+MYNOTES.length;
-  toast((lang==='en'?'saved ':'已存　')+n+(lang==='en'?' notes across all paintings':' 则'));
+  toast((lang==='en'?'saved ':'已存　')+MINE.length+(lang==='en'?' colophons':' 则'));
 }
-function gotoNote(n){
-  const want = Math.min(nativeZ(), Math.max(1.6, (VERT?apW:apH)/((n.w||300)*scale*2.2)));
-  Z=Math.max(MINZ,Math.min(nativeZ(),want));
-  x0=n.x-visW()/2; y0=n.y-visH()/2;
-  customUsed=true; mode='custom'; clamp(); buildTrack(); render();
-  $('script').classList.remove('on');
+function copyInvite(){
+  const u=location.origin+location.pathname+location.search+'#tiba='+HAND.pass;
+  navigator.clipboard.writeText(u).then(
+    ()=>toast(lang==='en'?'invite copied. Anyone holding it can read and write.':'已复制　持链者可读可题'),
+    ()=>toast(u));
+}
+
+// ---- the tail: mounting silk past the painting -----------------------------
+// Where a colophon sits is derived from the list and never stored. Oldest
+// nearest the painting, each block after the last, so mounting one moves
+// nothing and two browsers agree. Text is set in columns, as it would be.
+const CROSS=VERT?L:PH;
+const G=CROSS/28;                            // one glyph, in source px
+const FONT='"Songti SC","STSong","Noto Serif SC","Source Han Serif SC","Times New Roman",serif';
+const CJK=/[　-鿿豈-﫿＀-￯]/;
+let TAIL={blocks:[], extent:0};
+let mctx=null;
+function textW(s,fs){
+  if(!mctx) mctx=document.createElement('canvas').getContext('2d');
+  mctx.font=fs+'px '+FONT; return mctx.measureText(s).width;
+}
+// A column holds `per` glyph units. A CJK character is one unit; a Latin word
+// is set sideways and is as many units as it is long.
+function columnsOf(text,fs,per){
+  const cols=[]; let col=[], used=0;
+  const push=()=>{ cols.push(col); col=[]; used=0; };
+  String(text).split(/\r?\n/).forEach((line,li)=>{
+    if(li>0) push();
+    const toks=line.match(/[　-鿿豈-﫿＀-￯]|[^\s　-鿿豈-﫿＀-￯]+|\s+/g)||[];
+    toks.forEach(tk=>{
+      if(/^\s+$/.test(tk)){ if(used>0&&used<per){ col.push({t:'',u:0.45}); used+=0.45; } return; }
+      const lat=!CJK.test(tk);
+      const u = lat ? Math.max(1, textW(tk,fs)/fs+0.35) : 1;
+      if(used+u>per && used>0) push();
+      col.push({t:tk,u:u,lat:lat}); used+=u;
+    });
+  });
+  if(col.length||!cols.length) push();
+  return cols;
+}
+function sigOf(c){
+  const d=(c.at||'').slice(0,10).replace(/-/g,'·');
+  return (c.by||'')+(c.by&&d?'　':'')+d;
+}
+function layoutTail(){
+  const M=G*1.3, gap=G*1.3, fs=G, sfs=G*0.7, blocks=[];
+  const CH = VERT ? Math.min(CROSS*0.6, CROSS-2*M) : CROSS-2*M;
+  const per=Math.floor(CH/fs), sper=Math.floor(CH/sfs);
+  let cur = VERT ? L-M : -G, row=0;
+  COLOPHONS.filter(c=>!c.spot).forEach(c=>{
+    const cols=columnsOf(c.text||'',fs,per), sig=columnsOf(sigOf(c),sfs,sper);
+    const w=G*0.4+cols.length*G*1.25+G*0.15+sig.length*sfs*1.3+G*0.4;
+    if(VERT && cur-w<M && cur<L-M){ row++; cur=L-M; }
+    const b = VERT ? {x:cur-w, y:PH+M*0.5+row*(CH+M*1.7), w:w, h:CH+M*1.2}
+                   : {x:cur-w, y:M*0.5, w:w, h:PH-M};
+    b.c=c; b.cols=cols; b.sig=sig; b.ty=b.y+M*0.6; b.fs=fs; b.sfs=sfs;
+    blocks.push(b);
+    cur=b.x-gap;
+  });
+  const extent = VERT ? (blocks.length ? (row+1)*(CH+M*1.7)+M : 0) : (blocks.length ? -cur+G : 0);
+  TAIL={blocks:blocks, extent:extent};
+  tailLen=Math.max(TAIL_MIN, extent);
+  clamp();
+}
+const silk=$('silk'), sctx=silk.getContext('2d');
+const GROUND={mounted:'#d8cbad', shared:'#e3d9c2', private:'#efe8d8'};
+const INK='#2b2117';
+const spotsNow=()=> Z>=1.25 || $('script').classList.contains('on');
+function drawCol(col,size,cx,y){
+  sctx.font=size+'px '+FONT;
+  for(const it of col){
+    if(!it.t){ y+=size*it.u; continue; }
+    if(it.lat){
+      sctx.save(); sctx.translate(cx,y); sctx.rotate(Math.PI/2);
+      sctx.textAlign='left'; sctx.textBaseline='middle'; sctx.fillText(it.t,0,0);
+      sctx.restore(); y+=size*it.u;
+    } else { sctx.textAlign='center'; sctx.textBaseline='top'; sctx.fillText(it.t,cx,y); y+=size; }
+  }
+  return y;
+}
+function drawBlock(b){
+  sctx.fillStyle=GROUND[b.c.status]||GROUND.private;
+  sctx.fillRect(b.x,b.y,b.w,b.h);
+  if(b.c.status==='private'){                 // an unpasted sheet laid beside the scroll
+    sctx.save(); sctx.setLineDash([G*0.25,G*0.2]); sctx.lineWidth=G*0.05; sctx.strokeStyle='rgba(60,40,20,.45)';
+    sctx.strokeRect(b.x,b.y,b.w,b.h); sctx.restore();
+  }
+  sctx.fillStyle=INK;
+  let x=b.x+b.w-G*0.4-G*0.625;
+  for(const col of b.cols){ drawCol(col,b.fs,x,b.ty); x-=G*1.25; }
+  x-=G*0.15;
+  sctx.fillStyle='#5a4632';
+  let yEnd=b.ty;
+  for(const col of b.sig){ yEnd=Math.max(yEnd, drawCol(col,b.sfs,x,b.ty)); x-=b.sfs*1.3; }
+  // the seal: vermilion, the first character of the name
+  if(b.c.by){
+    const s=G*0.85, sx=x+b.sfs*1.3-s/2, sy=Math.min(yEnd+G*0.3, b.y+b.h-s-G*0.3);
+    sctx.fillStyle='#b2412b'; sctx.fillRect(sx,sy,s,s);
+    sctx.fillStyle='#f3e6c2'; sctx.font=(s*0.62)+'px '+FONT; sctx.textAlign='center'; sctx.textBaseline='middle';
+    sctx.fillText(Array.from(b.c.by)[0],sx+s/2,sy+s/2+s*0.03);
+  }
+}
+function drawTiba(sE){
+  if(mode==='fold'){ silk.style.display='none'; return; }
+  silk.style.display='block';
+  const dpr=sizeCanvas(silk);
+  sctx.setTransform(1,0,0,1,0,0); sctx.clearRect(0,0,silk.width,silk.height);
+  const left=x0, right=x0+visW(), top=y0, bot=y0+visH();
+  if(VERT ? bot>PH : left<0){
+    sctx.setTransform(dpr*sE,0,0,dpr*sE,dpr*TX,dpr*TY);
+    sctx.fillStyle='#cbbd9d';
+    if(VERT) sctx.fillRect(0,PH,L,tailLen); else sctx.fillRect(-tailLen,0,tailLen,PH);
+    sctx.fillStyle='rgba(60,40,20,.35)';                         // the seam
+    if(VERT) sctx.fillRect(0,PH,L,G*0.08); else sctx.fillRect(-G*0.08,0,G*0.08,PH);
+    for(const b of TAIL.blocks){
+      if(b.x>right||b.x+b.w<left||b.y>bot||b.y+b.h<top) continue;
+      drawBlock(b);
+    }
+    if(!TAIL.blocks.length){
+      sctx.fillStyle='rgba(60,40,20,.5)';
+      const hint=columnsOf(lang==='en'?'blank silk after the painting. Tap to write.':'卷末素绢　可题',G*0.8,40);
+      drawCol(hint[0],G*0.8, VERT?L-G*2:-G*2.2, VERT?PH+G*1.6:G*1.6);
+    }
+  }
+  if(spotsNow()){
+    sctx.setTransform(dpr,0,0,dpr,0,0);
+    for(const c of COLOPHONS){
+      if(!c.spot) continue;
+      const cx=c.spot.x*sE+TX, cy=c.spot.y*sE+TY;
+      if(cx<-10||cx>apW+10||cy<-10||cy>apH+10) continue;
+      sctx.beginPath(); sctx.arc(cx,cy,6.5,0,Math.PI*2);
+      sctx.fillStyle=GROUND[c.status]||GROUND.private; sctx.fill();
+      sctx.lineWidth=1.6; sctx.strokeStyle=INK; sctx.stroke();
+    }
+  }
+  sctx.setTransform(1,0,0,1,0,0);
+}
+function tailAt(sx,sy){
+  for(const b of TAIL.blocks) if(sx>=b.x&&sx<=b.x+b.w&&sy>=b.y&&sy<=b.y+b.h) return b.c;
+  return null;
+}
+function inTail(sx,sy){
+  return VERT ? (sy>PH&&sy<PH+tailLen&&sx>=0&&sx<=L) : (sx<0&&sx>-tailLen&&sy>=0&&sy<=PH);
+}
+function spotAt(sx,sy){
+  if(!spotsNow()) return null;
+  const sE=scale*Z; let best=null, bd=1e9;
+  for(const c of COLOPHONS){
+    if(!c.spot) continue;
+    const d=Math.hypot(c.spot.x-sx,c.spot.y-sy)*sE;
+    if(d<bd){ bd=d; best=c; }
+  }
+  return bd<14 ? best : null;
+}
+function gotoTail(){
+  if(mode==='fold') setMode('pane');
+  Z=1;
+  if(VERT){ y0=railMaxY()-visH(); } else { x0=railMin(); y0=0; }
+  target=null; vel=0; clamp(); buildTrack(); render();
+}
+function gotoSpot(c){
+  Z=Math.max(MINZ,Math.min(nativeZ(),1.8));
+  x0=c.spot.x-visW()/2; y0=c.spot.y-visH()/2;
+  customUsed=true; mode='custom'; target=null; vel=0; clamp(); buildTrack(); render();
+}
+
+// ---- writing ---------------------------------------------------------------
+// Writing after the painting is a tap on blank silk. Writing at a spot is a
+// tap on the painting after choosing 点题. Neither frames a box, so both work
+// at any zoom and on a phone.
+let editing=null, placing=false;
+function setPlacing(on){
+  placing=on; document.body.classList.toggle('placing',on);
+  if(on) toast(lang==='en'?'tap the painting where it goes':'点画上一处');
+}
+function newTiba(spot){
+  const c={id:newId(), slug:SLUG, at:new Date().toISOString(), by:HAND.name, text:'', status:'private', mine:true};
+  if(spot) c.spot=spot;
+  openTiba(c);
+}
+function whereText(c){
+  if(c.status==='mounted') return lang==='en' ? 'mounted after the painting. This cannot be unwritten.' : '已裱于卷後　不可复改';
+  if(c.status==='shared')  return lang==='en' ? 'sent. Anyone with the invite can read it. Waiting to be mounted.' : '已呈　持链者皆可见　待裱';
+  return lang==='en' ? 'kept in this browser only. Nobody else can see it.' : '仅存于此浏览器　他人不见';
+}
+function openTiba(c){
+  editing=c;
+  const box=$('editor');
+  const w=box.querySelector('.where'); w.textContent=whereText(c); w.className='where '+c.status;
+  box.querySelector('.who').textContent=sigOf(c).replace('　',' · ');
+  const ta=box.querySelector('.eb'); ta.value=c.text||'';
+  const ro = c.status==='mounted' || !c.mine;
+  ta.readOnly=ro;
+  box.querySelector('.ok').style.display = ro ? 'none' : '';
+  box.querySelector('.send').style.display = (!ro && invited() && c.status==='private') ? '' : 'none';
+  const del=box.querySelector('.del');
+  del.style.display = ro ? 'none' : '';
+  del.textContent = c.status==='shared' ? t('withdraw') : t('del');
+  box.classList.add('on'); if(!ro) ta.focus();
+}
+function closeEditor(){ $('editor').classList.remove('on'); editing=null; }
+// Save what is in the editor into your own store. Returns the stored record,
+// or null when there was nothing to keep.
+function commitEdit(){
+  const c=editing; if(!c) return null;
+  const text=$('editor').querySelector('.eb').value.trim().slice(0,480);
+  if(!text) return null;
+  if(!c.by) c.by=askName();
+  let m=MINE.find(x=>x.id===c.id);
+  if(!m){ m={id:c.id,slug:c.slug,at:c.at,by:c.by,text:text,status:'private'}; if(c.spot) m.spot=c.spot; MINE.push(m); }
+  else { m.text=text; m.by=c.by||m.by; }
+  saveTiba(); joinTiba(); render();
+  return m;
+}
+
+// ---- reading the colophons in order ----------------------------------------
+// The panel is the text of the scroll: what sits on the painting first, in the
+// order the scroll unrolls, then what sits after it, in the order written.
+function paintTibaRow(){
+  const el=document.querySelector('.persp[data-t="tiba"]'); if(!el) return;
+  el.classList.toggle('on', $('script').classList.contains('on'));
+  const c=$('scriptCount');
+  if(c) c.textContent = COLOPHONS.length ? String(COLOPHONS.length) : '';
+}
+function buildScript(){
+  const host=$('script'); if(!host) return;
+  host.innerHTML='';
+  const act=document.createElement('div'); act.className='act';
+  const mk=(label,fn)=>{ const b=document.createElement('button'); b.textContent=label; b.onclick=fn; act.appendChild(b); };
+  mk(t('writeTail'), ()=>{ gotoTail(); newTiba(null); });
+  mk(t('markSpot'), ()=>setPlacing(!placing));
+  if(invited()) mk(t('invite'), copyInvite);
+  mk(t('sign'), ()=>{ askName(); buildScript(); });
+  mk(t('saveFile'), exportTiba);
+  host.appendChild(act);
+  const hand=document.createElement('div'); hand.className='hand';
+  hand.textContent = (HAND.name ? (lang==='en'?'signing as ':'署名　')+HAND.name : (lang==='en'?'unsigned':'未署名'))
+    + '　·　' + (invited() ? (lang==='en'?'in the circle':'已入共室')
+                          : (lang==='en'?'no invite, so your writing stays here':'无邀链　所题仅存于此'));
+  host.appendChild(hand);
+  const spots=COLOPHONS.filter(c=>c.spot).sort((a,b)=> VERT ? a.spot.y-b.spot.y : b.spot.x-a.spot.x);
+  const tails=COLOPHONS.filter(c=>!c.spot);
+  if(!COLOPHONS.length){
+    const d=document.createElement('div'); d.className='empty';
+    d.textContent=lang==='en'?'nothing written yet':'尚无题跋'; host.appendChild(d);
+  }
+  const TIER={mounted:{zh:'裱',en:'mounted'}, shared:{zh:'呈',en:'shared'}, private:{zh:'私',en:'mine'}};
+  const row=c=>{
+    const d=document.createElement('div'); d.className='row '+c.status;
+    const a=document.createElement('span'); a.className='at';
+    a.textContent = c.spot ? (VERT ? Math.round(100*c.spot.y/PH) : Math.round(100*(CR-c.spot.x)/CR))+'%' : (lang==='en'?'after':'跋');
+    const tier=document.createElement('span'); tier.className='tier '+c.status; tier.textContent=TIER[c.status][lang==='en'?'en':'zh'];
+    const tt=document.createElement('span'); tt.className='tt'; tt.textContent=c.by||(lang==='en'?'(unsigned)':'（未署名）');
+    const dt=document.createElement('span'); dt.className='by'; dt.textContent=(c.at||'').slice(0,10);
+    const bd=document.createElement('div'); bd.className='bd'; bd.textContent=c.text||'';
+    [a,tier,tt,dt,bd].forEach(x=>d.appendChild(x));
+    d.addEventListener('click',()=>{ if(c.spot) gotoSpot(c); else gotoTail(); openTiba(c); });
+    host.appendChild(d);
+  };
+  spots.forEach(row); tails.forEach(row);
+  paintTibaRow();
 }
 
 // --- language --------------------------------------------------------------
@@ -1789,22 +1847,15 @@ function applyLang(){
   paintShotToggle();
   sp.classList.toggle('off', SHOTS.length===0);
   sp.title = SHOTS.length? '' : 'no photographs placed on this scroll yet';
-  const wp=document.querySelector('.persp[data-t="write"]');
-  iconise(wp.querySelector('.lb'),'write',t('write'));
-  const rp2=document.querySelector('.persp[data-t="read"]');
-  iconise(rp2.querySelector('.lb'),'read',t('read'));
-  const lp=document.querySelector('.persp[data-t="log"]');
-  iconise(lp.querySelector('.lb'),'log',t('log'));
-  lp.classList.toggle('off', !ROOM);
+  const tp=document.querySelector('.persp[data-t="tiba"]');
+  iconise(tp.querySelector('.lb'),'tiba',t('tiba'));
   const ed=$('editor');
   ed.querySelector('.ok').textContent=t('save');
+  ed.querySelector('.send').textContent=t('send');
   ed.querySelector('.del').textContent=t('del');
   ed.querySelector('.no').textContent=t('cancel');
+  ed.querySelector('.eb').placeholder=t('placeholder');
   buildScript();
-  const np=document.querySelector('.persp[data-t="notes"]');
-  iconise(np.querySelector('.lb'),'notes',t('notes'));
-  np.classList.toggle('off', NOTES.length===0);
-  np.title = NOTES.length? '' : 'nothing noted yet — use trace.html';
   document.title = window.PAINTING ? (lang==='en'?PAINTING.en:PAINTING.zh)
                   : (lang==='en'?'A Thousand Li of Rivers and Mountains':'千里江山图');
   buildTrack(); if(mode==='fold') layoutFold();
@@ -1815,14 +1866,24 @@ $('lang').addEventListener('click',()=>{
   localStorage.setItem('ccp_ui',ui);
   applyLang();
 });
-// In collage mode a click on the window is a click on a photograph, if one is
-// under the pointer. The marquee path ignores taps (it wants a drag), so this
-// does not fight it.
+// A tap on the window, in this order: a photograph in collage mode, the spot
+// being placed, a colophon (a dot on the painting or a block on the silk), or
+// blank silk, which starts a new one. A drag is not a tap. The marquee path
+// ignores taps (it wants a drag), so this does not fight it.
 win.addEventListener('click',e=>{
-  if(shotMode!==2 || shotOn!==null) return;
-  const r=win.getBoundingClientRect();
-  const i=shotAt(e.clientX-r.left, e.clientY-r.top);
-  if(i>=0){ e.stopPropagation(); openShot(i); }
+  if(shotOn!==null) return;
+  if(tapAt && Math.hypot(e.clientX-tapAt.x,e.clientY-tapAt.y)>6) return;
+  const r=win.getBoundingClientRect(), px=e.clientX-r.left, py=e.clientY-r.top;
+  if(shotMode===2){ const i=shotAt(px,py); if(i>=0){ e.stopPropagation(); openShot(i); return; } }
+  const sE=scale*Z, sx=(px-TX)/sE, sy=(py-TY)/sE;
+  if(placing){
+    setPlacing(false);
+    if(sx>=0&&sx<=L&&sy>=0&&sy<=PH) newTiba({x:Math.round(sx),y:Math.round(sy)});
+    return;
+  }
+  const c=spotAt(sx,sy)||tailAt(sx,sy);
+  if(c){ openTiba(c); return; }
+  if(inTail(sx,sy)) newTiba(null);
 });
 (function(){
   const b=$('shotbar');
@@ -1838,15 +1899,14 @@ win.addEventListener('click',e=>{
 (function(){
   const ed=$('editor');
   ed.querySelector('.ok').onclick=()=>{
-    if(!editing) return;
-    editing.title=ed.querySelector('.et').value.trim();
-    editing.text =ed.querySelector('.eb').value.trim();
-    saveMine(); buildNotes(); render(); closeEditor();
+    const m=commitEdit(); closeEditor();
+    if(m && m.status==='shared') sendTiba(m);      // an edit to a sent colophon is re-sent
   };
+  ed.querySelector('.send').onclick=()=>{ const m=commitEdit(); closeEditor(); if(m) sendTiba(m); };
   ed.querySelector('.del').onclick=()=>{
     if(!editing) return;
-    MYNOTES=MYNOTES.filter(n=>n!==editing);
-    saveMine(); buildNotes(); render(); closeEditor();
+    const m=MINE.find(x=>x.id===editing.id); closeEditor();
+    if(m) withdrawTiba(m);
   };
   ed.querySelector('.no').onclick=closeEditor;
   $('script').addEventListener('pointerdown',e=>e.stopPropagation());
@@ -1860,7 +1920,7 @@ addEventListener('keydown',e=>{
   }
   if(e.key==='Escape'){ if(shotOn!==null) closeShot();
                         else if($('editor').classList.contains('on')) closeEditor();
-                        else if(writing) setWriting(false); }
+                        else if(placing) setPlacing(false); }
   if(e.key==='1') setMode('fold'); else if(e.key==='2') setMode('wide');
   else if(e.key==='3') setMode('pane'); else if(e.key==='4'&&customUsed) setMode('custom');
 });
@@ -1876,15 +1936,13 @@ if(window.NOT_READY){
   document.body.appendChild(b);
   setTimeout(()=>b.classList.add('go'), 9000);
 }
-if(ROOM&&ROOM.api){
-  roomFetch().then(()=>{ buildLog(); });
-  // A room is other people writing while you read. Polling is the honest
-  // simple answer at this size -- six people, a few notes an hour. Only while
-  // the tab is in front, so a forgotten tab is not a standing request.
-  setInterval(()=>{ if(!document.hidden) roomFetch().then(()=>{
-    if($('log').classList.contains('on')) buildLog(); }); }, 15000);
-}
 measure(); applyLang();
+joinTiba();
+// The circle is other people writing while you read. Polling is the honest
+// simple answer at this size: a few friends, a few colophons an hour. Only
+// while the tab is in front, so a forgotten tab is not a standing request.
+fetchTiba();
+setInterval(()=>{ if(!document.hidden) fetchTiba(); }, 30000);
 x0 = VERT ? 0 : Math.max(0,CR-visW());
 const bleed=$('bleed'), lastImg=imgs[imgs.length-1];
 const reveal=()=>{ bleed.style.opacity='0'; };

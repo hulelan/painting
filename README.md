@@ -10,9 +10,9 @@ the two are linked only by the tab strip at the top of every page.
 
 | Page | What it is | Can you edit anything on it? |
 |---|---|---|
-| `index.html` | The viewer. Full-height handscroll, opens at the right. Four zooms (whole / wide / pane / detail), three overlays (locator, things, roads). Toggle cycles 中 → EN → pictograms. `?bg=` `?rolls=` `?font=` `?icons=1`. | No — read-only |
+| `index.html` | The viewer. Full-height handscroll, opens at the right. Four zooms (whole / wide / pane / detail), overlays (locator, roads, photographs). Toggle cycles 中 → EN → pictograms. `?bg=` `?rolls=` `?font=` `?icons=1`. | **Yes.** Unroll past the end and tap the silk to write a colophon, or 點題 and tap a spot. See `docs/tiba.md`. |
 | `cabinet.html` | The case. Two doors: this scroll, and the poetry site. | No |
-| `trace.html` | The workbench. Two modes: **Roads** (draw polylines) and **Objects** (draw a box, give it a title and a note). Everything lives in this browser's localStorage. `?review` opens a scratch copy for correcting machine proposals; `?load=<name>` pulls a named trace. | **Yes — this is the only page you can edit on** |
+| `trace.html` | The workbench for roads. Draw polylines; everything lives in this browser's localStorage. `?review` opens a scratch copy for correcting machine proposals; `?load=<name>` pulls a named trace. The old Objects mode is hidden; remarks are written in the viewer now. | **Yes**, for roads |
 | `grid.html` | 叠卷 — the scroll folded into four bands, whole composition at once. Predates the viewer. | No |
 | `classic.html` | 展卷 — the first scrolling viewer. Superseded by `index.html`. | No |
 | `nav.html` | 导览 — viewer with a thumbnail strip. Superseded. | No |
@@ -24,7 +24,7 @@ cabinet links to `index.html` alone.
 ## The five ways something gets added
 
 1. **Roads mode**, `trace.html` — you draw the geometry.
-2. **Objects mode**, `trace.html` — you draw a box and write a note on it.
+2. **A colophon**, `index.html` — you write after the painting or at a spot on it. Private until sent to the circle, mounted by a commit. `docs/tiba.md`.
 3. **Review mode**, `trace.html?review` — you correct a machine proposal instead
    of drawing from scratch.
 4. **A model sweep** — Qwen over the tiles via OpenRouter, run offline. Produces
@@ -45,22 +45,22 @@ invisible on a laptop until one of these is used.
 | Export roads.js | roads only | — |
 | Copy JSON | roads only | — |
 | Copy my edits | roads only, as a diff vs the published file | — |
-| Publish… | roads **and** notes | opens a prefilled GitHub issue; also copies to clipboard |
-| Copy device link | roads **and** notes | nothing — the payload rides in a `#w=` fragment, never sent to any server |
+| Publish… | roads | opens a prefilled GitHub issue; also copies to clipboard |
+| Copy device link | roads | nothing — the payload rides in a `#w=` fragment, never sent to any server |
 | Load by name… | pulls a named trace in | a file under `assets/data/wip/`, committed by hand |
 
-Note the split: the first three drop notes silently. Use Publish, the device link,
-or Sync if you have annotated anything.
+Colophons leave a browser two ways: 送呈 sends one to the circle's endpoint,
+and 存檔 saves all of yours as one file that `tools/tiba.py take --from` mounts.
 
 ## Two gaps, stated plainly
 
-- ~~Annotations have no way onto the site.~~ **Fixed.** `assets/data/notes.js`
-  now holds them and the viewer has a fourth overlay, *Noticed* / 所見, which
-  draws each note as the box it was drawn as, with its remark above it. The
-  route is: Objects mode → Send my work → merged into `notes.js` by hand.
-- **There is no live sync.** A Cloudflare worker was written for it and then
-  removed unused (commit `ad5679b`, if it is ever wanted). Cross-device means
-  the device link, or a named trace committed by hand.
+- ~~Annotations have no way onto the site.~~ **Fixed twice.** Remarks are
+  colophons now: written in the viewer, sent to the circle, mounted with
+  `tools/tiba.py take` into `assets/data/tiba-<slug>.js`. The four notes drawn
+  in August 2026 were lifted into that file as spots.
+- **Roads have no live sync.** Cross-device means the device link, or a named
+  trace committed by hand. Colophons do: `tools/tiba-worker.js` is the one
+  endpoint, and `wrangler.toml` deploys it.
 
 ## Structure
 

@@ -1,0 +1,7 @@
+name = "ccp-tiba"
+main = "tools/tiba-worker.js"
+compatibility_date = "2026-09-12"
+
+[[kv_namespaces]]
+binding = "TIBA"
+id = "2e37b4c8878b41deb5f6bd714bed7bf0"

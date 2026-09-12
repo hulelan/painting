@@ -50,7 +50,7 @@ window.PAINTINGS = {
       artist:{zh:'王希孟', en:'Wang Ximeng'}, dates:'1096–1119', dynasty:{zh:'北宋', en:'Northern Song'},
       museum:{zh:'故宫博物院', en:'The Palace Museum, Beijing'},
       dir:'assets/scroll', tiles:'assets/scroll/tiles/', strip:'assets/fold/strip.jpg',
-      data:['episodes','details','roads','notes'],   // notes.js is this scroll's; others get notes-<slug>.js
+      data:['episodes','details','roads'],
       w:41783, h:1673 },
 
     /* The Nelson-Atkins show, Legendary Landscapes: Sublime Visions from
@@ -146,3 +146,8 @@ window.PAINTINGS = {
       viewer:'https://scrolls.uchicago.edu/view-scroll/176', record:'https://art.nelson-atkins.org/objects/25447', }
   ]
 };
+
+// The one endpoint the shared colophons go through (tools/tiba-worker.js).
+// Empty until the worker is deployed; the viewer then offers no send button
+// and everything else works the same. Never carried in a link.
+window.TIBA_API = '';
