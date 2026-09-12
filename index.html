@@ -159,8 +159,9 @@ body.topbar.icons .stop .lb{margin-top:3px}
 body.topbar.icons .ico{width:22px;height:22px}
 #marks{position:absolute;inset:0;z-index:7;pointer-events:none;display:none}
 /* roads draw themselves as you arrive — see drawIn() */
-/* placing a colophon: the next tap on the painting is where it goes */
-body.placing #window{cursor:crosshair}
+/* write mode: a tap on the painting places a colophon, a drag frames one */
+body.writing #window{cursor:crosshair}
+body.writing #marquee{border-color:rgba(233,209,150,.9)}
 /* the mounting silk after the painting, and every colophon on it: one canvas */
 #silk{position:absolute;inset:0;z-index:2;pointer-events:none;display:none}
 #editor{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:70;
@@ -481,6 +482,7 @@ body.topbar #loc{top:60px;bottom:auto}
     <h2 id="hPersp">Perspectives</h2>
     <div class="persp" data-t="loc"><span class="box"></span><span class="lb"></span></div>
     <div class="persp" data-t="roads"><span class="box"></span><span class="lb"></span></div>
+  <div class="persp" data-t="write"><span class="box"></span><span class="lb"></span></div>
   <div class="persp" data-t="tiba"><span class="box"></span><span class="lb"></span><span id="scriptCount"></span></div>
   <div class="persp" data-t="shots"><span class="box"></span><span class="lb"></span><span id="shotCount"></span></div>
   </div>
@@ -519,12 +521,12 @@ body.topbar #loc{top:60px;bottom:auto}
      its data files are still ten minutes stale -- which is how the Whole view
      kept painting the wrong scroll after the fix had shipped. The build stamp
      makes each deploy a new URL. tools/stamp_build.py rewrites it. -->
-<script>window.BUILD='22f885b';</script>
-<link rel="preload" as="script" href="assets/data/paintings.js?b=22f885b">
-<link rel="preload" as="script" href="assets/scroll/manifest.js?b=22f885b">
-<link rel="preload" as="script" href="assets/data/roads.js?b=22f885b">
+<script>window.BUILD='e6d7c2d';</script>
+<link rel="preload" as="script" href="assets/data/paintings.js?b=e6d7c2d">
+<link rel="preload" as="script" href="assets/scroll/manifest.js?b=e6d7c2d">
+<link rel="preload" as="script" href="assets/data/roads.js?b=e6d7c2d">
 <link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
-<script src="assets/data/paintings.js?b=22f885b"></script>
+<script src="assets/data/paintings.js?b=e6d7c2d"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
    are per-painting, so they are written in here rather than fixed in the page.
@@ -588,9 +590,9 @@ const desk=$('desk'), win=$('window'), rail=$('rail'), rollL=$('rollL'), rollR=$
 
 const I18N={
   en:{zoom:'Zoom', persp:'Perspectives', whole:'Whole', pane:'Pane', detail:'Detail',
-      wide:'Wide', loc:'Locator', marks:'Things', roads:'Roads', tiba:'Colophons', shots:'Photographs', lang:'中',
+      wide:'Wide', loc:'Locator', marks:'Things', roads:'Roads', write:'Write', tiba:'Colophons', shots:'Photographs', lang:'中',
       save:'save', del:'delete', withdraw:'withdraw', send:'send', cancel:'close', back:'Return to Cabinet',
-      writeTail:'write after', markSpot:'mark a spot', invite:'copy invite', sign:'sign as', saveFile:'save file',
+      writeTail:'write after', markSpot:'write on the painting', invite:'copy invite', sign:'sign as', saveFile:'save file',
       placeholder:'what you would write after looking',
       uiZh:'中文', uiEn:'English', uiIco:'pictograms — no words',
       hidden:'hidden — click the painting to find them', found:'you found',
@@ -598,9 +600,9 @@ const I18N={
                              : 'A Thousand Li of Rivers and Mountains · Wang Ximeng · Northern Song'),
       seg:(i,n)=> i===0?'1 · opening' : i===n-1? n+' · end' : String(i+1)},
   zh:{zoom:'缩放', persp:'视角', whole:'全卷', pane:'展卷', detail:'细看',
-      wide:'通幅', loc:'卷影', marks:'物', roads:'道路', tiba:'题跋', shots:'照片', lang:'EN',
+      wide:'通幅', loc:'卷影', marks:'物', roads:'道路', write:'题', tiba:'题跋', shots:'照片', lang:'EN',
       save:'存', del:'删', withdraw:'撤', send:'送呈', cancel:'罢', back:'返回画匣',
-      writeTail:'题于卷後', markSpot:'点题', invite:'复制邀链', sign:'署名', saveFile:'存档',
+      writeTail:'题于卷後', markSpot:'题于画上', invite:'复制邀链', sign:'署名', saveFile:'存档',
       placeholder:'观後所题',
       uiZh:'中文', uiEn:'English', uiIco:'图示 —— 不用文字',
       hidden:'已隐藏 —— 点画面自己找', found:'你找到了',
@@ -1001,7 +1003,9 @@ win.addEventListener('pointerdown',e=>{
   tapAt={x:e.clientX,y:e.clientY};
   const r=win.getBoundingClientRect();
   // touch: a finger drag means "move the scroll", always. Zoom is pinch.
-  if(e.pointerType==='touch' || Z>1.03){
+  // In write mode a drag can only mean "frame this", so the pan must not
+  // take it, at any zoom or on touch. Two fingers still pinch.
+  if(!writing && (e.pointerType==='touch' || Z>1.03)){
     panZ={x:e.clientX,y:e.clientY,x0:x0,y0:y0,lx:e.clientX,lt:performance.now(),v:0};
     target=null; vel=0;
     win.classList.add('panning'); win.setPointerCapture(e.pointerId); return;
@@ -1031,6 +1035,13 @@ function winUp(){
   const w=parseFloat(marqEl.style.width)||0, h=parseFloat(marqEl.style.height)||0;
   const lf=parseFloat(marqEl.style.left)||0, tp=parseFloat(marqEl.style.top)||0;
   marqEl.style.display='none'; marq=null;
+  if(writing){                                   // a box is a colophon with extent; a tap is handled on click
+    if(w>10&&h>10){
+      const sE0=scale*Z;
+      newTiba({x:Math.round(x0+(lf+w/2)/sE0), y:Math.round(y0+(tp+h/2)/sE0), w:Math.round(w/sE0), h:Math.round(h/sE0)});
+    }
+    return;
+  }
   if(w<26||h<26){
     if(!showMarks && ITEMS.length && w<6 && h<6){      // a tap, not a scrub: go hunting
       const sE0=scale*Z, cx=(lf-TX)/sE0, cy=(tp-TY)/sE0;
@@ -1150,6 +1161,7 @@ document.querySelectorAll('.persp').forEach(el=>{
     if(k==='loc'){ showLoc=!showLoc; el.classList.toggle('on',showLoc); layoutFold(); }
     if(k==='marks'){ showMarks=!showMarks; el.classList.toggle('on',showMarks); }
     if(k==='roads'){ if(!ROADS.length) return; showRoads=!showRoads; el.classList.toggle('on',showRoads); }
+    if(k==='write'){ setWriting(!writing); return; }
     if(k==='tiba'){ $('script').classList.toggle('on'); buildScript(); render(); return; }
     if(k==='shots'){ if(!SHOTS.length) return;
       shotMode=(shotMode+1)%3;                       // off -> marks -> laid on
@@ -1190,6 +1202,8 @@ const ICO={
         '<circle class="f" cx="18.5" cy="12" r="1.9"/>',
   shots2:'<rect x="1.5" y="4" width="15" height="11"/><rect class="f" x="5" y="8" width="15" height="11"/>'+
         '<rect x="5" y="8" width="15" height="11"/>',
+  // a brush laid across the page: write mode
+  write:'<path d="M4 20 L13 11"/><path d="M12 10 L17 5 L20 8 L15 13 Z"/><circle class="f" cx="4.6" cy="19.4" r="1.5"/>',
   // the last peak of the painting, the seam where the mounting silk joins it,
   // and two columns of writing beyond: the thing the control travels to
   tiba:'<path class="f" d="M13.5 19 L17 11 L19.5 15 L22 8.5 L22 19 Z"/>'+
@@ -1606,7 +1620,7 @@ function layoutTail(){
 const silk=$('silk'), sctx=silk.getContext('2d');
 const GROUND={mounted:'#d8cbad', shared:'#e3d9c2', private:'#efe8d8'};
 const INK='#2b2117';
-const spotsNow=()=> Z>=1.25 || $('script').classList.contains('on');
+const spotsNow=()=> Z>=1.25 || writing || $('script').classList.contains('on');
 function drawCol(col,size,cx,y){
   sctx.font=size+'px '+FONT;
   for(const it of col){
@@ -1663,15 +1677,22 @@ function drawTiba(sE){
       drawCol(hint[0],G*0.8, VERT?L-G*2:-G*2.2, VERT?PH+G*1.6:G*1.6);
     }
   }
+  // on the painting: a colophon with extent is the box it was drawn as, one
+  // without is a dot. Both in screen space, so the line stays one line wide.
   if(spotsNow()){
     sctx.setTransform(dpr,0,0,dpr,0,0);
     for(const c of COLOPHONS){
       if(!c.spot) continue;
-      const cx=c.spot.x*sE+TX, cy=c.spot.y*sE+TY;
-      if(cx<-10||cx>apW+10||cy<-10||cy>apH+10) continue;
-      sctx.beginPath(); sctx.arc(cx,cy,6.5,0,Math.PI*2);
-      sctx.fillStyle=GROUND[c.status]||GROUND.private; sctx.fill();
-      sctx.lineWidth=1.6; sctx.strokeStyle=INK; sctx.stroke();
+      const s=c.spot, cx=s.x*sE+TX, cy=s.y*sE+TY, w=(s.w||0)*sE, h=(s.h||0)*sE;
+      if(cx+w/2<-10||cx-w/2>apW+10||cy+h/2<-10||cy-h/2>apH+10) continue;
+      sctx.fillStyle=GROUND[c.status]||GROUND.private; sctx.strokeStyle=INK; sctx.lineWidth=1.6;
+      if(w>8&&h>8){
+        sctx.globalAlpha=0.9; sctx.strokeRect(cx-w/2,cy-h/2,w,h);
+        sctx.globalAlpha=0.35; sctx.lineWidth=4; sctx.strokeStyle=GROUND[c.status]||GROUND.private; sctx.strokeRect(cx-w/2,cy-h/2,w,h);
+        sctx.globalAlpha=1;
+      } else {
+        sctx.beginPath(); sctx.arc(cx,cy,6.5,0,Math.PI*2); sctx.fill(); sctx.stroke();
+      }
     }
   }
   sctx.setTransform(1,0,0,1,0,0);
@@ -1688,7 +1709,12 @@ function spotAt(sx,sy){
   const sE=scale*Z; let best=null, bd=1e9;
   for(const c of COLOPHONS){
     if(!c.spot) continue;
-    const d=Math.hypot(c.spot.x-sx,c.spot.y-sy)*sE;
+    const s=c.spot, w=s.w||0, h=s.h||0;
+    let d;
+    if(w*sE>8 && h*sE>8){                       // inside the box; smaller boxes win
+      if(Math.abs(s.x-sx)>w/2||Math.abs(s.y-sy)>h/2) continue;
+      d=w*h*sE*sE/1e6;
+    } else d=Math.hypot(s.x-sx,s.y-sy)*sE;
     if(d<bd){ bd=d; best=c; }
   }
   return bd<14 ? best : null;
@@ -1700,19 +1726,22 @@ function gotoTail(){
   target=null; vel=0; clamp(); buildTrack(); render();
 }
 function gotoSpot(c){
-  Z=Math.max(MINZ,Math.min(nativeZ(),1.8));
+  const want=Math.min(nativeZ(), Math.max(1.6, (VERT?apW:apH)/((c.spot.h||300)*scale*2.2)));
+  Z=Math.max(MINZ,Math.min(nativeZ(),want));
   x0=c.spot.x-visW()/2; y0=c.spot.y-visH()/2;
   customUsed=true; mode='custom'; target=null; vel=0; clamp(); buildTrack(); render();
 }
 
 // ---- writing ---------------------------------------------------------------
-// Writing after the painting is a tap on blank silk. Writing at a spot is a
-// tap on the painting after choosing 点题. Neither frames a box, so both work
-// at any zoom and on a phone.
-let editing=null, placing=false;
-function setPlacing(on){
-  placing=on; document.body.classList.toggle('placing',on);
-  if(on) toast(lang==='en'?'tap the painting where it goes':'点画上一处');
+// Blank silk is always for writing: tap it. On the painting, write mode makes
+// a tap a colophon at that point and a drag a colophon with extent, at any
+// zoom and on a phone. The mode stays on until turned off.
+let editing=null, writing=false;
+function setWriting(on){
+  writing=on; document.body.classList.toggle('writing',on);
+  const el=document.querySelector('.persp[data-t="write"]'); if(el) el.classList.toggle('on',on);
+  if(on) toast(lang==='en'?'tap the painting, or drag a box round something. Tap the silk to write after.':'点画上一处，或框住一处　点素绢则题于卷後');
+  render();
 }
 function newTiba(spot){
   const c={id:newId(), slug:SLUG, at:new Date().toISOString(), by:HAND.name, text:'', status:'private', mine:true};
@@ -1769,7 +1798,7 @@ function buildScript(){
   const act=document.createElement('div'); act.className='act';
   const mk=(label,fn)=>{ const b=document.createElement('button'); b.textContent=label; b.onclick=fn; act.appendChild(b); };
   mk(t('writeTail'), ()=>{ gotoTail(); newTiba(null); });
-  mk(t('markSpot'), ()=>setPlacing(!placing));
+  mk(t('markSpot'), ()=>setWriting(!writing));
   if(invited()) mk(t('invite'), copyInvite);
   mk(t('sign'), ()=>{ askName(); buildScript(); });
   mk(t('saveFile'), exportTiba);
@@ -1847,6 +1876,8 @@ function applyLang(){
   paintShotToggle();
   sp.classList.toggle('off', SHOTS.length===0);
   sp.title = SHOTS.length? '' : 'no photographs placed on this scroll yet';
+  const wp=document.querySelector('.persp[data-t="write"]');
+  iconise(wp.querySelector('.lb'),'write',t('write'));
   const tp=document.querySelector('.persp[data-t="tiba"]');
   iconise(tp.querySelector('.lb'),'tiba',t('tiba'));
   const ed=$('editor');
@@ -1876,14 +1907,10 @@ win.addEventListener('click',e=>{
   const r=win.getBoundingClientRect(), px=e.clientX-r.left, py=e.clientY-r.top;
   if(shotMode===2){ const i=shotAt(px,py); if(i>=0){ e.stopPropagation(); openShot(i); return; } }
   const sE=scale*Z, sx=(px-TX)/sE, sy=(py-TY)/sE;
-  if(placing){
-    setPlacing(false);
-    if(sx>=0&&sx<=L&&sy>=0&&sy<=PH) newTiba({x:Math.round(sx),y:Math.round(sy)});
-    return;
-  }
   const c=spotAt(sx,sy)||tailAt(sx,sy);
   if(c){ openTiba(c); return; }
-  if(inTail(sx,sy)) newTiba(null);
+  if(inTail(sx,sy)){ newTiba(null); return; }
+  if(writing && sx>=0&&sx<=L&&sy>=0&&sy<=PH) newTiba({x:Math.round(sx),y:Math.round(sy)});
 });
 (function(){
   const b=$('shotbar');
@@ -1920,7 +1947,7 @@ addEventListener('keydown',e=>{
   }
   if(e.key==='Escape'){ if(shotOn!==null) closeShot();
                         else if($('editor').classList.contains('on')) closeEditor();
-                        else if(placing) setPlacing(false); }
+                        else if(writing) setWriting(false); }
   if(e.key==='1') setMode('fold'); else if(e.key==='2') setMode('wide');
   else if(e.key==='3') setMode('pane'); else if(e.key==='4'&&customUsed) setMode('custom');
 });

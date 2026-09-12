@@ -7,9 +7,11 @@ works, what to tell a friend, and what the owner does.
 
 ## What a visitor sees
 
-Every visitor can write. Unroll past the end of the painting and the scroll
-keeps going onto blank silk. Tap the silk and an editor opens. Tap the 題跋
-row in the panel for the list, the 點題 button, and the invite.
+Every visitor can write, anywhere. Turn on 題 in the panel. A tap on the
+painting places a colophon at that point and a drag frames one round
+something, at any zoom and on a phone. Unroll past the end of the painting and
+the scroll keeps going onto blank silk. Tap the silk and an editor opens, with
+or without 題. The 題跋 row holds the list, the invite, and the file.
 
 Writing has three statuses and one record.
 
@@ -39,9 +41,9 @@ Then say this.
 
 1. Open the link once. The invite is remembered on that device and taken off
    the address bar, so copying the address later does not pass it on.
-2. Unroll to the end of the painting and tap the blank silk to write. Or open
-   題跋 in the panel and press 點題, then tap the painting where the remark
-   belongs.
+2. Turn on 題 and tap the painting where the remark belongs, or drag a box
+   round it. Or unroll to the end of the painting and tap the blank silk to
+   write after it.
 3. Sign when asked. The name is typed, not proved. It is a signature, not a
    login.
 4. Press 送呈 to send it to the circle. Until then it is private to that
@@ -99,7 +101,7 @@ Colophon = { id, slug, at, by, text, spot? }
   at    ISO 8601, set once
   by    signature, 1 to 40 chars
   text  1 to 480 chars
-  spot  {x, y} in source pixels of that painting. Absent means the tail.
+  spot  {x, y, w?, h?} in source pixels, centre and extent. Absent means the tail.
 ```
 
 `status` exists only in the browser's own record (`localStorage`
@@ -110,7 +112,7 @@ join advances a status and never rewinds it.
 Where a tail colophon sits is derived from the list, oldest nearest the
 painting, so mounting moves nothing and two browsers agree. The tail is real
 pan domain. `clamp()` reaches below `x0=0` on a handscroll and past `PH` on a
-hanging one. The whole tail and every spot mark are drawn on one canvas,
+hanging one. The whole tail and every box or dot on the painting are drawn on one canvas,
 `#silk`, so a hundred colophons cost a hundred `fillText` calls and no DOM.
 
 ## Endpoint

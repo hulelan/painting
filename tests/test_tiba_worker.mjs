@@ -152,4 +152,14 @@ const big = { op: 'write', item: item({ text: 'x'.repeat(9000) }) };
 r = await call('POST', '/t/' + PASS, { body: big });
 check('body over 8 KB -> 413', [r.status, r.body], [413, { error: 'too big' }]);
 
+// a box is a spot with extent; both sides or neither
+{
+  const w = spot => call('POST', '/t/' + PASS, { body: { op: 'write', item: item({ id: 'BOXBOXBOXBOXBOXBOXBOXB', spot }) } });
+  const r1 = await w({ x: 10, y: 20, w: 30.4, h: 0 });
+  check('box needs both sides', r1.body.item.spot, { x: 10, y: 20 });
+  const r2 = await w({ x: 10, y: 20, w: 30.4, h: 12 });
+check('box kept', r2.body.item.spot, { x: 10, y: 20, w: 30, h: 12 });
+  await call('POST', '/t/' + PASS, { body: { op: 'withdraw', id: 'BOXBOXBOXBOXBOXBOXBOXB' }, owner: true });
+}
+
 console.log('\n' + passed + ' checks passed.');

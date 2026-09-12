@@ -85,7 +85,10 @@ function clean(it) {
     text: str(it.text, CAP.text),
   };
   const s = it.spot;
-  if (s && fin(s.x) && fin(s.y)) out.spot = { x: Math.round(s.x), y: Math.round(s.y) };
+  if (s && fin(s.x) && fin(s.y)) {
+    out.spot = { x: Math.round(s.x), y: Math.round(s.y) };
+    if (fin(s.w) && fin(s.h) && s.w > 0 && s.h > 0) { out.spot.w = Math.round(s.w); out.spot.h = Math.round(s.h); }
+  }
   return out;
 }
 

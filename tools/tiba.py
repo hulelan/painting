@@ -72,6 +72,8 @@ def trim(rec):
     s = rec.get("spot")
     if isinstance(s, dict) and "x" in s and "y" in s:
         out["spot"] = {"x": int(s["x"]), "y": int(s["y"])}
+        if s.get("w") and s.get("h"):
+            out["spot"]["w"] = int(s["w"]); out["spot"]["h"] = int(s["h"])
     return out
 
 

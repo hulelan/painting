@@ -1,7 +1,7 @@
 /* Colophons mounted on this scroll. Each was written in a browser, sent to
    the circle, and taken onto the scroll with tools/tiba.py. The id is the one
    the writer's browser minted; nothing here is renumbered. These four began
-   as boxes drawn in trace.html in August 2026 and were lifted to spots. */
+   as boxes drawn in trace.html in August 2026 and keep their boxes. */
 window.TIBA = {
   "v": 1,
   "slug": "qianli",
@@ -14,7 +14,9 @@ window.TIBA = {
       "text": "faded waterfall, with bridge?",
       "spot": {
         "x": 32428,
-        "y": 979
+        "y": 979,
+        "w": 142,
+        "h": 142
       }
     },
     {
@@ -25,7 +27,9 @@ window.TIBA = {
       "text": "gorgeous blue waterfall\nwish I could see it in more detail",
       "spot": {
         "x": 32698,
-        "y": 1219
+        "y": 1219,
+        "w": 253,
+        "h": 195
       }
     },
     {
@@ -36,7 +40,9 @@ window.TIBA = {
       "text": "water cave?",
       "spot": {
         "x": 31409,
-        "y": 1511
+        "y": 1511,
+        "w": 413,
+        "h": 249
       }
     },
     {
@@ -47,7 +53,9 @@ window.TIBA = {
       "text": "light-colored trees!",
       "spot": {
         "x": 33133,
-        "y": 830
+        "y": 830,
+        "w": 155,
+        "h": 67
       }
     }
   ]
