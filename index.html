@@ -521,12 +521,12 @@ body.topbar #loc{top:60px;bottom:auto}
      its data files are still ten minutes stale -- which is how the Whole view
      kept painting the wrong scroll after the fix had shipped. The build stamp
      makes each deploy a new URL. tools/stamp_build.py rewrites it. -->
-<script>window.BUILD='b2a1fce';</script>
-<link rel="preload" as="script" href="assets/data/paintings.js?b=b2a1fce">
-<link rel="preload" as="script" href="assets/scroll/manifest.js?b=b2a1fce">
-<link rel="preload" as="script" href="assets/data/roads.js?b=b2a1fce">
+<script>window.BUILD='979f9a0';</script>
+<link rel="preload" as="script" href="assets/data/paintings.js?b=979f9a0">
+<link rel="preload" as="script" href="assets/scroll/manifest.js?b=979f9a0">
+<link rel="preload" as="script" href="assets/data/roads.js?b=979f9a0">
 <link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
-<script src="assets/data/paintings.js?b=b2a1fce"></script>
+<script src="assets/data/paintings.js?b=979f9a0"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
    are per-painting, so they are written in here rather than fixed in the page.
@@ -1626,7 +1626,10 @@ function layoutTail(){
 const silk=$('silk'), sctx=silk.getContext('2d');
 const GROUND={mounted:'#d8cbad', shared:'#e3d9c2', private:'#efe8d8'};
 const INK='#2b2117';
-const spotsNow=()=> Z>=1.25 || writing || $('script').classList.contains('on');
+// Marks on the painting are always shown. A box too small for the zoom is
+// drawn as a dot, so from the whole view a colophon is a speck to travel to,
+// and nobody has to guess the zoom at which other people's writing appears.
+const spotsNow=()=> true;
 function drawCol(col,size,cx,y){
   sctx.font=size+'px '+FONT;
   for(const it of col){
