@@ -126,6 +126,9 @@ body.bg-dawn{ --th-bg:#fdf6ef; --th-bg2:#f7f0f3; --th-ink:#6b6069; --th-muted:#9
 #classic{position:fixed;right:18px;bottom:16px;z-index:9;font-size:11px;letter-spacing:2px;
   color:#443e33;text-decoration:none;transition:color .3s}
 #classic:hover{color:#a2957a}
+#feed{position:fixed;left:18px;bottom:16px;z-index:9;font-size:12px;letter-spacing:3px;
+  color:#8d8270;text-decoration:none;border:1px solid var(--line);padding:5px 10px;transition:color .3s}
+#feed:hover{color:#efe3c6}
 </style>
 </head>
 <body>
@@ -139,15 +142,16 @@ body.bg-dawn{ --th-bg:#fdf6ef; --th-bg2:#f7f0f3; --th-ink:#6b6069; --th-muted:#9
 
 <div id="lang">中</div>
 <a id="classic" href="classic.html"></a>
+<a id="feed" href="feed.html"></a>
 
 <script src="assets/data/paintings.js"></script>
 <script>
 (function(){
 const I18N={
-  en:{h1:'The Case', lang:'中', geo:'Geometric', pic:'Pictorial', classic:'classic view',
+  en:{h1:'The Case', lang:'中', geo:'Geometric', pic:'Pictorial', classic:'classic view', feed:'Colophons',
       await:'no scan yet', elsewhere:'no free scan — see it at Chicago ↗',
       sub:n=>n.all+' compartments. '+n.open+' filled.'},
-  zh:{h1:'画　匣', lang:'EN', geo:'几何', pic:'写实', classic:'旧版',
+  zh:{h1:'画　匣', lang:'EN', geo:'几何', pic:'写实', classic:'旧版', feed:'题跋',
       await:'尚无扫描本', elsewhere:'无自由授权扫描本　芝加哥大学可观 ↗',
       sub:n=>N(n.all)+'格　'+N(n.open)+'实'}
 };
@@ -212,6 +216,7 @@ function build(){
   document.getElementById('sub').textContent=d.sub({all:es.length, open:es.filter(e=>e.ready).length});
   document.getElementById('lang').textContent=d.lang;
   document.getElementById('classic').textContent=d.classic;
+  document.getElementById('feed').textContent=d.feed;
   document.title=d.h1;
   buildGeo(d);
 }

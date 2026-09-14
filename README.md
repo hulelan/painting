@@ -11,7 +11,8 @@ the two are linked only by the tab strip at the top of every page.
 | Page | What it is | Can you edit anything on it? |
 |---|---|---|
 | `index.html` | The viewer. Full-height handscroll, opens at the right. Four zooms (whole / wide / pane / detail), overlays (locator, roads, photographs). Toggle cycles 中 → EN → pictograms. `?bg=` `?rolls=` `?font=` `?icons=1`. | **Yes.** Unroll past the end and tap the silk to write a colophon, or 點題 and tap a spot. See `docs/tiba.md`. |
-| `cabinet.html` | The case. Two doors: this scroll, and the poetry site. | No |
+| `cabinet.html` | The case. Nine compartments, and a door to the feed. | No |
+| `feed.html` | The feed. Every colophon on every painting, newest first; each row opens the painting at that spot. | No |
 | `trace.html` | The workbench for roads. Draw polylines; everything lives in this browser's localStorage. `?review` opens a scratch copy for correcting machine proposals; `?load=<name>` pulls a named trace. The old Objects mode is hidden; remarks are written in the viewer now. | **Yes**, for roads |
 | `grid.html` | 叠卷 — the scroll folded into four bands, whole composition at once. Predates the viewer. | No |
 | `classic.html` | 展卷 — the first scrolling viewer. Superseded by `index.html`. | No |

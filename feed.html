@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>题跋</title>
+<link rel="stylesheet" href="css/type.css?v=3">
+<style>
+:root{ --room:#0a0908; --warm:#d9b45a; --line:rgba(217,180,90,.20); --ink:#c9bda4; --muted:#6f6552; }
+*{box-sizing:border-box}
+html,body{min-height:100%;margin:0;background:var(--room);color:var(--ink);
+  font-family:var(--type);-webkit-font-smoothing:antialiased}
+body{background:radial-gradient(70% 56% at 30% 2%, rgba(224,186,120,.11), transparent 64%), var(--room);
+  background-attachment:fixed, fixed}
+#wrap{max-width:720px;margin:0 auto;padding:64px 20px 80px}
+h1{font-weight:400;font-size:22px;letter-spacing:6px;color:#e6d7ae;margin:0 0 6px}
+:lang(en) h1{letter-spacing:2px}
+#sub{font-size:12px;color:var(--muted);letter-spacing:1px;margin:0 0 26px;line-height:1.6}
+:lang(en) #sub{letter-spacing:0}
+.row{display:block;color:inherit;text-decoration:none;padding:14px 0;border-top:1px solid var(--line)}
+.row:hover .bd{color:#efe3c6}
+.row .top{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline;font-size:12px;color:var(--muted);letter-spacing:1px}
+:lang(en) .row .top{letter-spacing:0}
+.row .pt{color:#d9caa4}
+.row .tier{font-size:10px;padding:0 5px;border:1px solid #5a5040;color:#d9caa4;letter-spacing:1px}
+.row .tier.mounted{color:#d9b45a;border-color:#6a5a34}
+.row .tier.private{color:#bfe6d2;border-color:#3f6a55}
+.row .by{color:#bfb39a}
+.row .bd{margin-top:8px;font-size:15px;line-height:1.7;color:#d9caa4;white-space:pre-wrap;text-wrap:pretty}
+.row .where{margin-left:auto;color:#5a5245}
+.empty{padding:40px 0;color:var(--muted);text-align:center;font-size:13px}
+#lang{position:fixed;right:18px;top:16px;z-index:9;font-size:12px;letter-spacing:3px;
+  color:#6b6151;cursor:pointer;border:1px solid var(--line);padding:5px 10px}
+#lang:hover{color:#efe3c6}
+#back{position:fixed;left:18px;top:16px;z-index:9;font-size:12px;letter-spacing:2px;color:#6b6151;text-decoration:none}
+#back:hover{color:#efe3c6}
+#circle{font-size:11px;color:#5a5245;margin-top:8px}
+</style>
+</head>
+<body>
+<a id="back" href="cabinet.html">‹</a>
+<div id="lang">EN</div>
+<div id="wrap">
+  <h1 id="h1">题跋</h1>
+  <p id="sub"></p>
+  <div id="feed"></div>
+</div>
+
+<script>window.BUILD='a675e35';</script>
+<script src="assets/data/paintings.js?b=a675e35"></script>
+<script>
+// Every mounted colophon on every scroll, one file per painting. Each file
+// sets window.TIBA, so it is collected as soon as it lands and the slot is
+// cleared for the next. A missing file is a painting nobody has written after.
+window.MOUNTED=[];
+window.__take=function(){ if(window.TIBA&&window.TIBA.items) window.MOUNTED.push.apply(window.MOUNTED, window.TIBA.items); window.TIBA=null; };
+(function(){
+  var B='?b='+(window.BUILD||'0');
+  ((window.PAINTINGS&&PAINTINGS.items)||[]).forEach(function(it){
+    if(!it.dir) return;
+    document.write('<scr'+'ipt src="assets/data/tiba-'+it.slug+'.js'+B+'" onerror="void 0"></scr'+'ipt><scr'+'ipt>window.__take()</scr'+'ipt>');
+  });
+})();
+</script>
+<script>
+(function(){
+const I18N={
+  en:{h1:'Colophons', lang:'中', tail:'after the painting', empty:'nothing written yet',
+      sub:n=>n+' colophons across the case, newest first',
+      circle:{yes:'you are in the circle: shared writing is included', no:'no invite on this device: mounted writing and your own only'},
+      tier:{mounted:'mounted', shared:'shared', private:'mine'}},
+  zh:{h1:'题跋', lang:'EN', tail:'卷後', empty:'尚无题跋',
+      sub:n=>'全匣 '+n+' 则　新者在前',
+      circle:{yes:'已入共室　含众人所呈', no:'此机无邀链　仅见已裱者与己题'},
+      tier:{mounted:'裱', shared:'呈', private:'私'}}
+};
+const RANK={private:0,shared:1,mounted:2};
+const NAME={}; ((window.PAINTINGS&&PAINTINGS.items)||[]).forEach(it=>{ NAME[it.slug]=it; });
+const API=(window.TIBA_API||'').replace(/\/+$/,'');
+let lang=localStorage.getItem('ccp_lang')||'zh';
+let MINE=[], SHARED=[], HAND={name:'',pass:''};
+try{ const o=JSON.parse(localStorage.getItem('ccp_tiba_v1')||'null'); if(o&&o.items) MINE=o.items; }catch(e){}
+try{ const o=JSON.parse(localStorage.getItem('ccp_hand_v1')||'null'); if(o) HAND={name:o.name||'',pass:o.pass||''}; }catch(e){}
+// an invite works here too, the same way as in the viewer
+(function(){
+  const m=/[#&]tiba=([A-Za-z0-9_-]{8,64})/.exec(location.hash); if(!m) return;
+  HAND.pass=m[1]; try{ localStorage.setItem('ccp_hand_v1',JSON.stringify(HAND)); }catch(e){}
+  history.replaceState(null,'',location.pathname+location.search);
+})();
+const invited=()=>!!(API&&HAND.pass);
+
+function joined(){
+  const by=new Map();
+  const put=(rec,floor)=>{
+    const prev=by.get(rec.id);
+    if(prev && RANK[floor]<=RANK[prev.status]) return;
+    by.set(rec.id, Object.assign({}, rec, {status:floor}));
+  };
+  MINE.forEach(c=>put(c, c.status||'private'));
+  SHARED.forEach(c=>put(c,'shared'));
+  window.MOUNTED.forEach(c=>put(c,'mounted'));
+  return [...by.values()].sort((a,b)=> a.at<b.at?1 : a.at>b.at?-1 : 0);
+}
+function where(c){
+  if(!c.spot) return I18N[lang].tail;
+  const it=NAME[c.slug]||{};
+  if(!it.w||!it.h) return '';
+  const vert=/hanging/.test(it.form||'');
+  return (vert ? Math.round(100*c.spot.y/it.h) : Math.round(100*(it.w-c.spot.x)/it.w))+'%';
+}
+function build(){
+  const d=I18N[lang];
+  document.documentElement.lang = lang==='en'?'en':'zh-Hans';
+  document.getElementById('h1').textContent=d.h1; document.title=d.h1;
+  document.getElementById('lang').textContent=d.lang;
+  const all=joined();
+  document.getElementById('sub').innerHTML='';
+  const sub=document.getElementById('sub');
+  sub.appendChild(document.createTextNode(d.sub(all.length)));
+  const cir=document.createElement('div'); cir.id='circle'; cir.textContent=invited()?d.circle.yes:d.circle.no; sub.appendChild(cir);
+  const host=document.getElementById('feed'); host.innerHTML='';
+  if(!all.length){ const e=document.createElement('div'); e.className='empty'; e.textContent=d.empty; host.appendChild(e); return; }
+  all.forEach(c=>{
+    const it=NAME[c.slug]||{zh:c.slug,en:c.slug};
+    const a=document.createElement('a'); a.className='row'; a.href='index.html?p='+encodeURIComponent(c.slug)+'#c='+c.id;
+    const top=document.createElement('div'); top.className='top';
+    const pt=document.createElement('span'); pt.className='pt'; pt.textContent=lang==='en'?it.en:it.zh;
+    const tier=document.createElement('span'); tier.className='tier '+c.status; tier.textContent=d.tier[c.status];
+    const by=document.createElement('span'); by.className='by'; by.textContent=c.by||(lang==='en'?'(unsigned)':'（未署名）');
+    const dt=document.createElement('span'); dt.textContent=(c.at||'').slice(0,10);
+    const wh=document.createElement('span'); wh.className='where'; wh.textContent=where(c);
+    [pt,tier,by,dt,wh].forEach(x=>top.appendChild(x));
+    const bd=document.createElement('div'); bd.className='bd'; bd.textContent=c.text||'';
+    a.appendChild(top); a.appendChild(bd); host.appendChild(a);
+  });
+}
+function fetchShared(){
+  if(!invited()) return Promise.resolve();
+  return fetch(API+'/t/'+HAND.pass,{cache:'no-store'})
+    .then(r=>r.ok?r.json():Promise.reject(new Error('HTTP '+r.status)))
+    .then(o=>{ SHARED=o.items||[]; build(); })
+    .catch(()=>{});
+}
+document.getElementById('lang').addEventListener('click',()=>{
+  lang = lang==='en'?'zh':'en'; localStorage.setItem('ccp_lang',lang); build();
+});
+build(); fetchShared();
+setInterval(()=>{ if(!document.hidden) fetchShared(); }, 30000);
+})();
+</script>
+</body>
+</html>

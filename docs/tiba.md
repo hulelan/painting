@@ -13,6 +13,12 @@ something, at any zoom and on a phone. Unroll past the end of the painting and
 the scroll keeps going onto blank silk. Tap the silk and an editor opens, with
 or without 題. The 題跋 row holds the list, the invite, and the file.
 
+`feed.html` is the feed: every colophon on every painting, newest first, with
+the painting's name, the tier, the signature and the date. A row links into
+the painting at that spot (`index.html?p=<slug>#c=<id>`). The cabinet links
+to it at the bottom left, and the 題跋 panel has a 全部題跋 button. An invite
+opened on the feed is remembered the same way as in the viewer.
+
 Writing has three statuses and one record.
 
 | status | where it lives | who sees it |

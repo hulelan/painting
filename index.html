@@ -521,12 +521,12 @@ body.topbar #loc{top:60px;bottom:auto}
      its data files are still ten minutes stale -- which is how the Whole view
      kept painting the wrong scroll after the fix had shipped. The build stamp
      makes each deploy a new URL. tools/stamp_build.py rewrites it. -->
-<script>window.BUILD='979f9a0';</script>
-<link rel="preload" as="script" href="assets/data/paintings.js?b=979f9a0">
-<link rel="preload" as="script" href="assets/scroll/manifest.js?b=979f9a0">
-<link rel="preload" as="script" href="assets/data/roads.js?b=979f9a0">
+<script>window.BUILD='a675e35';</script>
+<link rel="preload" as="script" href="assets/data/paintings.js?b=a675e35">
+<link rel="preload" as="script" href="assets/scroll/manifest.js?b=a675e35">
+<link rel="preload" as="script" href="assets/data/roads.js?b=a675e35">
 <link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
-<script src="assets/data/paintings.js?b=979f9a0"></script>
+<script src="assets/data/paintings.js?b=a675e35"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
    are per-painting, so they are written in here rather than fixed in the page.
@@ -593,7 +593,7 @@ const I18N={
       wide:'Wide', loc:'Locator', marks:'Things', roads:'Roads', write:'Write', tiba:'Colophons', shots:'Photographs', lang:'中',
       save:'save', del:'delete', withdraw:'withdraw', send:'send', cancel:'close', back:'Return to Cabinet',
       writeTail:'write after', markSpot:'write on the painting', invite:'copy invite', sign:'sign as', saveFile:'save file',
-      placeholder:'what you would write after looking',
+      placeholder:'what you would write after looking', feed:'all colophons',
       uiZh:'中文', uiEn:'English', uiIco:'pictograms — no words',
       hidden:'hidden — click the painting to find them', found:'you found',
       title:(window.PAINTING? PAINTING.en+' · '+PAINTING.artist.en+' · '+PAINTING.dynasty.en
@@ -603,7 +603,7 @@ const I18N={
       wide:'通幅', loc:'卷影', marks:'物', roads:'道路', write:'题', tiba:'题跋', shots:'照片', lang:'EN',
       save:'存', del:'删', withdraw:'撤', send:'送呈', cancel:'罢', back:'返回画匣',
       writeTail:'题于卷後', markSpot:'题于画上', invite:'复制邀链', sign:'署名', saveFile:'存档',
-      placeholder:'观後所题',
+      placeholder:'观後所题', feed:'全部题跋',
       uiZh:'中文', uiEn:'English', uiIco:'图示 —— 不用文字',
       hidden:'已隐藏 —— 点画面自己找', found:'你找到了',
       title:(window.PAINTING? PAINTING.zh+'　'+PAINTING.artist.zh+'　'+PAINTING.dynasty.zh
@@ -1471,7 +1471,8 @@ function saveHand(){ try{ localStorage.setItem(HKEY,JSON.stringify(HAND)); }catc
   if(!m) return;
   const fresh = HAND.pass!==m[1];
   HAND.pass=m[1]; saveHand();
-  history.replaceState(null,'',location.pathname+location.search);
+  const rest=location.hash.replace(/[#&]tiba=[A-Za-z0-9_-]+/,'').replace(/^&/,'#');
+  history.replaceState(null,'',location.pathname+location.search+(rest.length>1?rest:''));
   // The address bar going back to normal looks like nothing happened. Say
   // that something did, once the page is up.
   if(fresh) setTimeout(()=>toast(lang==='en'
@@ -1524,7 +1525,7 @@ function fetchTiba(){
       if(r.status===403){ HAND.pass=''; saveHand(); return Promise.reject(new Error(lang==='en'?'the invite no longer opens':'邀链已失效')); }
       return r.ok ? r.json() : Promise.reject(new Error('HTTP '+r.status));
     })
-    .then(o=>{ SHARED=o.items||[]; joinTiba(); render(); })
+    .then(o=>{ SHARED=o.items||[]; joinTiba(); render(); revealWanted(); })
     .catch(e=>{ if(!fetchTiba.warned){ fetchTiba.warned=true; toast((lang==='en'?'could not reach the circle: ':'未能连上共室：')+e.message); } });
 }
 function tibaPost(body){
@@ -1734,6 +1735,16 @@ function gotoTail(){
   if(VERT){ y0=railMaxY()-visH(); } else { x0=railMin(); y0=0; }
   target=null; vel=0; clamp(); buildTrack(); render();
 }
+// A link from the feed names one colophon: travel to it and open it. Shared
+// ones arrive with the first fetch, so this is tried again after it.
+let wanted=(/[#&]c=([A-Za-z0-9_-]{22})/.exec(location.hash)||[])[1]||null;
+function revealWanted(){
+  if(!wanted) return;
+  const c=COLOPHONS.find(x=>x.id===wanted); if(!c) return;
+  wanted=null;
+  if(c.spot) gotoSpot(c); else gotoTail();
+  openTiba(c);
+}
 function gotoSpot(c){
   const want=Math.min(nativeZ(), Math.max(1.6, (VERT?apW:apH)/((c.spot.h||300)*scale*2.2)));
   Z=Math.max(MINZ,Math.min(nativeZ(),want));
@@ -1811,6 +1822,7 @@ function buildScript(){
   if(invited()) mk(t('invite'), copyInvite);
   mk(t('sign'), ()=>{ askName(); buildScript(); });
   mk(t('saveFile'), exportTiba);
+  mk(t('feed'), ()=>{ location.href='feed.html'; });
   host.appendChild(act);
   const hand=document.createElement('div'); hand.className='hand';
   hand.textContent = (HAND.name ? (lang==='en'?'signing as ':'署名　')+HAND.name : (lang==='en'?'unsigned':'未署名'))
@@ -1974,6 +1986,7 @@ if(window.NOT_READY){
 }
 measure(); applyLang();
 joinTiba();
+revealWanted();
 // The circle is other people writing while you read. Polling is the honest
 // simple answer at this size: a few friends, a few colophons an hour. Only
 // while the tab is in front, so a forgotten tab is not a standing request.
