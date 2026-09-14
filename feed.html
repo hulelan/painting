@@ -46,8 +46,8 @@ h1{font-weight:400;font-size:22px;letter-spacing:6px;color:#e6d7ae;margin:0 0 6p
   <div id="feed"></div>
 </div>
 
-<script>window.BUILD='584a4fc';</script>
-<script src="assets/data/paintings.js?b=584a4fc"></script>
+<script>window.BUILD='d53e694';</script>
+<script src="assets/data/paintings.js?b=d53e694"></script>
 <script>
 // Every mounted colophon on every scroll, one file per painting. Each file
 // sets window.TIBA, so it is collected as soon as it lands and the slot is
@@ -68,10 +68,12 @@ const I18N={
   en:{h1:'Colophons', lang:'中', tail:'after the painting', empty:'nothing written yet',
       sub:n=>n+' colophons across the case, newest first',
       circle:{yes:'you are in the circle: shared writing is included', no:'no invite on this device: mounted writing and your own only'},
+      unsent:n=>n+' of yours not yet sent. Open each in the painting and press send.',
       tier:{mounted:'mounted', shared:'shared', private:'mine'}},
   zh:{h1:'题跋', lang:'EN', tail:'卷後', empty:'尚无题跋',
       sub:n=>'全匣 '+n+' 则　新者在前',
       circle:{yes:'已入共室　含众人所呈', no:'此机无邀链　仅见已裱者与己题'},
+      unsent:n=>'你有 '+n+' 则尚未送呈　入画点开，按送呈',
       tier:{mounted:'裱', shared:'呈', private:'私'}}
 };
 const RANK={private:0,shared:1,mounted:2};
@@ -118,6 +120,8 @@ function build(){
   const sub=document.getElementById('sub');
   sub.appendChild(document.createTextNode(d.sub(all.length)));
   const cir=document.createElement('div'); cir.id='circle'; cir.textContent=invited()?d.circle.yes:d.circle.no; sub.appendChild(cir);
+  const unsent=MINE.filter(c=>(c.status||'private')==='private').length;
+  if(invited()&&unsent){ const u=document.createElement('div'); u.id='circle'; u.textContent=d.unsent(unsent); sub.appendChild(u); }
   const host=document.getElementById('feed'); host.innerHTML='';
   if(!all.length){ const e=document.createElement('div'); e.className='empty'; e.textContent=d.empty; host.appendChild(e); return; }
   all.forEach(c=>{
