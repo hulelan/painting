@@ -135,6 +135,17 @@ window.PAINTINGS = {
       file:'https://art.nelson-atkins.org/objects/29084/gazing-at-a-waterfall',
       record:'https://art.nelson-atkins.org/objects/29084' },
 
+    { slug:'handu', zh:'寒江待渡图', en:'Waiting for the Ferry in the Chill of Winter',
+      artist:{zh:'佚名', en:'Unknown'}, dates:'early 1300s',
+      dynasty:{zh:'元', en:'Yuan'},
+      museum:{zh:'纳尔逊-阿特金斯艺术博物馆', en:'The Nelson-Atkins Museum of Art'},
+      acc:'46-52', inches:[8.75, 9.875], form:'album leaf',
+      dir:'assets/paintings/handu', tiles:'assets/paintings/handu/tiles/',
+      strip:'assets/paintings/handu/strip.jpg', w:1680, h:2000,
+      source:'The Nelson-Atkins Museum of Art', licence:'no licence granted — see the note above',
+      file:'https://art.nelson-atkins.org/objects/5242/waiting-for-the-ferry-in-the-chill-of-winter-hang-chiang-ta',
+      record:'https://art.nelson-atkins.org/objects/5242' },
+
     { slug:'xinglv', zh:'江山行旅图', en:'Traveling Among Streams and Mountains',
       artist:{zh:'太古遗民', en:'Taigu Yimin'}, dates:'active early 1200s',
       dynasty:{zh:'金', en:'Jin'},
