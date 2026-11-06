@@ -134,8 +134,6 @@ body.bg-dawn{ --th-bg:#fdf6ef; --th-bg2:#f7f0f3; --th-ink:#6b6069; --th-muted:#9
 <body>
 <div id="room">
   <div id="geo">
-    <h1 id="h1" class="t-ui">The Case</h1>
-    <p class="sub" id="sub"></p>
     <div id="grid"></div>
   </div>
 </div>
@@ -149,17 +147,13 @@ body.bg-dawn{ --th-bg:#fdf6ef; --th-bg2:#f7f0f3; --th-ink:#6b6069; --th-muted:#9
 (function(){
 const I18N={
   en:{h1:'The Case', lang:'中', geo:'Geometric', pic:'Pictorial', classic:'classic view', feed:'Colophons',
-      await:'no scan yet', elsewhere:'no free scan — see it at Chicago ↗',
-      sub:n=>n.all+' compartments. '+n.open+' filled.'},
+      await:'no scan yet', elsewhere:'no free scan — see it at Chicago ↗'},
   zh:{h1:'画　匣', lang:'EN', geo:'几何', pic:'写实', classic:'旧版', feed:'题跋',
-      await:'尚无扫描本', elsewhere:'无自由授权扫描本　芝加哥大学可观 ↗',
-      sub:n=>N(n.all)+'格　'+N(n.open)+'实'}
+      await:'尚无扫描本', elsewhere:'无自由授权扫描本　芝加哥大学可观 ↗'}
 };
 // The case is built from the register now, not from a pair of hard-coded
 // entries. A scroll with no scan is still shown -- shut, and labelled as such.
 // Compartments: every painting in the register, and the poetry site.
-const NUM=['〇','一','二','三','四','五','六','七','八','九','十'];
-const N=x=>NUM[x]||String(x);
 const REG=(window.PAINTINGS&&window.PAINTINGS.items)||[];
 const SITE={zh:'诗　渊', en:'Shi Yuan', meta:{zh:'古诗古文 二九六六篇', en:'2,966 poems and prose works'},
             href:'https://classicalchinesepoetry.com/', ready:true, site:true};
@@ -181,7 +175,7 @@ const PIC_C=[['#5d7186','#3b5063'],['#8a6a52','#5e4335'],['#6f7a55','#4a5238'],[
              ['#5c7a72','#3d554e'],['#8b6470','#5e434c'],['#5f7a7c','#3f5456'],['#9c8558','#6b5a39'],
              ['#8a6a52','#5e4335']];
 const SHUT=['#4a4536','#332f26'];
-let lang=localStorage.getItem('ccp_lang')||'zh';
+let lang=localStorage.getItem('ccp_lang')||'en';
 const grid=document.getElementById('grid');
 
 function buildGeo(d){
@@ -211,9 +205,6 @@ function buildGeo(d){
 function build(){
   const d=I18N[lang];
   document.documentElement.lang = lang==='en'?'en':'zh-Hans';
-  document.getElementById('h1').textContent=d.h1;
-  const es=entries(lang);
-  document.getElementById('sub').textContent=d.sub({all:es.length, open:es.filter(e=>e.ready).length});
   document.getElementById('lang').textContent=d.lang;
   document.getElementById('classic').textContent=d.classic;
   document.getElementById('feed').textContent=d.feed;

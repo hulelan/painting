@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>千里江山图 · 展卷</title>
-  <meta name="description" content="王希孟《千里江山图》全卷高清，自右向左展卷阅览。">
+  <title>展卷</title>
+  <meta name="description" content="全卷高清，自右向左展卷阅览。">
   <link rel="stylesheet" href="css/shell.css">
   <style>
     :root { --paper:#f4efe4; --cinnabar:#a8322d; }
@@ -34,6 +34,11 @@
       display: block; border: 0;
       -webkit-user-drag: none; user-select: none; pointer-events: none;
     }
+    /* A hanging scroll unrolls downward: the rail is a column, the stage
+       scrolls vertically, and the painting's width is what fits the screen. */
+    body.vert #stage { overflow-x: hidden; overflow-y: auto; }
+    body.vert #rail { height: auto; margin: 0 auto; }
+    body.vert #rail img { top: auto; left: 0; height: auto; width: 100%; }
 
     .caption {
       position: fixed; left: 18px; bottom: 16px; z-index: 1500;
@@ -53,6 +58,8 @@
     }
     .hint .arrow { display:inline-block; animation: nudge 1.4s ease-in-out infinite; }
     @keyframes nudge { 0%,100%{ transform:translateX(0) } 50%{ transform:translateX(-6px) } }
+    body.vert .hint .arrow { animation-name: nudgeY; }
+    @keyframes nudgeY { 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(6px) } }
     .faded { opacity: 0 !important; }
 
     .progress { position: fixed; left:0; bottom:0; height:3px; z-index:1600;
@@ -70,11 +77,10 @@
 </head>
 <body class="art-immersive">
   <div class="tabstrip" id="tabstrip">
-    <div class="tabrow tabrow-works">
+    <div class="tabrow tabrow-works" id="works">
       <a class="tabstrip-tab" href="https://classicalchinesepoetry.com/">诗渊</a>
-      <a class="tabstrip-tab active" href="./">千里江山图</a>
     </div>
-    <div class="tabrow tabrow-views">
+    <div class="tabrow tabrow-views" id="views" hidden>
       <span class="views-label">观法</span>
       <a class="tabstrip-tab active" href="classic.html">展卷</a>
       <a class="tabstrip-tab" href="grid.html">叠卷</a>
@@ -82,37 +88,83 @@
     </div>
   </div>
 
-  <div id="stage" aria-label="千里江山图 全卷"><div id="rail"></div></div>
+  <div id="stage"><div id="rail"></div></div>
 
-  <div class="caption" id="caption">《千里江山图》<small>王希孟　北宋　绢本设色</small></div>
+  <div class="caption" id="caption"></div>
   <div class="hint" id="hint"><span class="arrow">←</span>　向左展卷</div>
   <div class="progress" id="progress"></div>
   <div class="veil" id="veil">展卷中<span class="dot">…</span></div>
 
-  <script src="assets/scroll/manifest.js"></script>
+  <script src="assets/data/paintings.js"></script>
+  <script>
+  // Which scroll: ?p=<slug> from the register, the register's default otherwise.
+  // The manifest is document.written so it is in place before the viewer runs.
+  (function () {
+    var R = window.PAINTINGS, m = /[?&]p=([a-z0-9_-]+)/i.exec(location.search);
+    var slug = (m && m[1]) || R.default;
+    var it = R.items.filter(function (x) { return x.slug === slug && x.dir; })[0]
+          || R.items.filter(function (x) { return x.slug === R.default; })[0];
+    window.PAINTING = it;
+    document.write('<scr' + 'ipt src="' + it.dir + '/manifest.js"></scr' + 'ipt>');
+  })();
+  </script>
   <script>
   (function () {
+    var P = window.PAINTING;
+    var S = window.SCROLL || { w: 1, h: 1, tiles: [] };
+    var VERT = S.axis === 'v';
+    if (VERT) document.body.classList.add('vert');
+    document.title = P.zh + ' · 展卷';
+    document.getElementById('caption').innerHTML =
+      '《' + P.zh + '》<small>' + P.artist.zh + '　' + P.dynasty.zh + '</small>';
+    if (VERT) document.getElementById('hint').innerHTML = '<span class="arrow">↓</span>　向下展卷';
+
+    // the works row lists every scroll that has a scan; the views row is for
+    // 千里江山图 alone, since 叠卷 and 导览 were only ever built for it
+    var works = document.getElementById('works');
+    window.PAINTINGS.items.forEach(function (it) {
+      if (!it.dir) return;
+      var a = document.createElement('a');
+      a.className = 'tabstrip-tab' + (it.slug === P.slug ? ' active' : '');
+      a.href = 'classic.html?p=' + it.slug;
+      a.textContent = it.zh;
+      works.appendChild(a);
+    });
+    document.getElementById('views').style.display = P.slug === 'qianli' ? '' : 'none';
+
     var stage = document.getElementById('stage');
     var rail  = document.getElementById('rail');
-    var S = window.SCROLL || { w: 1, h: 1, tiles: [] };
     var n = S.tiles.length;
 
-    // cumulative source-x of each tile boundary
+    // cumulative source offset of each tile boundary, along the scroll's axis
     var cum = [0];
     S.tiles.forEach(function (t) { cum.push(cum[cum.length - 1] + t.w); });
 
     var imgs = S.tiles.map(function (t, i) {
       var img = document.createElement('img');
-      img.src = 'assets/scroll/tiles/' + t.f;
+      img.src = P.tiles + t.f;
       img.alt = '';
       img.decoding = 'async';
-      img.loading = (i >= n - 5) ? 'eager' : 'lazy';   // opening region loads immediately
+      img.loading = (VERT ? i < 3 : i >= n - 5) ? 'eager' : 'lazy';   // opening region loads immediately
       rail.appendChild(img);
       return img;
     });
 
     var scale = 1, xs = [];
     function layout() {
+      if (VERT) {
+        var W = Math.min(stage.clientWidth, 900);
+        if (!W || !S.w) return;
+        scale = W / S.w;
+        xs = cum.map(function (c) { return Math.round(c * scale); });
+        for (var j = 0; j < imgs.length; j++) {
+          imgs[j].style.top = xs[j] + 'px';
+          imgs[j].style.height = (xs[j + 1] - xs[j]) + 'px';
+        }
+        rail.style.width = W + 'px';
+        rail.style.height = xs[xs.length - 1] + 'px';
+        return;
+      }
       var H = stage.clientHeight;
       if (!H || !S.h) return;
       scale = H / S.h;
@@ -124,23 +176,25 @@
       rail.style.width = xs[xs.length - 1] + 'px';
     }
 
-    // The far-right ~700px of the scan is mounting silk, not painting — open on
-    // the artwork itself, leaving the frontispiece just off-screen to the right.
+    // A handscroll opens at its right edge, on the artwork itself: the far
+    // right of a scan may be mounting silk (contentRight). A hanging scroll
+    // opens at the top.
     function openAtStart() {
+      if (VERT) { stage.scrollTop = 0; return; }
       var edge = Math.round((S.contentRight || S.w) * scale);
       stage.scrollLeft = Math.max(0, edge - stage.clientWidth);
     }
+    function pos() { return VERT ? stage.scrollTop : stage.scrollLeft; }
+    function setPos(v) { if (VERT) stage.scrollTop = v; else stage.scrollLeft = v; }
+    function extent() { return VERT ? stage.scrollHeight - stage.clientHeight : stage.scrollWidth - stage.clientWidth; }
 
     var opened = false;
     function reflow(keepPlace) {
-      var frac = null, max0 = stage.scrollWidth - stage.clientWidth;
-      if (keepPlace && max0 > 0) frac = stage.scrollLeft / max0;
+      var frac = null, max0 = extent();
+      if (keepPlace && max0 > 0) frac = pos() / max0;
       layout();
-      if (opened && frac !== null) {
-        stage.scrollLeft = frac * (stage.scrollWidth - stage.clientWidth);
-      } else {
-        openAtStart();
-      }
+      if (opened && frac !== null) setPos(frac * extent());
+      else openAtStart();
     }
 
     layout(); openAtStart();
@@ -151,12 +205,12 @@
 
     var veil = document.getElementById('veil');
     function drop() { veil.classList.add('gone'); }
-    var lastImg = imgs[imgs.length - 1];
-    if (lastImg) { lastImg.complete ? drop() : lastImg.addEventListener('load', drop); }
+    var firstImg = VERT ? imgs[0] : imgs[imgs.length - 1];
+    if (firstImg) { firstImg.complete ? drop() : firstImg.addEventListener('load', drop); }
     setTimeout(drop, 4000);
 
     // vertical wheel advances the unroll (leave real horizontal swipes native)
-    stage.addEventListener('wheel', function (e) {
+    if (!VERT) stage.addEventListener('wheel', function (e) {
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
       e.preventDefault();
       stage.scrollLeft -= e.deltaY;
@@ -164,15 +218,15 @@
     }, { passive: false });
 
     // drag-to-pan on desktop; touch keeps native momentum
-    var down = false, startX = 0, startL = 0;
+    var down = false, start = 0, startP = 0;
     stage.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'touch') return;
-      down = true; markMoved(); startX = e.clientX; startL = stage.scrollLeft;
+      down = true; markMoved(); start = VERT ? e.clientY : e.clientX; startP = pos();
       stage.classList.add('grabbing'); stage.setPointerCapture(e.pointerId);
     });
     stage.addEventListener('pointermove', function (e) {
       if (!down) return;
-      stage.scrollLeft = startL - (e.clientX - startX);
+      setPos(startP - ((VERT ? e.clientY : e.clientX) - start));
     });
     function up() { down = false; stage.classList.remove('grabbing'); }
     stage.addEventListener('pointerup', up);
@@ -191,9 +245,10 @@
       }
     }
     stage.addEventListener('scroll', function () {
-      var max = stage.scrollWidth - stage.clientWidth;
-      var seen = max > 0 ? (1 - stage.scrollLeft / max) : 0;
+      var max = extent();
+      var seen = max > 0 ? (VERT ? pos() / max : 1 - pos() / max) : 0;
       progress.style.width = (seen * 100).toFixed(2) + '%';
+      if (VERT) markMoved();
     }, { passive: true });
     stage.addEventListener('touchstart', function () { markMoved(); }, { passive: true });
     setTimeout(function () { if (!moved) hint.classList.add('faded'); }, 6000);

@@ -190,25 +190,6 @@ body.writing #marquee{border-color:rgba(233,209,150,.9)}
   display:none;overflow-y:auto;background:rgba(18,15,11,.95);border:1px solid #3a3327;
   border-radius:3px;padding:8px}
 #script.on{display:block}
-/* the (i): what every control means, for someone new */
-#info{font-family:Georgia,"Times New Roman",serif;font-style:italic;font-size:14px;letter-spacing:0;
-  width:30px;height:26px;padding:0}
-#help{position:fixed;right:22px;top:96px;bottom:26px;width:min(400px,92vw);z-index:65;
-  display:none;overflow-y:auto;background:rgba(18,15,11,.96);border:1px solid #3a3327;
-  border-radius:3px;padding:10px 12px 16px}
-#help.on{display:block}
-#help .hl{display:flex;gap:6px;justify-content:flex-end;margin-bottom:4px}
-#help .hl span{cursor:pointer;font-size:11px;letter-spacing:2px;color:#6b6151;border:1px solid var(--line);padding:3px 8px}
-#help .hl span.on{color:#efe3c6;border-color:rgba(217,180,90,.5)}
-#help h3{font-size:11px;letter-spacing:3px;color:#c2ae7f;margin:14px 0 4px;font-weight:400}
-#help .hr{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(90,80,60,.16)}
-#help .hi{width:26px;height:26px;flex:none;color:#d9caa4;font-size:13px;text-align:center;line-height:26px}
-#help .hi .ico{width:22px;height:22px;margin-top:2px}
-#help .hn{font-size:12.5px;color:#e6d7ae;flex:none;min-width:84px;line-height:1.5}
-#help .hd{font-size:12px;line-height:1.55;color:#8d8270;text-wrap:pretty}
-:lang(en) #help .hn,:lang(en) #help .hd,:lang(en) #help h3{letter-spacing:0}
-:lang(en) #help h3{letter-spacing:1px}
-body.topbar #help{left:10px;right:10px;width:auto;top:60px;bottom:72px}
 #script .row{padding:9px 10px;border-bottom:1px solid rgba(90,80,60,.18);cursor:pointer}
 #script .row:hover{background:rgba(217,180,90,.07)}
 #script .at{font-size:10px;color:#6f6552;letter-spacing:1px;margin-right:8px}
@@ -351,7 +332,7 @@ body.icons #shotCount{display:none}
 /* stretches the tracer had to leap across — road inferred, not seen */
 #roads .gap{stroke-dasharray:0.5 5}
 #roads .gap.line{opacity:.8}
-.persp.off{opacity:.35;cursor:default}
+.persp.off{opacity:.45;cursor:default}
 
 /* the dashed selection, and the outline kept afterwards for context */
 #marquee,#kept{position:absolute;z-index:9;display:none;pointer-events:none;
@@ -384,19 +365,19 @@ body.icons #shotCount{display:none}
 
 /* ---------------- right-hand panel ---------------- */
 #panel{position:fixed;right:22px;top:50%;transform:translateY(-50%);z-index:16;
-  width:158px;opacity:.74;transition:opacity .35s ease}
+  width:158px;opacity:.92;transition:opacity .35s ease}
 #panel:hover{opacity:1}
 .sect{margin-bottom:28px}
 .sect h2{margin:0 0 10px;font-size:11px;font-weight:500;letter-spacing:4px;
-  text-transform:uppercase;color:#6e6552}
+  text-transform:uppercase;color:#9c9178}
 
 #track{position:relative;height:38px;margin:0 22px 0 8px}
-#track .line{position:absolute;left:0;right:0;top:9px;height:1px;background:rgba(217,180,90,.26)}
+#track .line{position:absolute;left:0;right:0;top:9px;height:1px;background:rgba(217,180,90,.4)}
 .stop{position:absolute;top:0;transform:translateX(-50%);cursor:pointer;text-align:center}
 .stop .dot{width:9px;height:9px;margin:5px auto 0;border-radius:50%;
-  border:1px solid rgba(217,180,90,.55);background:#0c0a08;
+  border:1px solid rgba(217,180,90,.8);background:#0c0a08;
   transition:background .3s, box-shadow .3s, transform .3s}
-.stop .lb{margin-top:7px;font-size:11px;letter-spacing:1px;color:#6e6552;white-space:nowrap;
+.stop .lb{margin-top:7px;font-size:11px;letter-spacing:1px;color:#a39a82;white-space:nowrap;
   transition:color .3s}
 .stop:hover .dot{background:rgba(217,180,90,.45)}
 .stop:hover .lb{color:#cbbd9c}
@@ -404,9 +385,9 @@ body.icons #shotCount{display:none}
 .stop.on .lb{color:#f0e6cd}
 
 .persp{display:flex;align-items:center;gap:9px;padding:5px 0;cursor:pointer;
-  font-size:12px;letter-spacing:2px;color:#7d735f;transition:color .3s}
+  font-size:12px;letter-spacing:2px;color:#b3a88e;transition:color .3s}
 .persp:hover{color:#e6dabb}
-.persp .box{width:12px;height:12px;border:1px solid rgba(217,180,90,.5);
+.persp .box{width:12px;height:12px;border:1px solid rgba(217,180,90,.75);
   display:flex;align-items:center;justify-content:center;flex:0 0 auto;
   transition:border-color .25s}
 .persp .box::after{content:"";width:6px;height:6px;background:var(--warm);
@@ -420,17 +401,17 @@ body.icons #shotCount{display:none}
 #corner{position:fixed;right:22px;top:18px;z-index:17;display:flex;
   flex-direction:column;align-items:flex-end;gap:9px}
 #corner .btns{display:flex;align-items:center;gap:8px}
-#lang,#back,#info{font-size:11px;letter-spacing:3px;color:#6b6151;cursor:pointer;
+#lang,#back{font-size:11px;letter-spacing:3px;color:#a39a82;cursor:pointer;
   border:1px solid var(--line);padding:5px 9px;text-decoration:none;
   display:inline-flex;align-items:center;justify-content:center;
   transition:color .3s, border-color .3s}
-#lang:hover,#back:hover,#info:hover{color:#efe3c6;border-color:rgba(217,180,90,.5)}
+#lang:hover,#back:hover{color:#efe3c6;border-color:rgba(217,180,90,.5)}
 /* third stop on the toggle: the button becomes a picture of pictures */
 #lang.asIcon{width:30px;height:26px;padding:0;letter-spacing:0}
 #lang.asIcon .ico{display:block;width:14px;height:14px}
 /* a bare chevron: unmistakable, and it stops competing with the painting */
 #back{font-size:15px;letter-spacing:0;line-height:1;width:30px;height:26px;padding:0}
-#title{font-size:12px;letter-spacing:3px;color:#5f5748;pointer-events:none;
+#title{font-size:12px;letter-spacing:3px;color:#8d8270;pointer-events:none;
   max-width:34vw;text-align:right}
 
 /* top-bar chrome: used on narrow screens, and in Wide mode at any width,
@@ -457,7 +438,7 @@ body.topbar #corner{right:10px;top:auto;bottom:9px;flex-direction:row;
 body.topbar #title{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:15;
   max-width:none;text-align:center;padding:6px 12px calc(6px + env(safe-area-inset-bottom));
   background:linear-gradient(0deg,rgba(10,8,6,.95),rgba(10,8,6,.78) 70%,transparent);
-  font-size:11px;letter-spacing:2px;color:#8d8270;line-height:1.5}
+  font-size:11px;letter-spacing:2px;color:#a39a82;line-height:1.5}
 body[class*="bg-"].topbar #title{color:var(--th-muted);
   background:linear-gradient(0deg,var(--th-bg),transparent)}
 #title .mus{display:none}
@@ -511,7 +492,6 @@ body.topbar #loc{top:60px;bottom:auto}
   <div class="btns">
     <a id="back" href="cabinet.html" title="Return to Cabinet" aria-label="Return to Cabinet">&lsaquo;</a>
     <div id="lang">中</div>
-    <div id="info" title="what the buttons mean" aria-label="what the buttons mean">i</div>
   </div>
   <div id="title"></div>
 </div>
@@ -530,7 +510,6 @@ body.topbar #loc{top:60px;bottom:auto}
   <div class="row"><button class="ok"></button><button class="send"></button><button class="del"></button><button class="no"></button></div>
 </div>
 <div id="script"></div>
-<div id="help"></div>
 <div id="rollTag"></div>
 <!-- The register has to be read before we know which manifest to fetch, which
      puts a round trip between the HTML arriving and the first tile being asked
@@ -542,12 +521,12 @@ body.topbar #loc{top:60px;bottom:auto}
      its data files are still ten minutes stale -- which is how the Whole view
      kept painting the wrong scroll after the fix had shipped. The build stamp
      makes each deploy a new URL. tools/stamp_build.py rewrites it. -->
-<script>window.BUILD='321dda5';</script>
-<link rel="preload" as="script" href="assets/data/paintings.js?b=321dda5">
-<link rel="preload" as="script" href="assets/scroll/manifest.js?b=321dda5">
-<link rel="preload" as="script" href="assets/data/roads.js?b=321dda5">
+<script>window.BUILD='2235d46';</script>
+<link rel="preload" as="script" href="assets/data/paintings.js?b=2235d46">
+<link rel="preload" as="script" href="assets/scroll/manifest.js?b=2235d46">
+<link rel="preload" as="script" href="assets/data/roads.js?b=2235d46">
 <link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
-<script src="assets/data/paintings.js?b=321dda5"></script>
+<script src="assets/data/paintings.js?b=2235d46"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
    are per-painting, so they are written in here rather than fixed in the page.
@@ -636,18 +615,17 @@ const I18N={
 // whichever language you last read, so the tooltips still make sense, and the
 // few words the mode can't replace (the scroll's own name) stay in Chinese.
 const UI_NEXT={zh:'en', en:'ico', ico:'zh'};
-// Pictograms are the default arrival: the panel says what it does in shapes,
-// which needs no language at all. The words are one tap away and remembered.
-// Only an explicit choice on this toggle is honoured -- ccp_lang is written by
-// the cabinet too, so falling back to it would hand most visitors words they
-// never asked for.
+// Words are the default arrival, in English, so the panel explains itself
+// without a help page. The cabinet writes ccp_lang too, so a visitor who chose
+// 中 there arrives here in Chinese. Pictograms are a stop on the toggle, not
+// the start.
 let ui=/[?&]icons=1/.test(location.search) ? 'ico'
-      : (localStorage.getItem('ccp_ui')||'ico');
-if(!UI_NEXT[ui]) ui='zh';
-let lang = ui==='ico' ? (localStorage.getItem('ccp_lang')||'zh') : ui;
+      : (localStorage.getItem('ccp_ui')||localStorage.getItem('ccp_lang')||'en');
+if(!UI_NEXT[ui]) ui='en';
+let lang = ui==='ico' ? (localStorage.getItem('ccp_lang')||'en') : ui;
 const t=k=>I18N[lang][k];
 
-let mode='pane', showLoc=false, showMarks=false, showRoads=false, customUsed=false;
+let mode='pane', showLoc=false, showMarks=false, showRoads=true, customUsed=false;
 const ROADS=(window.ROADS&&window.ROADS.paths)||[];
 // things.js -- 207 objects catalogued by a model -- is no longer loaded. Two
 // independent annotation passes agreed with it on barely half the contested
@@ -1183,7 +1161,7 @@ document.querySelectorAll('.persp').forEach(el=>{
     if(k==='marks'){ showMarks=!showMarks; el.classList.toggle('on',showMarks); }
     if(k==='roads'){ if(!ROADS.length) return; showRoads=!showRoads; el.classList.toggle('on',showRoads); }
     if(k==='write'){ setWriting(!writing); return; }
-    if(k==='tiba'){ $('script').classList.toggle('on'); $('help').classList.remove('on'); buildScript(); render(); return; }
+    if(k==='tiba'){ $('script').classList.toggle('on'); buildScript(); render(); return; }
     if(k==='shots'){ if(!SHOTS.length) return;
       shotMode=(shotMode+1)%3;                       // off -> marks -> laid on
       el.classList.toggle('on', shotMode!==0);
@@ -1708,11 +1686,6 @@ function drawTiba(sE){
       if(b.x>right||b.x+b.w<left||b.y>bot||b.y+b.h<top) continue;
       drawBlock(b);
     }
-    if(!TAIL.blocks.length){
-      sctx.fillStyle='rgba(60,40,20,.5)';
-      const hint=columnsOf(lang==='en'?'blank silk after the painting. Tap to write.':'卷末素绢　可题',G*0.8,40);
-      drawCol(hint[0],G*0.8, VERT?L-G*2:-G*2.2, VERT?PH+G*1.6:G*1.6);
-    }
   }
   // on the painting: a colophon with extent is the box it was drawn as, one
   // without is a dot. Both in screen space, so the line stays one line wide.
@@ -1881,65 +1854,6 @@ function buildScript(){
   paintTibaRow();
 }
 
-// ---- the (i): what every control means ------------------------------------
-// One table, both languages, drawn with the same pictograms the panel uses.
-// In word mode it follows the language chosen; in shapes mode nothing on
-// screen names a language, so the panel carries its own 中 / EN switch.
-const HELP=[
-  {h:{zh:'缩放',en:'Zoom'}},
-  {ico:'fold', zh:'全卷', en:'Whole', d:{zh:'整卷折成数段，一眼看全。点任一处，即展卷至彼处。', en:'The whole scroll folded into bands. Tap anywhere on it to unroll there.'}},
-  {ico:'wide', zh:'通幅', en:'Wide', d:{zh:'满幅横陈，面板让开。', en:'The full breadth of the screen, panel out of the way.'}},
-  {ico:'pane', zh:'展卷', en:'Pane', d:{zh:'案上展卷。拖动或滚轮即卷动；两端卷轴亦可拖。', en:'The scroll on a table. Drag or scroll to unroll. The rolls at either end can be dragged too.'}},
-  {ico:'custom', zh:'细看', en:'Detail', d:{zh:'未放大时框住一处，即放大至彼处。再选此段，回到上次所看。', en:'Not zoomed, drag a box round something to zoom to it. Choose this stop again to return to the last one.'}},
-  {h:{zh:'视角',en:'Perspectives'}},
-  {ico:'loc', zh:'卷影', en:'Locator', d:{zh:'整卷缩影，示所在之处。点其一处即跳。', en:'A strip of the whole scroll showing where you are. Tap it to jump.'}},
-  {ico:'roads', zh:'道路', en:'Roads', d:{zh:'画中描出的路径，随展卷而现。', en:'Paths traced through the painting, drawn in as you unroll.'}},
-  {ico:'write', zh:'题', en:'Write', d:{zh:'开着时，点画上一处即题于彼，框住一处亦可。点卷末素绢，题于卷後。任何缩放皆可；关则拖动复为移卷。', en:'While on, a tap on the painting writes a colophon there and a drag frames one. Tap the blank silk past the end to write after the painting. Any zoom. Off, a drag pans again.'}},
-  {ico:'tiba', zh:'题跋', en:'Colophons', d:{zh:'此卷所题之目录，点一则即至其处。并有题于卷後、题于画上、复制邀链、署名、存档、全部题跋诸钮。', en:'Everything written on this scroll; tap a row to travel to it. Also the buttons to write after, write on the painting, copy the invite, sign, save a file, and see the feed.'}},
-  {ico:'shots', zh:'照片', en:'Photographs', d:{zh:'三态轮换。关。点：放大後见小点，按之开照片。铺：照片贴于画上，‹ › 翻看，滑条调深浅。', en:'Cycles three states. Off. Marks, dots that open a photograph when tapped. Laid on, photographs placed over the scan; ‹ › pages through them, the slider fades one against the scan.'}},
-  {h:{zh:'所题',en:'Writing'}},
-  {t:'存', zh:'存', en:'save', d:{zh:'存于此浏览器。他人不见，除非送呈。', en:'Saved in this browser. Nobody else sees it until it is sent.'}},
-  {t:'呈', zh:'送呈', en:'send', d:{zh:'送至共室，持邀链者皆可见。须先署名。惟持邀链之机有此钮。', en:'Sends it to the circle, where anyone with the invite reads it. Needs a signature. Only shown on a device that holds the invite.'}},
-  {t:'删', zh:'删 / 撤', en:'delete / withdraw', d:{zh:'删去私存者；撤回已呈者。', en:'Deletes a private one. Withdraws a sent one.'}},
-  {t:'罢', zh:'罢', en:'close', d:{zh:'合上，不存。', en:'Closes without saving.'}},
-  {t:'裱', zh:'裱', en:'mounted', d:{zh:'主人已裱于卷上者，此处不可复改。', en:'Taken onto the scroll by the owner. Cannot be changed from here.'}},
-  {h:{zh:'角上',en:'Corner'}},
-  {t:'‹', zh:'返回', en:'back', d:{zh:'回画匣。自题跋进来者，回题跋。', en:'To the cabinet, or to the feed if you came from it.'}},
-  {ico:'ui', zh:'中 · EN · 图示', en:'中 · EN · shapes', d:{zh:'三段轮换：中文、英文、无字图示。', en:'Three stops. Chinese, English, wordless shapes.'}},
-  {t:'i', zh:'此页', en:'this', d:{zh:'诸钮何意。', en:'What the buttons mean.'}},
-  {h:{zh:'手势',en:'Gestures'}},
-  {t:'⇆', zh:'拖', en:'drag', d:{zh:'放大後拖即移卷；未放大时拖框即放大。', en:'Zoomed in, a drag pans. Not zoomed, a drag frames a box to zoom to.'}},
-  {t:'⤢', zh:'捏', en:'pinch · wheel', d:{zh:'两指捏合或滚轮，缩放。', en:'Pinch or wheel to zoom.'}},
-  {t:'⌨', zh:'键', en:'keys', d:{zh:'1 2 3 4 缩放段。p 照片，[ ] 翻看。Esc 合上。', en:'1 2 3 4 are the zoom stops. p photographs, [ ] pages through them. Esc closes.'}}
-];
-let helpLang=null;                          // shapes mode only; otherwise follows lang
-function buildHelp(){
-  const host=$('help'); host.innerHTML='';
-  const hl = ICONS_ON ? (helpLang||lang) : lang;
-  if(ICONS_ON){
-    const sw=document.createElement('div'); sw.className='hl';
-    [['zh','中'],['en','EN']].forEach(([k,w])=>{
-      const b=document.createElement('span'); b.textContent=w; b.classList.toggle('on',hl===k);
-      b.onclick=()=>{ helpLang=k; buildHelp(); }; sw.appendChild(b);
-    });
-    host.appendChild(sw);
-  }
-  HELP.forEach(row=>{
-    if(row.h){ const h=document.createElement('h3'); h.textContent=row.h[hl]; host.appendChild(h); return; }
-    const d=document.createElement('div'); d.className='hr';
-    const i=document.createElement('div'); i.className='hi';
-    if(row.ico) i.innerHTML=ico(row.ico); else i.textContent=row.t;
-    const n=document.createElement('div'); n.className='hn'; n.textContent=row[hl];
-    const x=document.createElement('div'); x.className='hd'; x.textContent=row.d[hl];
-    d.appendChild(i); d.appendChild(n); d.appendChild(x); host.appendChild(d);
-  });
-}
-$('info').addEventListener('click',()=>{
-  const h=$('help'), on=!h.classList.contains('on');
-  h.classList.toggle('on',on);
-  if(on){ buildHelp(); $('script').classList.remove('on'); paintTibaRow(); }
-});
-$('help').addEventListener('pointerdown',e=>e.stopPropagation());
 
 // --- language --------------------------------------------------------------
 function applyLang(){
@@ -1982,6 +1896,7 @@ function applyLang(){
   const rp=document.querySelector('.persp[data-t="roads"]');
   iconise(rp.querySelector('.lb'),'roads',t('roads'));
   rp.classList.toggle('off', ROADS.length===0);
+  rp.classList.toggle('on', showRoads && ROADS.length>0);
   rp.title = ROADS.length? '' : 'no roads traced yet — use trace.html';
   const sp=document.querySelector('.persp[data-t="shots"]');
   paintShotToggle();
@@ -1998,9 +1913,6 @@ function applyLang(){
   ed.querySelector('.no').textContent=t('cancel');
   ed.querySelector('.eb').placeholder=t('placeholder');
   buildScript();
-  $('info').title = lang==='en' ? 'what the buttons mean' : '诸钮何意';
-  $('info').setAttribute('aria-label',$('info').title);
-  if($('help').classList.contains('on')) buildHelp();
   document.title = window.PAINTING ? (lang==='en'?PAINTING.en:PAINTING.zh)
                   : (lang==='en'?'A Thousand Li of Rivers and Mountains':'千里江山图');
   buildTrack(); if(mode==='fold') layoutFold();
@@ -2059,8 +1971,7 @@ addEventListener('keydown',e=>{
   if(shotOn!==null && (e.key==='ArrowRight'||e.key==='ArrowLeft')){
     e.preventDefault(); stepShot(e.key==='ArrowRight'?1:-1);
   }
-  if(e.key==='Escape'){ if($('help').classList.contains('on')) $('help').classList.remove('on');
-                        else if(shotOn!==null) closeShot();
+  if(e.key==='Escape'){ if(shotOn!==null) closeShot();
                         else if($('editor').classList.contains('on')) closeEditor();
                         else if(writing) setWriting(false); }
   if(e.key==='1') setMode('fold'); else if(e.key==='2') setMode('wide');
