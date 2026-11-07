@@ -521,12 +521,12 @@ body.topbar #loc{top:60px;bottom:auto}
      its data files are still ten minutes stale -- which is how the Whole view
      kept painting the wrong scroll after the fix had shipped. The build stamp
      makes each deploy a new URL. tools/stamp_build.py rewrites it. -->
-<script>window.BUILD='2235d46';</script>
-<link rel="preload" as="script" href="assets/data/paintings.js?b=2235d46">
-<link rel="preload" as="script" href="assets/scroll/manifest.js?b=2235d46">
-<link rel="preload" as="script" href="assets/data/roads.js?b=2235d46">
+<script>window.BUILD='dbeae7e';</script>
+<link rel="preload" as="script" href="assets/data/paintings.js?b=dbeae7e">
+<link rel="preload" as="script" href="assets/scroll/manifest.js?b=dbeae7e">
+<link rel="preload" as="script" href="assets/data/roads.js?b=dbeae7e">
 <link rel="preload" as="image" href="assets/scroll/tiles/tile-20.jpg">
-<script src="assets/data/paintings.js?b=2235d46"></script>
+<script src="assets/data/paintings.js?b=dbeae7e"></script>
 <script>
 /* Which scroll. ?p=<slug> picks one from the register; the annotation files
    are per-painting, so they are written in here rather than fixed in the page.
@@ -1871,9 +1871,9 @@ function applyLang(){
   // the chevron IS the label; the translated string becomes its tooltip
   const bk=$('back'), bkt = bk.getAttribute('href')==='feed.html' ? (lang==='en'?'Return to the feed':'返回题跋') : t('back');
   bk.title=bkt; bk.setAttribute('aria-label',bkt);
-  // pictograms are wordless, so the one caption left keeps the scroll's own name
+  // pictograms are wordless; the one caption left follows the last language read
   const cap=$('title');
-  cap.textContent = ICONS_ON ? I18N.zh.title : t('title');
+  cap.textContent = t('title');
   // The collection line is always built and hidden by CSS unless the caption is
   // at the foot. Building it only when topbar is on would miss a rotation:
   // measure() sets that class on resize, and applyLang does not run again.
